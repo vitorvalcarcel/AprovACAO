@@ -4,13 +4,19 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "usuarios")
-@Data // Cria Getters, Setters, ToString, HashCode
-@NoArgsConstructor // Obrigatório para o JPA
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
-public class Usuario {
+public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +30,41 @@ public class Usuario {
 
     @Column(nullable = false)
     private String senha;
-    
-    // Futuramente adicionaremos 'Role' (Admin/User) aqui
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Por enquanto, todo usuário tem o perfil "ROLE_USER".
+        // Futuramente, se tiver ADMIN, a lógica entra aqui.
+        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+
+    @Override
+    public String getPassword() {
+        return senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }
