@@ -1,0 +1,35 @@
+Arquivo de Pendências e Melhorias Futuras (Backlog)
+1. Segurança e Infraestrutura
+[ ] Variáveis de Ambiente: Remover senhas e segredos (JWT Secret, Senha do Banco) do application.properties e usar variáveis do sistema (${JWT_SECRET}) para produção.
+
+[ ] CORS: Configurar o WebConfig para permitir que o Front-end (React/Vue) acesse a API quando estiverem em domínios diferentes.
+
+[ ] Docker de Produção: Criar um Dockerfile otimizado para gerar o .jar final da aplicação, não apenas o ambiente de desenvolvimento.
+
+[ ] Testes Automatizados: Implementar testes unitários (JUnit) para as regras de negócio nos Services (UsuarioService, MateriaService, etc).
+
+2. Módulo de Identidade (Usuário)
+[ ] Recuperação de Senha: Implementar fluxo de "Esqueci minha senha" com envio de e-mail (Token temporário).
+
+[ ] Confirmação de E-mail: Bloquear o login até que o usuário clique no link de confirmação enviado por e-mail.
+
+[ ] Perfis de Acesso (Roles): Implementar a lógica de ADMIN vs USER (atualmente está fixo como ROLE_USER).
+
+[ ] Logout: Implementar "Blacklist" de tokens ou tempo de expiração curto com Refresh Token para invalidar sessões.
+
+3. Módulo de Inventário (Matérias e Tópicos)
+[ ] Integridade na Exclusão: Antes de excluir uma Matéria, verificar se ela já possui Registros de Estudo ou vínculo com Concursos. Se tiver, impedir a exclusão ou arquivar (Soft Delete).
+
+[ ] Importação em Lote: Permitir importar matérias via arquivo (CSV/Excel).
+
+4. Módulo de Estratégia (Concursos)
+[ ] Status do Concurso: Criar campo ou lógica para definir se o concurso está "Aberto", "Edital Publicado" ou "Encerrado".
+
+[ ] Dashboard: Exibir contagem regressiva para a prova (dias restantes).
+
+5. Módulo de Planejamento (Ciclos) - O próximo grande passo
+[ ] Vínculo Concurso-Matéria: Tabela intermediária para definir Pesos e Metas de horas.
+
+[ ] Algoritmo do Ciclo: Lógica matemática para distribuir as horas disponíveis baseado nos pesos.
+
+[ ] Histórico de Ciclos: Permitir arquivar um ciclo e iniciar outro sem perder os dados anteriores.
