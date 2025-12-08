@@ -2,6 +2,7 @@ package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.DadosCriacaoCiclo;
 import com.nomeacao.api.dto.DadosSugestaoCiclo;
+import com.nomeacao.api.dto.DashboardDTO;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.CicloService;
 import jakarta.transaction.Transactional;
@@ -38,4 +39,19 @@ public class CicloController {
         var uri = uriBuilder.path("/ciclos/{id}").buildAndExpand(id).toUri();
         return ResponseEntity.created(uri).build(); // Retorna 201 Created
     }
+
+    @GetMapping("/atual")
+    public ResponseEntity<DashboardDTO> obterAtual(@RequestParam Long concursoId,
+                                                   @AuthenticationPrincipal Usuario usuario) {
+        var dash = service.calcularProgresso(concursoId, usuario);
+        return ResponseEntity.ok(dash);
+    }
+
+    @PutMapping("/{id}/fechar")
+    @Transactional
+    public ResponseEntity fechar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        service.fecharCiclo(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
+
 }
