@@ -1,11 +1,10 @@
 package com.nomeacao.api.controller;
 
+import com.nomeacao.api.dto.DadosAtualizacaoTopico;
 import com.nomeacao.api.dto.DadosCadastroTopico;
 import com.nomeacao.api.dto.DadosListagemTopico;
-import com.nomeacao.api.model.Topico;
 import com.nomeacao.api.model.Usuario;
-import com.nomeacao.api.repository.MateriaRepository;
-import com.nomeacao.api.repository.TopicoRepository;
+import com.nomeacao.api.service.TopicoService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,49 +20,53 @@ import java.util.List;
 public class TopicoController {
 
     @Autowired
-    private TopicoRepository repository;
-
-    @Autowired
-    private MateriaRepository materiaRepository;
+    private TopicoService service;
 
     @PostMapping
     @Transactional
     public ResponseEntity cadastrar(@RequestBody @Valid DadosCadastroTopico dados,
                                     @AuthenticationPrincipal Usuario usuarioLogado,
                                     UriComponentsBuilder uriBuilder) {
-        
-        var materiaPai = materiaRepository.findById(dados.materiaId())
-                .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
-
-        if (!materiaPai.getUsuario().getId().equals(usuarioLogado.getId())) {
-            return ResponseEntity.status(403).build(); // Proibido!
+        try {
+            var dto = service.cadastrar(dados, usuarioLogado);
+            var uri = uriBuilder.path("/topicos/{id}").buildAndExpand(dto.id()).toUri();
+            return ResponseEntity.created(uri).body(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
         }
-
-        var topico = new Topico();
-        topico.setNome(dados.nome());
-        topico.setMateria(materiaPai);
-
-        repository.save(topico);
-
-        var uri = uriBuilder.path("/topicos/{id}").buildAndExpand(topico.getId()).toUri();
-        return ResponseEntity.created(uri).body(new DadosListagemTopico(topico));
     }
 
     @GetMapping("/{materiaId}")
-    public ResponseEntity<List<DadosListagemTopico>> listarPorMateria(@PathVariable Long materiaId, 
-                                                                      @AuthenticationPrincipal Usuario usuarioLogado) {
-        var materiaPai = materiaRepository.findById(materiaId)
-                .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
-
-        if (!materiaPai.getUsuario().getId().equals(usuarioLogado.getId())) {
+    public ResponseEntity listarPorMateria(@PathVariable Long materiaId, 
+                                           @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            var lista = service.listar(materiaId, usuarioLogado);
+            return ResponseEntity.ok(lista);
+        } catch (RuntimeException e) {
             return ResponseEntity.status(403).build();
         }
+    }
 
-        var lista = repository.findAllByMateriaId(materiaId)
-                .stream()
-                .map(DadosListagemTopico::new)
-                .toList();
+    @PutMapping
+    @Transactional
+    public ResponseEntity atualizar(@RequestBody @Valid DadosAtualizacaoTopico dados, 
+                                    @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            var dto = service.atualizar(dados, usuarioLogado);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).build();
+        }
+    }
 
-        return ResponseEntity.ok(lista);
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity excluir(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            service.excluir(id, usuarioLogado);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).build();
+        }
     }
 }
