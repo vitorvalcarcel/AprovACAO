@@ -49,3 +49,9 @@ Arquivo de Pendências e Melhorias Futuras (Backlog)
 [ ] Simulador de Nota: Com base nos pesos cadastrados, criar uma calculadora onde o usuário coloca quantos acertos espera ter e o sistema calcula a nota final provável.
 
 [ ] Edição de Vínculo: Permitir alterar o Peso ou a Qtd. de Questões de uma matéria já vinculada sem ter que remover e adicionar de novo.
+
+[ ] Edição de Ciclo Fechado: (Decisão de Produto) Se o usuário insistir em editar um ciclo fechado, teremos que recalcular todos os saldos posteriores. Por enquanto, bloquear edição de ciclos fechados para manter a integridade.
+
+[ ] Dashboard Geral: Criar uma visão que mostre "Horas Totais de Vida" vs "Horas em Concursos Ativos".
+
+[ ] Migração de Estudo: Permitir que o usuário pegue um estudo "Sem Vínculo" e atribua a um concurso posteriormente (caso tenha esquecido).
