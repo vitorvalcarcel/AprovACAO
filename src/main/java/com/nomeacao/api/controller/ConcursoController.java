@@ -1,10 +1,14 @@
 package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.DadosAtualizacaoConcurso;
+import com.nomeacao.api.dto.DadosAtualizacaoVinculo;
+import com.nomeacao.api.dto.DadosDetalhamentoVinculo;
+import com.nomeacao.api.dto.DadosVinculoMateria;
 import com.nomeacao.api.dto.DadosCadastroConcurso;
 import com.nomeacao.api.dto.DadosListagemConcurso;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.ConcursoService;
+import com.nomeacao.api.service.ConcursoMateriaService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +25,9 @@ public class ConcursoController {
 
     @Autowired
     private ConcursoService service;
+
+    @Autowired
+    private ConcursoMateriaService vinculoService;
 
     @PostMapping
     @Transactional
@@ -58,6 +65,32 @@ public class ConcursoController {
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.status(403).build();
+        }
+    }
+
+    @PostMapping("/{id}/materias")
+    @Transactional
+    public ResponseEntity vincularMateria(@PathVariable Long id,
+                                          @RequestBody @Valid DadosVinculoMateria dados,
+                                          @AuthenticationPrincipal Usuario usuarioLogado,
+                                          UriComponentsBuilder uriBuilder) {
+        
+        var dto = vinculoService.vincular(id, dados, usuarioLogado);
+        
+        var uri = uriBuilder.path("/concursos/vinculos/{id}").buildAndExpand(dto.id()).toUri();
+        
+        return ResponseEntity.created(uri).body(dto);
+    }
+
+    @PutMapping("/materias")
+    @Transactional
+    public ResponseEntity atualizarVinculo(@RequestBody @Valid DadosAtualizacaoVinculo dados,
+                                           @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            var dto = vinculoService.atualizar(dados, usuarioLogado);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
         }
     }
 }

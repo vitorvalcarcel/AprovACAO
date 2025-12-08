@@ -33,3 +33,19 @@ Arquivo de Pendências e Melhorias Futuras (Backlog)
 [ ] Algoritmo do Ciclo: Lógica matemática para distribuir as horas disponíveis baseado nos pesos.
 
 [ ] Histórico de Ciclos: Permitir arquivar um ciclo e iniciar outro sem perder os dados anteriores.
+
+[ ] Mostrar qual matéria estudar agora: Calcular e ver qual matéria está mais longe para fechar o ciclo e recomendar o estudo dela.
+
+[ ] Visualização da Estratégia: Endpoint para listar todas as matérias de um concurso mostrando os dados (GET /concursos/{id}/materias).
+
+[ ] Edição do Vínculo: Permitir alterar os dados (peso quantidade de questões) de uma matéria já vinculada.
+
+[ ] Desvincular: Permitir remover uma matéria do concurso (sem apagar a matéria do banco).
+
+[ ] Importação de Edital: Futuramente, permitir ler um PDF ou colar um texto para preencher automaticamente as matérias e quantidade de questões.
+
+[ ] Algoritmo de Metas de Questões: Criar lógica que define uma "Meta de Questões a Resolver" baseada na "Quantidade de Questões da Prova" x "Peso" x "Tempo até a prova".
+
+[ ] Simulador de Nota: Com base nos pesos cadastrados, criar uma calculadora onde o usuário coloca quantos acertos espera ter e o sistema calcula a nota final provável.
+
+[ ] Edição de Vínculo: Permitir alterar o Peso ou a Qtd. de Questões de uma matéria já vinculada sem ter que remover e adicionar de novo.
