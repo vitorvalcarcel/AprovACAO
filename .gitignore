@@ -38,3 +38,22 @@ Thumbs.db
 
 ### Logs ###
 *.log
+
+# --- Java (API) ---
+api/target/
+api/**/*.class
+api/.mvn/wrapper/maven-wrapper.jar
+api/.idea
+api/*.iml
+api/.settings
+api/.classpath
+api/.project
+api/help.md
+
+# --- Node (Web) ---
+web/node_modules/
+web/dist/
+web/dist-ssr/
+web/*.local
+web/.env
+web/.DS_Store
