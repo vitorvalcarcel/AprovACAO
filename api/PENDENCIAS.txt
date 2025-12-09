@@ -1,16 +1,18 @@
 Arquivo de Pendências e Melhorias Futuras (Backlog) - Atualizado
 
 1. Segurança e Infraestrutura (Prioridade Alta)
-[ ] Variáveis de Ambiente: Remover senhas (JWT Secret: 12345678, Senha do Banco) do application.properties e usar variáveis de sistema/ambiente.
-[ ] CORS: Criar classe de configuração (WebConfig) para liberar acesso do Front-end à API.
-[ ] Docker de Produção: Criar Dockerfile otimizado para gerar o .jar final (multi-stage build).
-[ ] Testes Automatizados: Criar testes unitários e de integração (JUnit/Mockito) para Services e Controllers (foco em CicloService e Fechamento).
+[ ] Variáveis de Ambiente: Remover senhas do application.properties.
+[x] CORS: Configurado via WebConfig e SecurityConfigurations.
+[ ] Docker de Produção: Criar Dockerfile otimizado.
+[ ] Testes Automatizados: Criar testes unitários.
 
-2. Módulo de Identidade (Usuário)
-[ ] Recuperação de Senha: Fluxo de "Esqueci minha senha" com envio de e-mail e token temporário.
-[ ] Confirmação de E-mail: Bloquear login até validação do e-mail.
-[ ] Perfis de Acesso (Roles): Estruturar lógica para ADMIN vs USER (hoje fixo em ROLE_USER).
-[ ] Logout: Implementar invalidação de token (Blacklist ou expiração curta com Refresh Token).
+2. Módulo de Identidade (Usuário) - Melhorias de UX e Segurança
+[ ] Proteção de Rotas Públicas: Impedir que usuários logados acessem /login e /cadastro (Redirecionar para Dashboard).
+[ ] Senha Forte (Back-end): Validar senha com min 8 caracteres, maiúscula, minúscula, número e especial.
+[ ] Feedback Visual Personalizado: Remover todos os alerts() nativos e usar mensagens de sucesso/erro integradas ao layout.
+[ ] Tratamento de Erros Real: O Back-end deve retornar mensagens claras ("Email já existe") e o Front deve exibir isso, em vez de mensagens genéricas.
+[ ] Recuperação de Senha.
+[ ] Confirmação de E-mail.
 
 3. Módulo de Inventário (Matérias e Tópicos)
 [ ] Integridade na Exclusão (MateriaService): Impedir exclusão de matérias que tenham registros de estudo ou vínculos com concursos (ou implementar Soft Delete).
