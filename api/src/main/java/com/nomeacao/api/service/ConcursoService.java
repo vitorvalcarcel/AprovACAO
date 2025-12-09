@@ -26,6 +26,10 @@ public class ConcursoService {
     private CicloRepository cicloRepository;
 
     public DadosListagemConcurso cadastrar(DadosCadastroConcurso dados, Usuario usuario) {
+        if (repository.existsByUsuarioIdAndNomeIgnoreCase(usuario.getId(), dados.nome().trim())) {
+            throw new RuntimeException("Já existe um concurso com este nome.");
+        }
+
         var concurso = new Concurso();
         concurso.setNome(dados.nome());
         concurso.setBanca(dados.banca());
@@ -37,7 +41,7 @@ public class ConcursoService {
     }
 
     public List<DadosListagemConcurso> listar(Usuario usuario) {
-        return repository.findAllByUsuarioAndArquivadoFalse(usuario)
+        return repository.findAllByUsuario(usuario)
                 .stream()
                 .map(DadosListagemConcurso::new)
                 .toList();
@@ -48,6 +52,11 @@ public class ConcursoService {
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
 
         validarDono(concurso, usuario);
+
+        if (dados.nome() != null && !concurso.getNome().equalsIgnoreCase(dados.nome()) && 
+            repository.existsByUsuarioIdAndNomeIgnoreCase(usuario.getId(), dados.nome().trim())) {
+            throw new RuntimeException("Já existe um concurso com este nome.");
+        }
 
         concurso.atualizarInformacoes(dados.nome(), dados.banca(), dados.dataProva());
         return new DadosListagemConcurso(repository.save(concurso));

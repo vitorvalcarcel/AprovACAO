@@ -1,19 +1,31 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // Endereço do Backend Java
+  baseURL: 'http://localhost:8080',
 });
 
-// Antes de qualquer requisição sair, verifica se tem um token.
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   
   if (token) {
-    // Se tiver token, anexa ele no cabeçalho
     config.headers.Authorization = `Bearer ${token}`;
   }
   
   return config;
 });
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 403) {
+      
+      console.warn("Sessão expirada ou token inválido. Redirecionando...");
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

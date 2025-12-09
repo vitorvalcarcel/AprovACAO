@@ -30,6 +30,9 @@ public class MateriaService {
     private CicloRepository cicloRepository;
 
     public DadosListagemMateria cadastrar(DadosCadastroMateria dados, Usuario usuario) {
+        if (repository.existsByUsuarioIdAndNomeIgnoreCase(usuario.getId(), dados.nome().trim())) {
+            throw new RuntimeException("Já existe uma matéria cadastrada com este nome.");
+        }
         var materia = new Materia();
         materia.setNome(dados.nome());
         materia.setUsuario(usuario);
@@ -51,6 +54,11 @@ public class MateriaService {
                 .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
 
         validarDono(materia, usuario);
+
+        if (!materia.getNome().equalsIgnoreCase(dados.nome()) && 
+            repository.existsByUsuarioIdAndNomeIgnoreCase(usuario.getId(), dados.nome().trim())) {
+            throw new RuntimeException("Já existe uma matéria cadastrada com este nome.");
+        }
 
         materia.atualizarInformacoes(dados.nome());
         return new DadosListagemMateria(repository.save(materia)); 
