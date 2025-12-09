@@ -1,73 +1,33 @@
-# React + TypeScript + Vite
+# 🎯 NomeAÇÃO - Frontend (Web)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Esta pasta contém a interface web da aplicação, construída com **React**, **TypeScript** e **Vite**.
 
-Currently, two official plugins are available:
+## 🚀 Como Iniciar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1.  **Instalar dependências:**
 
-## React Compiler
+    npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2.  **Rodar servidor de desenvolvimento:**
 
-## Expanding the ESLint configuration
+    npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+    O acesso será em `http://localhost:5173`.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📦 Estrutura de Pastas
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* `src/components`: Componentes reutilizáveis (Botões, Inputs, Cards).
+* `src/pages`: As telas completas do sistema (Login, Dashboard, Ciclos).
+* `src/services`: Configuração de chamadas à API (Axios/Fetch).
+* `src/routes`: Configuração de rotas (React Router).
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🔌 Conexão com API
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Este frontend espera que a API esteja rodando na porta **8080**.
+Caso precise alterar a URL da API, verifique as configurações de serviço (em breve implementaremos variáveis de ambiente `.env` para isso).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🛠️ Scripts Disponíveis
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+* `npm run dev`: Roda o servidor local.
+* `npm run build`: Gera a versão otimizada para produção na pasta `dist`.
+* `npm run lint`: Verifica erros de código e padronização.
