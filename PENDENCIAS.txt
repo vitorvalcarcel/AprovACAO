@@ -32,3 +32,6 @@ Arquivo de Pendências e Melhorias Futuras (Backlog) - Atualizado
 [ ] Edição de Ciclo Fechado: Decidir regra de negócio e implementar bloqueio ou recálculo.
 [ ] Dashboard Geral: Visão macro "Horas Totais de Vida" vs "Horas em Concursos".
 [ ] Migração de Estudo: Atribuir um estudo avulso a um concurso posteriormente.
+
+Questões que apareceram nos testes, mas não foram implementadas ainda:
+[ ] Matéria duplicada: Impedir cadastro de matérias com mesmo nome ignorando acentos e case sensitivity.

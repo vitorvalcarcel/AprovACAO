@@ -1,8 +1,8 @@
 package com.nomeacao.api.service;
 
+import com.nomeacao.api.dto.DadosAtualizacaoVinculo;
 import com.nomeacao.api.dto.DadosDetalhamentoVinculo;
 import com.nomeacao.api.dto.DadosVinculoMateria;
-import com.nomeacao.api.dto.DadosAtualizacaoVinculo;
 import com.nomeacao.api.model.ConcursoMateria;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.ConcursoMateriaRepository;
@@ -10,6 +10,8 @@ import com.nomeacao.api.repository.ConcursoRepository;
 import com.nomeacao.api.repository.MateriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class ConcursoMateriaService {
@@ -72,4 +74,28 @@ public class ConcursoMateriaService {
         return new DadosDetalhamentoVinculo(vinculo);
     }
 
+    public List<DadosDetalhamentoVinculo> listar(Long concursoId, Usuario usuario) {
+        var concurso = concursoRepository.findById(concursoId)
+                .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
+
+        if (!concurso.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado!");
+        }
+
+        return repository.findAllByConcursoId(concursoId)
+                .stream()
+                .map(DadosDetalhamentoVinculo::new)
+                .toList();
+    }
+
+    public void desvincular(Long id, Usuario usuario) {
+        var vinculo = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Vínculo não encontrado"));
+
+        if (!vinculo.getConcurso().getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado!");
+        }
+
+        repository.delete(vinculo);
+    }
 }

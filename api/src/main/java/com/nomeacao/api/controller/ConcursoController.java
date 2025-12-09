@@ -1,11 +1,6 @@
 package com.nomeacao.api.controller;
 
-import com.nomeacao.api.dto.DadosAtualizacaoConcurso;
-import com.nomeacao.api.dto.DadosAtualizacaoVinculo;
-import com.nomeacao.api.dto.DadosDetalhamentoVinculo;
-import com.nomeacao.api.dto.DadosVinculoMateria;
-import com.nomeacao.api.dto.DadosCadastroConcurso;
-import com.nomeacao.api.dto.DadosListagemConcurso;
+import com.nomeacao.api.dto.*;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.ConcursoService;
 import com.nomeacao.api.service.ConcursoMateriaService;
@@ -28,7 +23,7 @@ public class ConcursoController {
 
     @Autowired
     private ConcursoMateriaService vinculoService;
-
+    
     @PostMapping
     @Transactional
     public ResponseEntity cadastrar(@RequestBody @Valid DadosCadastroConcurso dados,
@@ -41,8 +36,7 @@ public class ConcursoController {
 
     @GetMapping
     public ResponseEntity<List<DadosListagemConcurso>> listar(@AuthenticationPrincipal Usuario usuarioLogado) {
-        var lista = service.listar(usuarioLogado);
-        return ResponseEntity.ok(lista);
+        return ResponseEntity.ok(service.listar(usuarioLogado));
     }
 
     @PutMapping
@@ -50,8 +44,7 @@ public class ConcursoController {
     public ResponseEntity atualizar(@RequestBody @Valid DadosAtualizacaoConcurso dados,
                                     @AuthenticationPrincipal Usuario usuarioLogado) {
         try {
-            var dto = service.atualizar(dados, usuarioLogado);
-            return ResponseEntity.ok(dto);
+            return ResponseEntity.ok(service.atualizar(dados, usuarioLogado));
         } catch (RuntimeException e) {
             return ResponseEntity.status(403).body(e.getMessage());
         }
@@ -68,37 +61,15 @@ public class ConcursoController {
         }
     }
 
-    @PostMapping("/{id}/materias")
-    @Transactional
-    public ResponseEntity vincularMateria(@PathVariable Long id,
-                                          @RequestBody @Valid DadosVinculoMateria dados,
-                                          @AuthenticationPrincipal Usuario usuarioLogado,
-                                          UriComponentsBuilder uriBuilder) {
-        
-        var dto = vinculoService.vincular(id, dados, usuarioLogado);
-        
-        var uri = uriBuilder.path("/concursos/vinculos/{id}").buildAndExpand(dto.id()).toUri();
-        
-        return ResponseEntity.created(uri).body(dto);
-    }
-
-    @PutMapping("/materias")
-    @Transactional
-    public ResponseEntity atualizarVinculo(@RequestBody @Valid DadosAtualizacaoVinculo dados,
-                                           @AuthenticationPrincipal Usuario usuarioLogado) {
-        try {
-            var dto = vinculoService.atualizar(dados, usuarioLogado);
-            return ResponseEntity.ok(dto);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        }
-    }
-
     @PatchMapping("/{id}/arquivar")
     @Transactional
     public ResponseEntity arquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
-        service.arquivar(id, usuario);
-        return ResponseEntity.noContent().build();
+        try {
+            service.arquivar(id, usuario);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PatchMapping("/{id}/desarquivar")
@@ -108,4 +79,49 @@ public class ConcursoController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/materias")
+    @Transactional
+    public ResponseEntity vincularMateria(@PathVariable Long id,
+                                          @RequestBody @Valid DadosVinculoMateria dados,
+                                          @AuthenticationPrincipal Usuario usuarioLogado,
+                                          UriComponentsBuilder uriBuilder) {
+        try {
+            var dto = vinculoService.vincular(id, dados, usuarioLogado);
+            var uri = uriBuilder.path("/concursos/vinculos/{id}").buildAndExpand(dto.id()).toUri();
+            return ResponseEntity.created(uri).body(dto);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}/materias")
+    public ResponseEntity listarMaterias(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        try {
+            return ResponseEntity.ok(vinculoService.listar(id, usuario));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/materias")
+    @Transactional
+    public ResponseEntity atualizarVinculo(@RequestBody @Valid DadosAtualizacaoVinculo dados,
+                                           @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            return ResponseEntity.ok(vinculoService.atualizar(dados, usuarioLogado));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/materias/{idVinculo}")
+    @Transactional
+    public ResponseEntity desvincularMateria(@PathVariable Long idVinculo, @AuthenticationPrincipal Usuario usuario) {
+        try {
+            vinculoService.desvincular(idVinculo, usuario);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

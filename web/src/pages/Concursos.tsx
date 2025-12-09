@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import ModalDisciplinas from '../components/ModalDisciplinas';
 
 interface Concurso {
   id: number;
@@ -16,14 +17,18 @@ export default function Concursos() {
   const [loading, setLoading] = useState(true);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
-  // Formulário
+  // Estados do Formulário Principal
   const [modalAberto, setModalAberto] = useState(false);
   const [modoEdicao, setModoEdicao] = useState<Concurso | null>(null);
   const [form, setForm] = useState({ nome: '', banca: '', dataProva: '' });
   const [erroForm, setErroForm] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Confirmação
+  // Estados do Modal de Disciplinas (O Livro)
+  const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
+  const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
+
+  // Estados de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -74,6 +79,11 @@ export default function Concursos() {
     setModalAberto(true);
   };
 
+  const abrirDisciplinas = (concurso: Concurso) => {
+    setConcursoSelecionado(concurso);
+    setModalDisciplinasAberto(true);
+  };
+
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
@@ -97,12 +107,11 @@ export default function Concursos() {
   };
 
   const confirmarAcao = (concurso: Concurso, tipo: 'arquivar' | 'desarquivar' | 'excluir') => {
-    // 1. Exclusão
     if (tipo === 'excluir') {
       setModalConfirmacao({
         aberto: true,
         titulo: 'Excluir Concurso',
-        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros de estudo, a ação será bloqueada.`,
+        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros vinculados, a ação será bloqueada.`,
         acao: async () => {
           try {
             await api.delete(`/concursos/${concurso.id}`);
@@ -116,7 +125,6 @@ export default function Concursos() {
       return;
     }
 
-    // 2. Arquivamento
     const isArquivar = tipo === 'arquivar';
     setModalConfirmacao({
       aberto: true,
@@ -137,8 +145,9 @@ export default function Concursos() {
   const listaExibida = concursos.filter(c => mostrarArquivados ? c.arquivado : !c.arquivado);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6"> {/* PADRONIZADO: max-w-4xl */}
+    <div className="max-w-4xl mx-auto space-y-6">
       
+      {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Concursos</h1>
@@ -149,6 +158,7 @@ export default function Concursos() {
         </button>
       </div>
 
+      {/* Filtros */}
       <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
         <div className="flex items-center gap-2 text-gray-500 text-sm px-2">
           <Search size={16} /> <span>{listaExibida.length} concursos</span>
@@ -162,6 +172,7 @@ export default function Concursos() {
         </label>
       </div>
 
+      {/* LISTA */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400">Carregando...</div>
@@ -183,18 +194,18 @@ export default function Concursos() {
               }
 
               return (
-                <div key={concurso.id} className="group flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"> {/* PADRONIZADO: p-3 */}
+                <div key={concurso.id} className="group flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
                   
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <div className={`w-1.5 h-1.5 rounded-full ${concurso.arquivado ? 'bg-orange-400' : 'bg-blue-600'}`} />
-                      <span className={`font-medium text-gray-700 ${concurso.arquivado ? 'line-through text-gray-400' : ''}`}> {/* PADRONIZADO: font-medium text-gray-700 */}
+                      <span className={`font-medium text-gray-700 ${concurso.arquivado ? 'line-through text-gray-400' : ''}`}>
                         {concurso.nome}
                       </span>
                       {concurso.arquivado && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Arquivado</span>}
                     </div>
 
-                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 pl-4"> {/* PADRONIZADO: text-xs */}
+                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 pl-4">
                       {concurso.banca && <div className="flex items-center gap-1"><Building2 size={12} />{concurso.banca}</div>}
                       {concurso.dataProva && <div className="flex items-center gap-1"><Calendar size={12} />{formatarData(concurso.dataProva)}</div>}
                     </div>
@@ -208,13 +219,26 @@ export default function Concursos() {
                     )}
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      
+                      {/* BOTÃO DISCIPLINAS (LIVRO) */}
+                      {!concurso.arquivado && (
+                        <button 
+                          onClick={() => abrirDisciplinas(concurso)}
+                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                          title="Gerenciar Disciplinas"
+                        >
+                          <BookOpen size={16} />
+                        </button>
+                      )}
+
                       <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar">
                         <Pencil size={16} />
                       </button>
+                      
                       <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={concurso.arquivado ? "Restaurar" : "Arquivar"}>
                         {concurso.arquivado ? <RefreshCw size={16} /> : <Archive size={16} />}
                       </button>
-                      {/* Botão EXCLUIR */}
+
                       <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir Permanentemente">
                         <Trash2 size={16} />
                       </button>
@@ -227,7 +251,8 @@ export default function Concursos() {
         )}
       </div>
 
-      {/* Modais (Form e Confirmação) - Mantidos iguais */}
+      {/* --- MODAIS --- */}
+
       <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={modoEdicao ? 'Editar Concurso' : 'Novo Concurso'}>
         <form onSubmit={salvar}>
           <div className="mb-4">
@@ -261,6 +286,14 @@ export default function Concursos() {
           </div>
         </div>
       </Modal>
+
+      {/* MODAL DE DISCIPLINAS (O NOVO!) */}
+      <ModalDisciplinas 
+        isOpen={modalDisciplinasAberto}
+        onClose={() => setModalDisciplinasAberto(false)}
+        concurso={concursoSelecionado}
+      />
+
     </div>
   );
 }
