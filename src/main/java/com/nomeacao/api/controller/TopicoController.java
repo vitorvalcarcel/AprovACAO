@@ -69,4 +69,18 @@ public class TopicoController {
             return ResponseEntity.status(403).build();
         }
     }
+
+    @PatchMapping("/{id}/arquivar")
+    @Transactional
+    public ResponseEntity arquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        service.arquivar(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/desarquivar")
+    @Transactional
+    public ResponseEntity desarquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        service.desarquivar(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
 }

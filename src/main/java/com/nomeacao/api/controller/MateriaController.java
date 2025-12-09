@@ -62,4 +62,22 @@ public class MateriaController {
             return ResponseEntity.status(403).build();
         }
     }
+
+    @PatchMapping("/{id}/arquivar")
+    @Transactional
+    public ResponseEntity arquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
+        try {
+            service.arquivar(id, usuarioLogado);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/{id}/desarquivar")
+    @Transactional
+    public ResponseEntity desarquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
+        service.desarquivar(id, usuarioLogado);
+        return ResponseEntity.noContent().build();
+    }
 }

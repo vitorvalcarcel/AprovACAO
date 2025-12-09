@@ -21,6 +21,9 @@ public class Concurso {
     @Column(nullable = false)
     private String nome;
 
+    @Column(nullable = false)
+    private Boolean arquivado = false;
+
     @Column(length = 50)
     private String banca;
 

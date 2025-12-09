@@ -93,4 +93,19 @@ public class ConcursoController {
             return ResponseEntity.status(403).body(e.getMessage());
         }
     }
+
+    @PatchMapping("/{id}/arquivar")
+    @Transactional
+    public ResponseEntity arquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        service.arquivar(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/desarquivar")
+    @Transactional
+    public ResponseEntity desarquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        service.desarquivar(id, usuario);
+        return ResponseEntity.noContent().build();
+    }
+
 }

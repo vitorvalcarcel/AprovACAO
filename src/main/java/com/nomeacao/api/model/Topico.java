@@ -19,6 +19,9 @@ public class Topico {
     @Column(nullable = false)
     private String nome;
 
+    @Column(nullable = false)
+    private Boolean arquivado = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "materia_id") // A chave estrangeira
     private Materia materia; // O Pai

@@ -1,57 +1,32 @@
-Arquivo de Pendências e Melhorias Futuras (Backlog)
-1. Segurança e Infraestrutura
-[ ] Variáveis de Ambiente: Remover senhas e segredos (JWT Secret, Senha do Banco) do application.properties e usar variáveis do sistema (${JWT_SECRET}) para produção.
+Arquivo de Pendências e Melhorias Futuras (Backlog) - Atualizado
 
-[ ] CORS: Configurar o WebConfig para permitir que o Front-end (React/Vue) acesse a API quando estiverem em domínios diferentes.
-
-[ ] Docker de Produção: Criar um Dockerfile otimizado para gerar o .jar final da aplicação, não apenas o ambiente de desenvolvimento.
-
-[ ] Testes Automatizados: Implementar testes unitários (JUnit) para as regras de negócio nos Services (UsuarioService, MateriaService, etc).
+1. Segurança e Infraestrutura (Prioridade Alta)
+[ ] Variáveis de Ambiente: Remover senhas (JWT Secret: 12345678, Senha do Banco) do application.properties e usar variáveis de sistema/ambiente.
+[ ] CORS: Criar classe de configuração (WebConfig) para liberar acesso do Front-end à API.
+[ ] Docker de Produção: Criar Dockerfile otimizado para gerar o .jar final (multi-stage build).
+[ ] Testes Automatizados: Criar testes unitários e de integração (JUnit/Mockito) para Services e Controllers (foco em CicloService e Fechamento).
 
 2. Módulo de Identidade (Usuário)
-[ ] Recuperação de Senha: Implementar fluxo de "Esqueci minha senha" com envio de e-mail (Token temporário).
-
-[ ] Confirmação de E-mail: Bloquear o login até que o usuário clique no link de confirmação enviado por e-mail.
-
-[ ] Perfis de Acesso (Roles): Implementar a lógica de ADMIN vs USER (atualmente está fixo como ROLE_USER).
-
-[ ] Logout: Implementar "Blacklist" de tokens ou tempo de expiração curto com Refresh Token para invalidar sessões.
+[ ] Recuperação de Senha: Fluxo de "Esqueci minha senha" com envio de e-mail e token temporário.
+[ ] Confirmação de E-mail: Bloquear login até validação do e-mail.
+[ ] Perfis de Acesso (Roles): Estruturar lógica para ADMIN vs USER (hoje fixo em ROLE_USER).
+[ ] Logout: Implementar invalidação de token (Blacklist ou expiração curta com Refresh Token).
 
 3. Módulo de Inventário (Matérias e Tópicos)
-[ ] Integridade na Exclusão: Antes de excluir uma Matéria, verificar se ela já possui Registros de Estudo ou vínculo com Concursos. Se tiver, impedir a exclusão ou arquivar (Soft Delete).
-
-[ ] Importação em Lote: Permitir importar matérias via arquivo (CSV/Excel).
+[ ] Integridade na Exclusão (MateriaService): Impedir exclusão de matérias que tenham registros de estudo ou vínculos com concursos (ou implementar Soft Delete).
+[ ] Importação em Lote: Endpoint para upload de CSV/Excel para cadastrar várias matérias de uma vez.
 
 4. Módulo de Estratégia (Concursos)
-[ ] Status do Concurso: Criar campo ou lógica para definir se o concurso está "Aberto", "Edital Publicado" ou "Encerrado".
+[ ] Visualização da Estratégia: Endpoint GET /concursos/{id}/materias para listar matérias vinculadas mostrando pesos e questões.
+[ ] Status do Concurso: Campo para definir status (Aberto, Edital Publicado, Encerrado).
+[ ] Desvincular Matéria: Endpoint para remover uma matéria de um concurso (DELETE /concursos/vinculos/{id}).
+[ ] Dashboard Concurso: Contagem regressiva para a data da prova.
 
-[ ] Dashboard: Exibir contagem regressiva para a prova (dias restantes).
-
-5. Módulo de Planejamento (Ciclos) - O próximo grande passo
-[ ] Vínculo Concurso-Matéria: Tabela intermediária para definir Pesos e Metas de horas.
-
-[ ] Algoritmo do Ciclo: Lógica matemática para distribuir as horas disponíveis baseado nos pesos.
-
-[ ] Histórico de Ciclos: Permitir arquivar um ciclo e iniciar outro sem perder os dados anteriores.
-
-[ ] Mostrar qual matéria estudar agora: Calcular e ver qual matéria está mais longe para fechar o ciclo e recomendar o estudo dela.
-
-[ ] Visualização da Estratégia: Endpoint para listar todas as matérias de um concurso mostrando os dados (GET /concursos/{id}/materias).
-
-[ ] Edição do Vínculo: Permitir alterar os dados (peso quantidade de questões) de uma matéria já vinculada.
-
-[ ] Desvincular: Permitir remover uma matéria do concurso (sem apagar a matéria do banco).
-
-[ ] Importação de Edital: Futuramente, permitir ler um PDF ou colar um texto para preencher automaticamente as matérias e quantidade de questões.
-
-[ ] Algoritmo de Metas de Questões: Criar lógica que define uma "Meta de Questões a Resolver" baseada na "Quantidade de Questões da Prova" x "Peso" x "Tempo até a prova".
-
-[ ] Simulador de Nota: Com base nos pesos cadastrados, criar uma calculadora onde o usuário coloca quantos acertos espera ter e o sistema calcula a nota final provável.
-
-[ ] Edição de Vínculo: Permitir alterar o Peso ou a Qtd. de Questões de uma matéria já vinculada sem ter que remover e adicionar de novo.
-
-[ ] Edição de Ciclo Fechado: (Decisão de Produto) Se o usuário insistir em editar um ciclo fechado, teremos que recalcular todos os saldos posteriores. Por enquanto, bloquear edição de ciclos fechados para manter a integridade.
-
-[ ] Dashboard Geral: Criar uma visão que mostre "Horas Totais de Vida" vs "Horas em Concursos Ativos".
-
-[ ] Migração de Estudo: Permitir que o usuário pegue um estudo "Sem Vínculo" e atribua a um concurso posteriormente (caso tenha esquecido).
+5. Módulo de Planejamento (Ciclos) - Funcionalidades Avançadas
+[ ] Recomendação de Estudo ("O que estudar agora?"): Endpoint que calcula e retorna qual matéria do ciclo está mais atrasada/necessita atenção.
+[ ] Metas de Questões: Implementar lógica de meta de questões no ciclo (hoje é focado apenas em horas).
+[ ] Simulador de Nota: Calculadora baseada nos pesos e acertos esperados.
+[ ] Importação de Edital: Ler PDF/Texto para preencher matérias e pesos automaticamente.
+[ ] Edição de Ciclo Fechado: Decidir regra de negócio e implementar bloqueio ou recálculo.
+[ ] Dashboard Geral: Visão macro "Horas Totais de Vida" vs "Horas em Concursos".
+[ ] Migração de Estudo: Atribuir um estudo avulso a um concurso posteriormente.

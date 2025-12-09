@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ConcursoRepository extends JpaRepository<Concurso, Long> {
-    List<Concurso> findAllByUsuario(Usuario usuario);
+    List<Concurso> findAllByUsuarioAndArquivadoFalse(Usuario usuario);
 }

@@ -19,13 +19,20 @@ public class Materia {
     @Column(nullable = false)
     private String nome;
 
-    @ManyToOne(fetch = FetchType.LAZY) // Muitas matérias pertencem a Um usuário
-    @JoinColumn(name = "usuario_id") // Nome da coluna no banco que liga as tabelas
+    @Column(nullable = false)
+    private Boolean arquivada = false; 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
     public void atualizarInformacoes(String novoNome) {
         if (novoNome != null && !novoNome.trim().isEmpty()) {
             this.nome = novoNome;
         }
+    }
+
+    public void setArquivada(Boolean status) {
+        this.arquivada = status;
     }
 }

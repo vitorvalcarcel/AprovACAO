@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, Long> {
     List<RegistroEstudo> findAllByUsuarioOrderByDataInicioDesc(Usuario usuario);
-    // Futuro: findAllByConcursoId(Long concursoId);
+
+    boolean existsByMateriaId(Long materiaId);
+    boolean existsByTopicoId(Long topicoId);
+    boolean existsByConcursoId(Long concursoId);
 
     @Query("""
         SELECT new com.nomeacao.api.dto.ResumoHistoricoDTO(
