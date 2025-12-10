@@ -48,7 +48,7 @@ export default function Layout() {
             Início
           </NavLink>
 
-          <NavLink to="/app/registros" className={linkClass}>
+          <NavLink to="/app/historico" className={linkClass}>
             <CheckSquare size={20} />
             Meus Registros
           </NavLink>

@@ -7,6 +7,7 @@ import PublicRoute from './routes/PublicRoute';
 import Layout from './components/Layout';
 import Materias from './pages/Materias';
 import Concursos from './pages/Concursos';
+import Historico from './pages/Historico';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/app" element={<Dashboard />} />
             <Route path="/app/materias" element={<Materias />} />
             <Route path="/app/concursos" element={<Concursos />} />
+            <Route path="/app/historico" element={<Historico />} />
           </Route>
           
           <Route path="/" element={<Navigate to="/app" replace />} />

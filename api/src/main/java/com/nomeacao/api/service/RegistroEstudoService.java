@@ -6,8 +6,13 @@ import com.nomeacao.api.model.RegistroEstudo;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import jakarta.persistence.criteria.Predicate;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -57,8 +62,41 @@ public class RegistroEstudoService {
         return new DadosDetalhamentoRegistro(registro);
     }
 
-    public List<DadosDetalhamentoRegistro> listarHistorico(Usuario usuario) {
-        return repository.findAllByUsuarioOrderByDataInicioDesc(usuario)
-                .stream().map(DadosDetalhamentoRegistro::new).toList();
+    public List<DadosDetalhamentoRegistro> listar(
+            LocalDateTime inicio, 
+            LocalDateTime fim, 
+            List<Long> materias, 
+            List<Long> concursos, 
+            List<Long> tipos, 
+            Usuario usuario) {
+        
+        Specification<RegistroEstudo> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.equal(root.get("usuario"), usuario));
+
+            if (inicio != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("dataInicio"), inicio));
+            }
+            if (fim != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("dataInicio"), fim));
+            }
+            if (materias != null && !materias.isEmpty()) {
+                predicates.add(root.get("materia").get("id").in(materias));
+            }
+            if (concursos != null && !concursos.isEmpty()) {
+                predicates.add(root.get("concurso").get("id").in(concursos));
+            }
+            if (tipos != null && !tipos.isEmpty()) {
+                predicates.add(root.get("tipoEstudo").get("id").in(tipos));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return repository.findAll(spec, Sort.by(Sort.Direction.DESC, "dataInicio"))
+                .stream()
+                .map(DadosDetalhamentoRegistro::new)
+                .toList();
     }
 }
