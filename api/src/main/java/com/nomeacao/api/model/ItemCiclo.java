@@ -17,6 +17,9 @@ public class ItemCiclo {
 
     @Column(name = "horas_meta", nullable = false)
     private Double horasMeta;
+    
+    @Column(nullable = false)
+    private Integer ordem;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ciclo_id", nullable = false)

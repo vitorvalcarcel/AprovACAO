@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen } from 'lucide-react';
+import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
+import ModalGerarCiclo from '../components/ModalGerarCiclo';
 
 interface Concurso {
   id: number;
@@ -24,9 +25,12 @@ export default function Concursos() {
   const [erroForm, setErroForm] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Estados do Modal de Disciplinas (O Livro)
-  const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
+  // Estado Compartilhado (Qual concurso foi clicado?)
   const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
+
+  // Estados dos Modais Específicos
+  const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
+  const [modalCicloAberto, setModalCicloAberto] = useState(false); // <--- NOVO
 
   // Estados de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
@@ -66,7 +70,7 @@ export default function Concursos() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  // --- Ações ---
+  // --- Abertura de Modais ---
   const abrirModal = (concurso?: Concurso) => {
     setErroForm('');
     if (concurso) {
@@ -84,6 +88,12 @@ export default function Concursos() {
     setModalDisciplinasAberto(true);
   };
 
+  const abrirGerarCiclo = (concurso: Concurso) => { // <--- NOVO
+    setConcursoSelecionado(concurso);
+    setModalCicloAberto(true);
+  };
+
+  // --- Salvar Concurso ---
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
@@ -106,6 +116,7 @@ export default function Concursos() {
     }
   };
 
+  // --- Ações de Status ---
   const confirmarAcao = (concurso: Concurso, tipo: 'arquivar' | 'desarquivar' | 'excluir') => {
     if (tipo === 'excluir') {
       setModalConfirmacao({
@@ -118,7 +129,7 @@ export default function Concursos() {
             carregarConcursos();
             setModalConfirmacao(prev => ({ ...prev, aberto: false }));
           } catch (error: any) {
-            alert(error.response?.data || "Não foi possível excluir.");
+            alert(error.response?.data?.mensagem || "Não foi possível excluir.");
           }
         }
       });
@@ -220,7 +231,18 @@ export default function Concursos() {
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       
-                      {/* BOTÃO DISCIPLINAS (LIVRO) */}
+                      {/* BOTÃO GERAR CICLO (Novo) */}
+                      {!concurso.arquivado && (
+                        <button 
+                          onClick={() => abrirGerarCiclo(concurso)}
+                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                          title="Gerar Ciclo de Estudos"
+                        >
+                          <PlayCircle size={16} />
+                        </button>
+                      )}
+
+                      {/* Botão Disciplinas */}
                       {!concurso.arquivado && (
                         <button 
                           onClick={() => abrirDisciplinas(concurso)}
@@ -231,14 +253,17 @@ export default function Concursos() {
                         </button>
                       )}
 
+                      {/* Botão Editar */}
                       <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar">
                         <Pencil size={16} />
                       </button>
                       
+                      {/* Botão Arquivar */}
                       <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={concurso.arquivado ? "Restaurar" : "Arquivar"}>
                         {concurso.arquivado ? <RefreshCw size={16} /> : <Archive size={16} />}
                       </button>
 
+                      {/* Botão Excluir */}
                       <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir Permanentemente">
                         <Trash2 size={16} />
                       </button>
@@ -287,10 +312,17 @@ export default function Concursos() {
         </div>
       </Modal>
 
-      {/* MODAL DE DISCIPLINAS (O NOVO!) */}
+      {/* Modal Disciplinas */}
       <ModalDisciplinas 
         isOpen={modalDisciplinasAberto}
         onClose={() => setModalDisciplinasAberto(false)}
+        concurso={concursoSelecionado}
+      />
+
+      {/* Modal Gerar Ciclo (NOVO) */}
+      <ModalGerarCiclo 
+        isOpen={modalCicloAberto}
+        onClose={() => setModalCicloAberto(false)}
         concurso={concursoSelecionado}
       />
 

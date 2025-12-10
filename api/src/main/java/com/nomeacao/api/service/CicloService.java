@@ -2,18 +2,11 @@ package com.nomeacao.api.service;
 
 import com.nomeacao.api.dto.DadosCriacaoCiclo;
 import com.nomeacao.api.dto.DadosSugestaoCiclo;
-import com.nomeacao.api.dto.DashboardDTO;
-import com.nomeacao.api.dto.ResumoHistoricoDTO;
 import com.nomeacao.api.model.*;
-import com.nomeacao.api.repository.CicloRepository;
-import com.nomeacao.api.repository.ConcursoMateriaRepository;
-import com.nomeacao.api.repository.ConcursoRepository;
-import com.nomeacao.api.repository.CicloHistoricoRepository;
-import com.nomeacao.api.repository.RegistroEstudoRepository;
-import com.nomeacao.api.repository.MateriaRepository;
+import com.nomeacao.api.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,152 +14,98 @@ import java.util.List;
 @Service
 public class CicloService {
 
-    @Autowired private CicloRepository repository;
-    @Autowired private ConcursoRepository concursoRepository;
-    @Autowired private ConcursoMateriaRepository vinculoRepository;
-    @Autowired private MateriaRepository materiaRepository;
-    @Autowired private RegistroEstudoRepository registroRepository;
-    @Autowired private CicloHistoricoRepository historicoRepository;
+    @Autowired
+    private CicloRepository repository;
 
-    public DadosSugestaoCiclo gerarSugestao(Long concursoId, Double horasTotais, Usuario usuario) {
+    @Autowired
+    private ConcursoRepository concursoRepository;
+
+    @Autowired
+    private ConcursoMateriaRepository vinculoRepository;
+
+    @Autowired
+    private MateriaRepository materiaRepository;
+
+    // 1. GERAR SUGESTÃO (Cálculo Matemático)
+    public List<DadosSugestaoCiclo> sugerirCiclo(Long concursoId, Double horasMeta, Usuario usuario) {
         var concurso = concursoRepository.findById(concursoId)
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
         
-        if (!concurso.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado");
+        if (!concurso.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado!");
+        }
 
         var vinculos = vinculoRepository.findAllByConcursoId(concursoId);
+        if (vinculos.isEmpty()) {
+            throw new RuntimeException("Adicione disciplinas ao concurso antes de gerar o ciclo.");
+        }
 
-        double pontuacaoTotalConcurso = vinculos.stream()
+        // Soma total de pontos (Peso * Questões)
+        double pontuacaoTotal = vinculos.stream()
                 .mapToDouble(v -> v.getPeso() * v.getQuestoesProva())
                 .sum();
 
-        if (pontuacaoTotalConcurso == 0) throw new RuntimeException("Configure os pesos e questões do concurso antes de criar um ciclo!");
+        if (pontuacaoTotal == 0) {
+            throw new RuntimeException("Os pesos e questões estão zerados. Ajuste as disciplinas.");
+        }
 
-        List<DadosSugestaoCiclo.ItemSugestao> itensSugestao = new ArrayList<>();
+        List<DadosSugestaoCiclo> sugestao = new ArrayList<>();
         
-        for (var vinculo : vinculos) {
-            double pontosMateria = vinculo.getPeso() * vinculo.getQuestoesProva();
-            double porcentagem = pontosMateria / pontuacaoTotalConcurso;
+        for (ConcursoMateria v : vinculos) {
+            double score = v.getPeso() * v.getQuestoesProva();
+            double proporcao = score / pontuacaoTotal;
             
-            double horasSugeridas = horasTotais * porcentagem;
+            // Regra de 3 para horas
+            double horas = Math.round((horasMeta * proporcao) * 100.0) / 100.0;
+            double percentual = Math.round(proporcao * 100.0 * 10.0) / 10.0;
 
-            itensSugestao.add(new DadosSugestaoCiclo.ItemSugestao(
-                    vinculo.getMateria().getId(),
-                    vinculo.getMateria().getNome(),
-                    vinculo.getPeso(),
-                    vinculo.getQuestoesProva(),
-                    horasSugeridas
+            sugestao.add(new DadosSugestaoCiclo(
+                v.getMateria().getId(),
+                v.getMateria().getNome(),
+                v.getPeso(),
+                v.getQuestoesProva(),
+                horas,
+                percentual
             ));
         }
-
-        return new DadosSugestaoCiclo(concursoId, horasTotais, itensSugestao);
+        
+        // Ordena por quem tem mais horas primeiro
+        sugestao.sort((a, b) -> b.horasSugeridas().compareTo(a.horasSugeridas()));
+        return sugestao;
     }
 
+    // 2. SALVAR CICLO
     @Transactional
-    public Long criarCiclo(DadosCriacaoCiclo dados, Usuario usuario) {
-        if (repository.findByConcursoIdAndAtivoTrue(dados.concursoId()).isPresent()) {
-            throw new RuntimeException("Já existe um ciclo ativo para este concurso. Finalize-o antes de criar outro.");
-        }
-
+    public void criarCiclo(DadosCriacaoCiclo dados, Usuario usuario) {
         var concurso = concursoRepository.findById(dados.concursoId())
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
-        if (!concurso.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado");
+
+        if (!concurso.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado!");
+        }
+
+        // Desativa ciclo anterior se existir
+        repository.findByConcursoIdAndAtivoTrue(concurso.getId())
+                .ifPresent(c -> c.setAtivo(false));
 
         var ciclo = new Ciclo();
         ciclo.setConcurso(concurso);
-        ciclo.setAnotacoes(dados.anotacoes());
+        ciclo.setDescricao(dados.descricao());
+        ciclo.setTotalHoras(dados.totalHoras());
+        ciclo.setAtivo(true);
 
-        for (var itemMeta : dados.itens()) {
-            var materia = materiaRepository.findById(itemMeta.materiaId())
-                    .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
+        // Adiciona os itens aprovados pelo usuário
+        for (var itemDto : dados.itens()) {
+            var materia = materiaRepository.getReferenceById(itemDto.materiaId());
             
-            var itemCiclo = new ItemCiclo();
-            itemCiclo.setMateria(materia);
-            itemCiclo.setHorasMeta(itemMeta.horasMeta());
+            var item = new ItemCiclo();
+            item.setMateria(materia);
+            item.setHorasMeta(itemDto.horasMeta());
+            item.setOrdem(itemDto.ordem());
             
-            ciclo.adicionarItem(itemCiclo);
+            ciclo.adicionarItem(item); // Usa o método do Model
         }
 
         repository.save(ciclo);
-        return ciclo.getId();
     }
-
-    public DashboardDTO calcularProgresso(Long concursoId, Usuario usuario) {
-        var cicloAtual = repository.findByConcursoIdAndAtivoTrue(concursoId)
-                .orElseThrow(() -> new RuntimeException("Nenhum ciclo ativo para este concurso."));
-        
-        if (!cicloAtual.getConcurso().getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado");
-
-        var totalEstudado = registroRepository.somarEstudosPorConcurso(concursoId);
-        var totalDescontado = historicoRepository.somarDescontosPorConcurso(concursoId);
-
-        List<DashboardDTO.ItemDashboard> itensDash = new ArrayList<>();
-        double totalMetaCiclo = 0;
-        double totalSaldoCiclo = 0;
-
-        for (var itemMeta : cicloAtual.getItens()) {
-            Long matId = itemMeta.getMateria().getId();
-            
-            double horasTotais = totalEstudado.stream().filter(e -> e.materiaId().equals(matId))
-                    .findFirst().map(ResumoHistoricoDTO::totalHoras).orElse(0.0);
-            
-            double horasDescontadas = totalDescontado.stream().filter(h -> h.materiaId().equals(matId))
-                    .findFirst().map(ResumoHistoricoDTO::totalHoras).orElse(0.0);
-
-            double saldoAtual = Math.max(0, horasTotais - horasDescontadas);
-            double percentual = itemMeta.getHorasMeta() > 0 ? (saldoAtual / itemMeta.getHorasMeta()) * 100 : 0;
-            if (percentual > 100) percentual = 100;
-
-            itensDash.add(new DashboardDTO.ItemDashboard(
-                    itemMeta.getMateria().getNome(),
-                    itemMeta.getHorasMeta(),
-                    horasTotais,
-                    saldoAtual,
-                    percentual
-            ));
-
-            totalMetaCiclo += itemMeta.getHorasMeta();
-            totalSaldoCiclo += Math.min(saldoAtual, itemMeta.getHorasMeta()); // Soma só até o limite da meta para o geral
-        }
-
-        double progressoGeral = totalMetaCiclo > 0 ? (totalSaldoCiclo / totalMetaCiclo) * 100 : 0;
-
-        return new DashboardDTO(
-                cicloAtual.getId(),
-                cicloAtual.getConcurso().getNome(),
-                progressoGeral,
-                itensDash
-        );
-    }
-
-    @Transactional
-    public void fecharCiclo(Long cicloId, Usuario usuario) {
-        var ciclo = repository.findById(cicloId).orElseThrow(() -> new RuntimeException("Ciclo não encontrado"));
-        if (!ciclo.getConcurso().getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado");
-        if (!ciclo.getAtivo()) throw new RuntimeException("Ciclo já está fechado!");
-
-        var dashboard = calcularProgresso(ciclo.getConcurso().getId(), usuario);
-
-        for (var itemDash : dashboard.itens()) {
-            var itemOriginal = ciclo.getItens().stream()
-                    .filter(i -> i.getMateria().getNome().equals(itemDash.nomeMateria()))
-                    .findFirst().orElseThrow();
-
-            var historico = new CicloHistorico();
-            historico.setCiclo(ciclo);
-            historico.setMateria(itemOriginal.getMateria());
-            
-            double aDescontar = Math.min(itemDash.horasSaldoAtual(), itemDash.metaHoras());
-            
-            historico.setHorasDescontadas(aDescontar);
-            // Implementar mesma lógica de horas para questões.
-            historico.setQuestoesDescontadas(0);
-
-            historicoRepository.save(historico);
-        }
-
-        ciclo.setAtivo(false); // Fecha o ciclo
-        repository.save(ciclo);
-    }
-
 }

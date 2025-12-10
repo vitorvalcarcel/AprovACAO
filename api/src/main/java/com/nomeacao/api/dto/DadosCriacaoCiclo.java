@@ -1,15 +1,16 @@
 package com.nomeacao.api.dto;
 
-import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record DadosCriacaoCiclo(
-    @NotNull Long concursoId,
-    String anotacoes,
-    @NotNull List<ItemMeta> itens
+    Long concursoId,
+    String descricao,
+    Double totalHoras,
+    List<DadosItemCiclo> itens
 ) {
-    public record ItemMeta(
-        @NotNull Long materiaId,
-        @NotNull Double horasMeta
+    public record DadosItemCiclo(
+        Long materiaId,
+        Double horasMeta,
+        Integer ordem
     ) {}
 }
