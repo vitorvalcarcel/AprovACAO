@@ -21,7 +21,7 @@ public class RegistroEstudo {
     private LocalDateTime dataInicio;
 
     @Column(nullable = false)
-    private Integer minutos;
+    private Integer segundos;
 
     @Column(name = "questoes_feitas")
     private Integer questoesFeitas;

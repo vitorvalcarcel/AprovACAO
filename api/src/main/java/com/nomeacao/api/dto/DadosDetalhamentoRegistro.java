@@ -7,20 +7,24 @@ public record DadosDetalhamentoRegistro(
     Long id,
     String nomeMateria,
     String nomeTopico,
+    String nomeConcurso,
     LocalDateTime dataInicio,
-    Integer minutos,
+    Integer segundos,
     Integer questoesFeitas,
-    Integer questoesCertas
+    Integer questoesCertas,
+    String anotacoes
 ) {
-    public DadosDetalhamentoRegistro(RegistroEstudo r) {
+    public DadosDetalhamentoRegistro(RegistroEstudo registro) {
         this(
-            r.getId(),
-            r.getMateria().getNome(),
-            r.getTopico() != null ? r.getTopico().getNome() : null,
-            r.getDataInicio(),
-            r.getMinutos(),
-            r.getQuestoesFeitas(),
-            r.getQuestoesCertas()
+            registro.getId(),
+            registro.getMateria().getNome(),
+            registro.getTopico() != null ? registro.getTopico().getNome() : null,
+            registro.getConcurso() != null ? registro.getConcurso().getNome() : null,
+            registro.getDataInicio(),
+            registro.getSegundos(),
+            registro.getQuestoesFeitas(),
+            registro.getQuestoesCertas(),
+            registro.getAnotacoes()
         );
     }
 }

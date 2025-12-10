@@ -16,7 +16,7 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
     @Query("""
         SELECT new com.nomeacao.api.dto.ResumoHistoricoDTO(
             r.materia.id,
-            SUM(CAST(r.minutos AS double)) / 60.0,
+            SUM(CAST(r.segundos AS double)) / 3600.0, 
             SUM(CAST(r.questoesFeitas AS long))
         )
         FROM RegistroEstudo r

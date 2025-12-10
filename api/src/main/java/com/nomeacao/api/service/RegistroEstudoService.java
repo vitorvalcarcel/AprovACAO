@@ -23,7 +23,7 @@ public class RegistroEstudoService {
         var registro = new RegistroEstudo();
         registro.setUsuario(usuario);
         registro.setDataInicio(dados.dataInicio());
-        registro.setMinutos(dados.minutos());
+        registro.setSegundos(dados.segundos());
         registro.setQuestoesFeitas(dados.questoesFeitas());
         registro.setQuestoesCertas(dados.questoesCertas());
         registro.setAnotacoes(dados.anotacoes());

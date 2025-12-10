@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 public record DadosCadastroRegistro(
     @NotNull Long materiaId,
     @NotNull LocalDateTime dataInicio,
-    @NotNull @Positive Integer minutos,
+    @NotNull @Positive 
+    Integer segundos,
     
     Long topicoId,
     Long concursoId,
