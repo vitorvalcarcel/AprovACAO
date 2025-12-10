@@ -23,6 +23,7 @@ public class RegistroEstudoService {
     @Autowired private TopicoRepository topicoRepository;
     @Autowired private ConcursoRepository concursoRepository;
     @Autowired private TipoEstudoRepository tipoRepository;
+    @Autowired private CicloRepository cicloRepository;
 
     public DadosDetalhamentoRegistro registrar(DadosCadastroRegistro dados, Usuario usuario) {
         var registro = new RegistroEstudo();
@@ -49,6 +50,11 @@ public class RegistroEstudoService {
                     .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
             if (!concurso.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado ao Concurso");
             registro.setConcurso(concurso);
+        } else {
+            cicloRepository.findFirstByUsuarioAndAtivoTrue(usuario)
+                .ifPresent(cicloAtivo -> {
+                    registro.setConcurso(cicloAtivo.getConcurso());
+                });
         }
 
         if (dados.tipoEstudoId() != null) {

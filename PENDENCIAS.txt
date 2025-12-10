@@ -64,3 +64,56 @@ Arquivo de Pendências e Melhorias Futuras (Backlog)
 5. UX / Front-end
 [ ] Feedback Visual: Substituir alerts() de erro de rede por Toasts (notificações flutuantes).
 [ ] Tratamento de Erros Real: Exibir mensagens específicas vindas do backend em todos os formulários.
+
+
+Arquivo de Pendências e Melhorias Futuras (Backlog)
+
+1. Segurança e Infraestrutura (Prioridade Alta)
+[ ] Variáveis de Ambiente: Remover senhas do application.properties.
+[x] CORS: Configurado via WebConfig e SecurityConfigurations.
+[ ] Docker de Produção: Criar Dockerfile otimizado.
+[ ] Testes Automatizados: Criar testes unitários.
+[ ] Refatoração de Erros (Backend): Remover try-catch dos Controllers e centralizar no TratadorDeErros. Alterar retorno de erros de negócio de 403 (Forbidden) para 400 (Bad Request) para evitar logout automático no Front-end.
+
+2. Módulo de Identidade (Usuário)
+[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
+[x] Senha Forte: Validação de complexidade no Backend.
+[ ] Recuperação de Senha.
+[ ] Confirmação de E-mail.
+
+3. Módulo de Inventário (Matérias)
+[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
+[x] Validação de Unicidade (Nome duplicado).
+[x] Validação de Integridade (Impedir exclusão se tiver vínculos).
+
+4. Módulo de Estratégia (Concursos)
+[x] CRUD Completo.
+[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
+[ ] Edição Rápida de Vínculo: Adicionar botão de editar na lista do modal de disciplinas.
+[ ] Gestão de Ativos/Inativos: Tela dedicada ou botão "Tornar Principal" (Estrela) para definir qual concurso aparece no Dashboard (evitar conflito de múltiplos ciclos ativos).
+
+5. Módulo de Planejamento (Ciclos)
+[x] Algoritmo de Sugestão de Horas (Baseado em Peso x Questões).
+[x] Edição Manual da Sugestão.
+[x] Visualização em Tabela com Barra de Progresso.
+[x] "Auto-Link": Vincular registro de estudo ao ciclo ativo automaticamente se o usuário não informar concurso.
+
+6. Módulo de Execução (Registro)
+[x] Cronômetro com Pausa/Retomada.
+[x] Registro Manual.
+[x] Validação Lógica (Acertos <= Questões).
+[ ] Cadastro de Tópicos: Permitir criar novos tópicos direto na tela de registro (hoje só lista os existentes).
+
+7. Módulo de Monitoramento (Dashboard)
+[x] Filtros Avançados (Datas, Múltipla escolha).
+[x] Cards de Resumo (Horas, Questões, %).
+[x] Widget de Progresso do Ciclo.
+[ ] Atualização em Tempo Real: Recarregar gráficos automaticamente após salvar um registro (Implementando agora).
+[ ] Gráficos de Evolução: Linha do tempo de estudos (Semana/Mês).
+
+8. UX / Front-end
+[ ] Feedback Visual: Substituir alerts() de erro de rede por Toasts (notificações flutuantes).
+[ ] Tratamento de Erros Real: Exibir mensagens específicas vindas do backend em todos os formulários.
+
+
+O tabanho da tela de ciclos no Dashboard está limitado e aparece barra de rolagem quando ultrapassa, ele deve ficar com altura automática para caber todo o conteúdo sem rolagem.

@@ -7,7 +7,12 @@ interface Materia { id: number; nome: string; }
 interface TipoEstudo { id: number; nome: string; }
 interface Topico { id: number; nome: string; }
 
-export default function RegistroRapido() {
+// 1. Definimos que este componente aceita uma função de aviso
+interface RegistroRapidoProps {
+  onRegistroSalvo?: () => void;
+}
+
+export default function RegistroRapido({ onRegistroSalvo }: RegistroRapidoProps) {
   const [modo, setModo] = useState<'manual' | 'timer'>('timer');
   
   // Listas
@@ -44,12 +49,9 @@ export default function RegistroRapido() {
     api.get('/tipos-estudo').then(res => setTiposEstudo(res.data)).catch(() => {});
   }, []);
 
-  // Carrega Tópicos sempre que mudar a matéria
   useEffect(() => {
     if (form.materiaId) {
-      api.get(`/topicos/${form.materiaId}`)
-         .then(res => setTopicos(res.data))
-         .catch(() => setTopicos([]));
+      api.get(`/topicos/${form.materiaId}`).then(res => setTopicos(res.data)).catch(() => setTopicos([]));
     } else {
       setTopicos([]);
     }
@@ -146,6 +148,11 @@ export default function RegistroRapido() {
 
       await api.post('/registros', payload);
       
+      // 2. AQUI ESTÁ A MÁGICA: Avisa o pai que salvou!
+      if (onRegistroSalvo) {
+        onRegistroSalvo();
+      }
+
       setModalSucessoAberto(true);
       setTimeout(() => {
         setModalSucessoAberto(false);
@@ -184,7 +191,7 @@ export default function RegistroRapido() {
 
       <div className="p-4 space-y-4">
         
-        {/* === MODO TIMER === */}
+        {/* TIMER */}
         {modo === 'timer' && (
           <div className="space-y-4 text-center">
             <div className={`text-5xl font-mono font-bold tracking-wider ${ativo && !pausado ? 'text-blue-600' : 'text-gray-700'}`}>
@@ -204,7 +211,6 @@ export default function RegistroRapido() {
                 </select>
               </div>
               
-              {/* TÓPICO (VOLTOU!) - Sempre visível agora */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Tópico</label>
                 <select 
@@ -213,7 +219,7 @@ export default function RegistroRapido() {
                   disabled={!form.materiaId}
                   className="w-full border rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white disabled:bg-gray-50 disabled:text-gray-400"
                 >
-                  <option value="">{form.materiaId && topicos.length === 0 ? "Nenhum tópico cadastrado" : "Geral (Sem tópico)"}</option>
+                  <option value="">{form.materiaId && topicos.length === 0 ? "Nenhum tópico cadastrado" : "Geral"}</option>
                   {topicos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
                 </select>
               </div>
@@ -242,10 +248,9 @@ export default function RegistroRapido() {
           </div>
         )}
 
-        {/* === MODO MANUAL === */}
+        {/* MANUAL */}
         {modo === 'manual' && (
           <div className="space-y-3">
-            {/* Matéria e Tópico agora aparecem juntos no Manual também */}
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Matéria *</label>
@@ -255,11 +260,10 @@ export default function RegistroRapido() {
                 </select>
               </div>
               
-              {/* TÓPICO (VOLTOU!) */}
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Tópico</label>
                 <select value={form.topicoId} onChange={e => setForm({...form, topicoId: e.target.value})} disabled={!form.materiaId} className="w-full border rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white disabled:bg-gray-50 disabled:text-gray-400">
-                  <option value="">{form.materiaId && topicos.length === 0 ? "Nenhum tópico cadastrado" : "Geral (Sem tópico)"}</option>
+                  <option value="">{form.materiaId && topicos.length === 0 ? "Nenhum tópico cadastrado" : "Geral"}</option>
                   {topicos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
                 </select>
               </div>
@@ -278,7 +282,7 @@ export default function RegistroRapido() {
           </div>
         )}
 
-        {/* DETALHES (Visível se Manual ou Timer Pausado) */}
+        {/* DETALHES */}
         {(modo === 'manual' || (modo === 'timer' && pausado)) && (
           <div className="space-y-3 pt-3 border-t animate-fade-in">
             <div className="grid grid-cols-3 gap-3">

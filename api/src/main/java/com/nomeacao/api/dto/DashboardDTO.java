@@ -3,16 +3,20 @@ package com.nomeacao.api.dto;
 import java.util.List;
 
 public record DashboardDTO(
+    Double horasLiquidas,
+    Integer questoesFeitas,
+    Double taxaAcertos,
+
     Long cicloId,
     String nomeConcurso,
     Double progressoGeral,
-    List<ItemDashboard> itens
+    List<ItemProgresso> itens
 ) {
-    public record ItemDashboard(
+    public record ItemProgresso(
         String nomeMateria,
         Double metaHoras,
-        Double horasEstudadasTotal,
-        Double horasSaldoAtual,
-        Double percentualConcluido
+        Long segundosRealizados,
+        Long saldoSegundos,
+        Double percentual
     ) {}
 }

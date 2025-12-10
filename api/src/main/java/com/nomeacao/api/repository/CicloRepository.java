@@ -1,19 +1,24 @@
 package com.nomeacao.api.repository;
 
 import com.nomeacao.api.model.Ciclo;
+import com.nomeacao.api.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface CicloRepository extends JpaRepository<Ciclo, Long> {
+    
+    @Query("SELECT c FROM Ciclo c WHERE c.concurso.usuario = :usuario AND c.ativo = true")
+    Optional<Ciclo> findFirstByUsuarioAndAtivoTrue(@Param("usuario") Usuario usuario);
+
     Optional<Ciclo> findByConcursoIdAndAtivoTrue(Long concursoId);
 
     @Query("""
-        SELECT COUNT(c) > 0 
-        FROM Ciclo c 
-        JOIN c.itens i 
-        WHERE c.ativo = true 
-        AND i.materia.id = :materiaId
-    """)
+           SELECT COUNT(i) > 0 
+           FROM ItemCiclo i 
+           WHERE i.materia.id = :materiaId 
+           AND i.ciclo.ativo = true
+           """)
     boolean isMateriaEmCicloAtivo(Long materiaId);
 }
