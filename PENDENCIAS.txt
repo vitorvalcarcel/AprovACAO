@@ -35,3 +35,32 @@ Arquivo de Pendências e Melhorias Futuras (Backlog) - Atualizado
 
 Questões que apareceram nos testes, mas não foram implementadas ainda:
 [ ] Matéria duplicada: Impedir cadastro de matérias com mesmo nome ignorando acentos e case sensitivity.
+
+Arquivo de Pendências e Melhorias Futuras (Backlog)
+
+1. Segurança e Infraestrutura (Prioridade Alta)
+[ ] Variáveis de Ambiente: Remover senhas do application.properties.
+[x] CORS: Configurado via WebConfig e SecurityConfigurations.
+[ ] Docker de Produção: Criar Dockerfile otimizado.
+[ ] Testes Automatizados: Criar testes unitários.
+[ ] Refatoração de Erros (Backend): Remover try-catch dos Controllers e centralizar no TratadorDeErros. Alterar retorno de erros de negócio de 403 (Forbidden) para 400 (Bad Request) para evitar logout automático no Front-end.
+
+2. Módulo de Identidade (Usuário)
+[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
+[x] Senha Forte: Validação de complexidade no Backend.
+[ ] Recuperação de Senha.
+[ ] Confirmação de E-mail.
+
+3. Módulo de Inventário (Matérias)
+[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
+[x] Validação de Unicidade (Nome duplicado).
+[x] Proteção de Integridade (Não excluir se tiver vinculos).
+
+4. Módulo de Estratégia (Concursos)
+[x] CRUD Completo.
+[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
+[ ] Edição Rápida de Vínculo: Adicionar botão de editar na lista do modal de disciplinas (hoje precisa remover e adicionar de novo).
+
+5. UX / Front-end
+[ ] Feedback Visual: Substituir alerts() de erro de rede por Toasts (notificações flutuantes).
+[ ] Tratamento de Erros Real: Exibir mensagens específicas vindas do backend em todos os formulários.
