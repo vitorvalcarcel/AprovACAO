@@ -1,49 +1,36 @@
-RELATÓRIO TÉCNICO E BACKLOG - PROJETO APROVAÇÃO
-Data: 11/12/2025
-Responsável: Arquiteto de Software / Tech Lead
-
 =============================================================================
 SEÇÃO 1: DÉBITOS TÉCNICOS E ARQUITETURA (PRIORIDADE CRÍTICA)
 Estes itens colocam a estabilidade, segurança ou escalabilidade do sistema em risco.
 =============================================================================
 
 [01] Implementação de Testes Automatizados (Backend)
-     - Detalhe: A pasta `src/test` está vazia. O sistema não possui garantia de qualidade automática.
-     - Ação: Criar testes unitários com JUnit 5 e Mockito para os principais Services (`CicloService`, `RegistroEstudoService`).
-     - Meta: Cobrir cenários críticos de cálculo de horas e validação de regras.
+     - Detalhe: A pasta `src/test` está vazia.
+     - Status: 🔴 PENDENTE
 
 [02] Otimização de Cálculos no Banco de Dados (Performance)
-     - Detalhe: `DashboardService` carrega listas inteiras em memória para somar segundos via Java Stream. Isso não escala.
-     - Ação: Refatorar consultas JPQL para usar agregações (SUM, AVG, GROUP BY) diretamente no PostgreSQL.
+     - Detalhe: `DashboardService` carrega listas inteiras em memória.
+     - Status: 🔴 PENDENTE
 
 [03] Externalização de Segredos (Segurança)
-     - Detalhe: Senhas de banco e Secret JWT estão expostos no `application.properties` e no código.
-     - Ação: Configurar leitura via Variáveis de Ambiente (`System.getenv`) e criar arquivo `.env` (não versionado) para desenvolvimento local.
+     - Detalhe: Senhas e Secrets expostos no código.
+     - Status: 🔴 PENDENTE
 
 [04] Observabilidade e Logs (Infraestrutura)
-     - Detalhe: Ausência de logs estruturados. Erros em produção serão invisíveis.
-     - Ação: Adicionar Logback/Slf4j nos Services para registrar fluxos críticos (ex: "Ciclo X criado", "Erro ao processar registro Y").
+     - Detalhe: Ausência de logs estruturados.
+     - Status: 🔴 PENDENTE
 
 [05] Dockerização para Produção (Infraestrutura)
-     - Detalhe: Existe apenas o Compose do banco. Falta o container da aplicação Java.
-     - Ação: Criar `Dockerfile` otimizado (Multi-stage build) para gerar a imagem leve do .jar da API.
+     - Detalhe: Falta Dockerfile da API.
+     - Status: 🔴 PENDENTE
 
 =============================================================================
 SEÇÃO 2: UX E FRONT-END (MELHORIA DE EXPERIÊNCIA)
-Melhorias necessárias para o sistema deixar de parecer um protótipo.
+[STATUS: ✅ CONCLUÍDO]
 =============================================================================
 
-[06] Sistema de Notificações (Toasts)
-     - Detalhe: O sistema usa `window.alert()` para erros e sucessos, o que trava o navegador e é visualmente pobre.
-     - Ação: Implementar Context API + Componente de Toast para feedback não bloqueante (Sucesso/Erro/Info).
-
-[07] Feedback de Carregamento (Skeleton Screens)
-     - Detalhe: O uso de texto simples "Carregando..." causa layout shift (pulo de tela).
-     - Ação: Criar componentes de Skeleton (esqueleto cinza pulsante) para Tabelas e Cards do Dashboard.
-
-[08] Tratamento de Erros no Formulário
-     - Detalhe: Mensagens de erro do backend nem sempre são exibidas de forma amigável no input correspondente.
-     - Ação: Padronizar o consumo de exceções da API no front para destacar campos inválidos em vermelho.
+[06] Sistema de Notificações (Toasts) [FEITO]
+[07] Feedback de Carregamento (Skeleton Screens) [FEITO]
+[08] Tratamento de Erros no Formulário [FEITO]
 
 =============================================================================
 SEÇÃO 3: FUNCIONALIDADES - IDENTIDADE E SEGURANÇA
@@ -51,47 +38,38 @@ Recursos faltantes para gestão de usuários.
 =============================================================================
 
 [09] Recuperação de Senha
-     - Detalhe: Usuário não tem como recuperar conta se esquecer a senha.
-     - Ação: Criar fluxo de "Esqueci minha senha" (Endpoint de solicitação + Envio de token/email + Endpoint de reset).
+     - Detalhe: Fluxo de "Esqueci minha senha".
+     - Status: 🔴 PENDENTE
 
 [10] Confirmação de E-mail
-     - Detalhe: O sistema aceita qualquer e-mail (fake) no cadastro.
-     - Ação: Implementar envio de link de verificação no cadastro e bloquear funcionalidades até a confirmação.
+     - Detalhe: Envio de link de verificação.
+     - Status: 🔴 PENDENTE
 
 =============================================================================
 SEÇÃO 4: FUNCIONALIDADES - CORE BUSINESS (ESTUDOS)
-O "coração" do produto que gera valor para o concurseiro.
 =============================================================================
 
-[11] Recomendação Inteligente de Estudo ("O que estudar agora?")
-     - Detalhe: O usuário precisa decidir sozinho o que estudar. O sistema deve guiar.
-     - Ação: Criar algoritmo que considera (Peso Matéria x Deficit de Horas) e sugere a próxima matéria do ciclo.
+[11] Recomendação Inteligente de Estudo
+     - Status: 🔴 PENDENTE
 
 [12] Simulador de Nota (Projeção)
-     - Detalhe: Ferramenta para motivar o usuário.
-     - Ação: Criar calculadora: (Taxa de Acertos Atual * Peso da Matéria) = Nota Projetada na Prova.
+     - Status: 🔴 PENDENTE
 
 [13] Importação em Lote de Matérias
-     - Detalhe: Cadastrar 20 matérias uma a uma é tedioso.
-     - Ação: Endpoint para upload de arquivo .csv ou .txt e processamento em lote.
+     - Status: 🔴 PENDENTE
 
 [14] Status do Concurso
-     - Detalhe: Não há distinção visual entre concursos passados e futuros.
-     - Ação: Adicionar campo Status (Previsto, Edital Aberto, Encerrado) e destacar visualmente.
+     - Status: 🔴 PENDENTE
 
 [15] Widget de Contagem Regressiva
-     - Detalhe: A data da prova existe mas não gera senso de urgência.
-     - Ação: Adicionar contador "Faltam X dias" no card do Concurso e no Dashboard principal.
+     - Status: 🔴 PENDENTE
 
 =============================================================================
 SEÇÃO 5: FUNCIONALIDADES - ANALYTICS AVANÇADO
-Relatórios para análise de longo prazo.
 =============================================================================
 
-[16] Gráficos de Evolução Histórica
-     - Detalhe: O front tem o componente, mas o back precisa agrupar os dados corretamente.
-     - Ação: Implementar query que agrupa horas estudadas por dia (`GROUP BY DATE(data_inicio)`) para alimentar o gráfico de linha.
+[16] Gráficos de Evolução Histórica (Query Group By)
+     - Status: 🔴 PENDENTE
 
 [17] Dashboard Macro (Visão de Vida)
-     - Detalhe: O dashboard atual foca muito no ciclo/concurso atual.
-     - Ação: Criar visão "Total acumulado na plataforma" (Todas as horas já estudadas na vida vs. horas no concurso atual).
+     - Status: 🔴 PENDENTE

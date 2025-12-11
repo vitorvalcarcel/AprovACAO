@@ -1,16 +1,17 @@
 package com.nomeacao.api.service;
 
-import com.nomeacao.api.dto.DadosGrafico;
 import com.nomeacao.api.dto.DashboardDTO;
+import com.nomeacao.api.dto.DadosGrafico;
+import com.nomeacao.api.dto.EvolucaoDiariaDTO;
+import com.nomeacao.api.dto.ResumoGeralDTO;
 import com.nomeacao.api.dto.ResumoHistoricoDTO;
 import com.nomeacao.api.model.*;
 import com.nomeacao.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
-import jakarta.persistence.criteria.Predicate;
 import org.springframework.stereotype.Service;
 
-import java.time.format.DateTimeFormatter;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,38 +23,39 @@ public class DashboardService {
 
     public DashboardDTO carregarDashboard(
             Usuario usuario,
-            java.time.LocalDateTime inicio, java.time.LocalDateTime fim,
+            LocalDateTime inicio, LocalDateTime fim,
             List<Long> materias, List<Long> concursos, List<Long> tipos
     ) {
-        // 1. Filtros e Resumo (Mantido igual)
-        Specification<RegistroEstudo> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("usuario"), usuario));
-            if (inicio != null) predicates.add(cb.greaterThanOrEqualTo(root.get("dataInicio"), inicio));
-            if (fim != null) predicates.add(cb.lessThanOrEqualTo(root.get("dataInicio"), fim));
-            if (materias != null && !materias.isEmpty()) predicates.add(root.get("materia").get("id").in(materias));
-            if (concursos != null && !concursos.isEmpty()) predicates.add(root.get("concurso").get("id").in(concursos));
-            if (tipos != null && !tipos.isEmpty()) predicates.add(root.get("tipoEstudo").get("id").in(tipos));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+        // --- 1. FILTROS E RESUMO (OTIMIZADO) ---
+        List<Long> listaMaterias = (materias != null && !materias.isEmpty()) ? materias : null;
+        List<Long> listaConcursos = (concursos != null && !concursos.isEmpty()) ? concursos : null;
+        List<Long> listaTipos = (tipos != null && !tipos.isEmpty()) ? tipos : null;
 
-        List<RegistroEstudo> listaFiltrada = registroRepository.findAll(spec);
+        ResumoGeralDTO resumo = registroRepository.calcularResumoGeral(
+            usuario, inicio, fim, listaMaterias, listaConcursos, listaTipos
+        );
 
-        double totalSegundosResumo = listaFiltrada.stream().mapToDouble(RegistroEstudo::getSegundos).sum();
+        double totalSegundosResumo = resumo.totalSegundos() != null ? resumo.totalSegundos() : 0.0;
         double horasLiquidas = Math.round((totalSegundosResumo / 3600.0) * 100.0) / 100.0;
-        int totalQuestoes = listaFiltrada.stream().mapToInt(RegistroEstudo::getQuestoesFeitas).sum();
-        int totalAcertos = listaFiltrada.stream().mapToInt(RegistroEstudo::getQuestoesCertas).sum();
+        
+        int totalQuestoes = resumo.totalQuestoes() != null ? resumo.totalQuestoes().intValue() : 0;
+        int totalAcertos = resumo.totalAcertos() != null ? resumo.totalAcertos().intValue() : 0;
+        
         double taxaAcertos = totalQuestoes > 0 ? (double) totalAcertos / totalQuestoes * 100.0 : 0.0;
         taxaAcertos = Math.round(taxaAcertos * 10.0) / 10.0;
 
-        // Gráfico Evolução (Mantido igual)
-        Map<String, Double> mapaEvolucao = new TreeMap<>();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-        for (RegistroEstudo reg : listaFiltrada) {
-            mapaEvolucao.merge(reg.getDataInicio().format(fmt), (double) reg.getSegundos() / 3600.0, Double::sum);
-        }
-        List<DadosGrafico> evolucao = mapaEvolucao.entrySet().stream()
-                .map(e -> new DadosGrafico(e.getKey(), Math.round(e.getValue() * 100.0) / 100.0))
+        // --- GRÁFICO EVOLUÇÃO (OTIMIZADO) ---
+        List<EvolucaoDiariaDTO> evolucaoBanco = registroRepository.calcularEvolucaoDiaria(
+            usuario, inicio, fim, listaMaterias, listaConcursos, listaTipos
+        );
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
+        List<DadosGrafico> evolucao = evolucaoBanco.stream()
+                .map(dto -> {
+                    String label = sdf.format(dto.data());
+                    Double horasDia = Math.round((dto.totalSegundos() / 3600.0) * 100.0) / 100.0;
+                    return new DadosGrafico(label, horasDia);
+                })
                 .collect(Collectors.toList());
 
         // --- 2. CICLO ATIVO (Cálculo Duplo) ---
@@ -68,7 +70,7 @@ public class DashboardService {
             cicloId = ciclo.getId();
             nomeConcurso = ciclo.getConcurso().getNome();
 
-            // Busca os totais do histórico (agora a query já separa horas válidas)
+            // Busca os totais do histórico para o ciclo
             List<ResumoHistoricoDTO> historico = registroRepository.somarEstudosPorConcurso(ciclo.getConcurso().getId());
             
             Map<Long, Long> segundosPorMateria = historico.stream()
@@ -97,7 +99,6 @@ public class DashboardService {
                 if (percQ > 100.0) percQ = 100.0;
 
                 // Progresso Geral (Média simples dos dois progressos para este item)
-                // Se não tiver meta de questões, conta só horas.
                 double progressoItem = (metaQ > 0) ? (percH + percQ) / 2.0 : percH;
                 somaPercentuais += progressoItem;
                 totalItens++;
