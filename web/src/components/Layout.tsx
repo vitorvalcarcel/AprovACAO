@@ -1,111 +1,101 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  GraduationCap, 
-  Library, 
-  LogOut, 
-  User,
-  Tags,
-  CheckSquare
-} from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 
 export default function Layout() {
+  const location = useLocation();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
     navigate('/login');
   };
 
-  // Estilo base para os links do menu
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200 ${
-      isActive 
-        ? 'bg-blue-600 text-white shadow-md' 
-        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-    }`;
+  const menuItems = [
+    { label: 'Dashboard', icon: LayoutDashboard, path: '/app' },
+    { label: 'Concursos', icon: Target, path: '/app/concursos' },
+    { label: 'Matérias & Tópicos', icon: Book, path: '/app/materias' },
+    { label: 'Histórico', icon: History, path: '/app/historico' },
+  ];
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50 flex">
       
-      {/* === BARRA LATERAL (SIDEBAR) === */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col fixed h-full shadow-xl">
-        
-        {/* Logo */}
-        <div className="p-6 border-b border-gray-800">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-            NomeAÇÃO
-          </h1>
-          <p className="text-xs text-gray-500 mt-1">Sua vaga, sua estratégia.</p>
-        </div>
+      {/* MENU MOBILE (Overlay) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
 
-        {/* Menu de Navegação */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          
-          <NavLink to="/app" end className={linkClass}>
-            <LayoutDashboard size={20} />
-            Início
-          </NavLink>
-
-          <NavLink to="/app/historico" className={linkClass}>
-            <CheckSquare size={20} />
-            Meus Registros
-          </NavLink>
-
-          {/* GRUPO: CADASTROS / INVENTÁRIO */}
-          <div className="pt-6 pb-2">
-            <p className="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Inventário
-            </p>
+      {/* SIDEBAR */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:block
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="h-full flex flex-col">
+          {/* Logo */}
+          <div className="h-16 flex items-center px-6 border-b border-gray-100">
+            <GraduationCap className="text-blue-600 mr-2" size={28} />
+            <span className="text-xl font-bold text-gray-800">Aprov<span className="text-blue-600">AÇÃO</span></span>
+            <button onClick={() => setMobileMenuOpen(false)} className="ml-auto lg:hidden text-gray-500">
+              <X size={24} />
+            </button>
           </div>
 
-          <NavLink to="/app/concursos" className={linkClass}>
-            <GraduationCap size={20} />
-            Concursos
-          </NavLink>
+          {/* Links */}
+          <nav className="flex-1 px-4 py-6 space-y-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const active = location.pathname === item.path;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    active 
+                      ? 'bg-blue-50 text-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon size={20} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-          <NavLink to="/app/materias" className={linkClass}>
-            <Library size={20} />
-            Matérias
-          </NavLink>
-
-          <NavLink to="/app/topicos" className={linkClass}>
-            <Tags size={20} />
-            Tópicos
-          </NavLink>
-
-          <NavLink to="/app/tipos-estudo" className={linkClass}>
-            <BookOpen size={20} />
-            Tipos de Estudo
-          </NavLink>
-
-        </nav>
-
-        {/* Rodapé do Menu */}
-        <div className="p-4 border-t border-gray-800 space-y-2">
-          <NavLink to="/app/perfil" className={linkClass}>
-            <User size={20} />
-            Meu Perfil
-          </NavLink>
-          
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg transition-colors"
-          >
-            <LogOut size={20} />
-            Sair
-          </button>
+          {/* Footer Sidebar */}
+          <div className="p-4 border-t border-gray-100">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut size={20} />
+              Sair
+            </button>
+          </div>
         </div>
-
       </aside>
 
-      {/* === ÁREA DE CONTEÚDO (MAIN) === */}
-      {/* margin-left para não ficar escondido atrás da sidebar fixa */}
-      <main className="flex-1 ml-64 p-8">
-        <Outlet /> {/* Aqui é onde as telas (Dashboard, Matérias) aparecem */}
-      </main>
+      {/* CONTEÚDO PRINCIPAL */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen"> {/* h-screen para travar rolagem no main se precisar, ou min-h-screen */}
+        
+        {/* Header Mobile */}
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:hidden flex-shrink-0">
+          <button onClick={() => setMobileMenuOpen(true)} className="text-gray-600 p-2">
+            <Menu size={24} />
+          </button>
+          <span className="ml-2 font-bold text-gray-800">AprovAÇÃO</span>
+        </header>
 
+        {/* Área de Scroll */}
+        <div className="flex-1 overflow-auto p-4 lg:p-8">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 }

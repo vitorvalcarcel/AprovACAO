@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface TopicoRepository extends JpaRepository<Topico, Long> {
     List<Topico> findAllByMateriaIdAndArquivadoFalse(Long materiaId);
+    List<Topico> findAllByMateriaId(Long materiaId);
 }

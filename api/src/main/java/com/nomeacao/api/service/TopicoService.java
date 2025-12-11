@@ -26,77 +26,78 @@ public class TopicoService {
     private RegistroEstudoRepository registroRepository;
 
     public DadosListagemTopico cadastrar(DadosCadastroTopico dados, Usuario usuario) {
-        var materiaPai = materiaRepository.findById(dados.materiaId())
+        var materia = materiaRepository.findById(dados.materiaId())
                 .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
 
-        if (!materiaPai.getUsuario().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Você não pode adicionar tópicos na matéria de outro usuário!");
+        if (!materia.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Você não tem permissão para adicionar tópicos nesta matéria.");
         }
 
         var topico = new Topico();
         topico.setNome(dados.nome());
-        topico.setMateria(materiaPai);
+        topico.setMateria(materia);
+        topico.setArquivado(false);
 
         repository.save(topico);
         return new DadosListagemTopico(topico);
     }
 
-    public List<DadosListagemTopico> listar(Long materiaId, Usuario usuario) {
-        var materiaPai = materiaRepository.findById(materiaId)
+    public List<DadosListagemTopico> listar(Long materiaId, boolean incluirArquivados, Usuario usuario) {
+        var materia = materiaRepository.findById(materiaId)
                 .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
 
-        if (!materiaPai.getUsuario().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Acesso negado à esta matéria.");
+        if (!materia.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado a esta matéria.");
         }
 
-        return repository.findAllByMateriaIdAndArquivadoFalse(materiaId)
-                .stream()
-                .map(DadosListagemTopico::new)
-                .toList();
+        List<Topico> lista;
+        if (incluirArquivados) {
+            lista = repository.findAllByMateriaId(materiaId);
+        } else {
+            lista = repository.findAllByMateriaIdAndArquivadoFalse(materiaId);
+        }
+
+        return lista.stream().map(DadosListagemTopico::new).toList();
     }
 
     public DadosListagemTopico atualizar(DadosAtualizacaoTopico dados, Usuario usuario) {
         var topico = repository.findById(dados.id())
                 .orElseThrow(() -> new RuntimeException("Tópico não encontrado"));
 
-        validarDono(topico, usuario);
+        if (!topico.getMateria().getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado.");
+        }
 
-        topico.atualizarInformacoes(dados.nome());
-        return new DadosListagemTopico(repository.save(topico));
+        topico.setNome(dados.nome());
+        return new DadosListagemTopico(topico);
     }
 
     public void excluir(Long id, Usuario usuario) {
         var topico = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tópico não encontrado"));
 
-        validarDono(topico, usuario);
-
-        if (registroRepository.existsByTopicoId(id)) {
-            throw new RuntimeException("Não é possível excluir: Já existem estudos registrados para este tópico.");
+        if (!topico.getMateria().getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado.");
         }
-
+        
+        if (registroRepository.existsByTopicoId(id)) {
+            throw new RuntimeException("Não é possível excluir este tópico pois existem estudos vinculados a ele. Tente arquivá-lo.");
+        }
+        
         repository.delete(topico);
     }
 
     public void arquivar(Long id, Usuario usuario) {
-        var topico = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tópico não encontrado"));
-        validarDono(topico, usuario);
+        var topico = repository.findById(id).orElseThrow();
+        if (!topico.getMateria().getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso negado.");
+        
         topico.setArquivado(true);
-        repository.save(topico);
     }
 
     public void desarquivar(Long id, Usuario usuario) {
-        var topico = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tópico não encontrado"));
-        validarDono(topico, usuario);
+        var topico = repository.findById(id).orElseThrow();
+        if (!topico.getMateria().getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso negado.");
+        
         topico.setArquivado(false);
-        repository.save(topico);
-    }
-
-    private void validarDono(Topico topico, Usuario usuario) {
-        if (!topico.getMateria().getUsuario().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Acesso negado!");
-        }
     }
 }

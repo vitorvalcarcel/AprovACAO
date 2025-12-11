@@ -2,7 +2,6 @@ package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.DadosAtualizacaoTopico;
 import com.nomeacao.api.dto.DadosCadastroTopico;
-import com.nomeacao.api.dto.DadosListagemTopico;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.TopicoService;
 import jakarta.transaction.Transactional;
@@ -12,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/topicos")
@@ -37,10 +34,11 @@ public class TopicoController {
     }
 
     @GetMapping("/{materiaId}")
-    public ResponseEntity listarPorMateria(@PathVariable Long materiaId, 
+    public ResponseEntity listarPorMateria(@PathVariable Long materiaId,
+                                           @RequestParam(required = false, defaultValue = "false") boolean incluirArquivados,
                                            @AuthenticationPrincipal Usuario usuarioLogado) {
         try {
-            var lista = service.listar(materiaId, usuarioLogado);
+            var lista = service.listar(materiaId, incluirArquivados, usuarioLogado);
             return ResponseEntity.ok(lista);
         } catch (RuntimeException e) {
             return ResponseEntity.status(403).build();

@@ -1,41 +1,58 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Archive, Trash2, Book, ChevronDown, ChevronUp, Box, RefreshCw, AlertCircle, Search } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import ModalTopico from '../components/ModalTopico';
 
+// Tipos
 interface Materia {
   id: number;
   nome: string;
   arquivada: boolean;
 }
 
+interface Topico {
+  id: number;
+  nome: string;
+  arquivado: boolean;
+}
+
 export default function Materias() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mostrarArquivadas, setMostrarArquivadas] = useState(false);
+  
+  // Controle da Sanfona: Qual matéria está aberta?
+  const [materiaAbertaId, setMateriaAbertaId] = useState<number | null>(null);
+  
+  // Dados da matéria aberta (Tópicos)
+  const [topicos, setTopicos] = useState<Topico[]>([]);
+  const [loadingTopicos, setLoadingTopicos] = useState(false);
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
-  // Estados do Modal Form
-  const [modalFormAberto, setModalFormAberto] = useState(false);
-  const [modoEdicao, setModoEdicao] = useState<Materia | null>(null);
-  const [nomeForm, setNomeForm] = useState('');
-  const [erroForm, setErroForm] = useState('');
-  const [salvando, setSalvando] = useState(false);
+  // Estados dos Modais
+  const [modalMateriaOpen, setModalMateriaOpen] = useState(false);
+  const [materiaEdicao, setMateriaEdicao] = useState<Materia | null>(null);
+  const [formMateria, setFormMateria] = useState('');
 
-  // Modal de Confirmação
-  const [modalConfirmacao, setModalConfirmacao] = useState<{
+  const [modalTopicoOpen, setModalTopicoOpen] = useState(false);
+  const [topicoEdicao, setTopicoEdicao] = useState<Topico | null>(null);
+
+  // Modal de Confirmação Genérico
+  const [confirmacao, setConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
-    mensagem: string;
+    msg: string;
     acao: () => Promise<void>;
-  }>({ aberto: false, titulo: '', mensagem: '', acao: async () => {} });
+  }>({ aberto: false, titulo: '', msg: '', acao: async () => {} });
 
+  // --- CARREGAMENTO INICIAL ---
   const carregarMaterias = async () => {
     setLoading(true);
     try {
-      const response = await api.get<Materia[]>('/materias');
-      setMaterias(response.data);
-    } catch (error) {
-      console.error("Erro ao listar matérias", error);
+      const res = await api.get('/materias');
+      setMaterias(res.data);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -43,173 +60,262 @@ export default function Materias() {
 
   useEffect(() => { carregarMaterias(); }, []);
 
-  // --- Formulário ---
-  const abrirModalForm = (materia?: Materia) => {
-    setErroForm('');
-    if (materia) {
-      setModoEdicao(materia);
-      setNomeForm(materia.nome);
+  // --- LÓGICA DA SANFONA ---
+  const toggleMateria = async (id: number) => {
+    if (materiaAbertaId === id) {
+      setMateriaAbertaId(null); // Fecha se já estava aberta
     } else {
-      setModoEdicao(null);
-      setNomeForm('');
+      setMateriaAbertaId(id);
+      setMostrarArquivados(false); // Reseta filtro ao abrir
+      carregarTopicos(id, false);
     }
-    setModalFormAberto(true);
   };
 
+  const carregarTopicos = async (id: number, incluirArquivados: boolean) => {
+    setLoadingTopicos(true);
+    try {
+      const res = await api.get(`/topicos/${id}`, {
+        params: { incluirArquivados }
+      });
+      setTopicos(res.data);
+    } catch (e) {
+      alert("Erro ao carregar tópicos.");
+    } finally {
+      setLoadingTopicos(false);
+    }
+  };
+
+  // Switch de Arquivados dentro da matéria
+  const toggleFiltroArquivados = () => {
+    if (!materiaAbertaId) return;
+    const novoValor = !mostrarArquivados;
+    setMostrarArquivados(novoValor);
+    carregarTopicos(materiaAbertaId, novoValor);
+  };
+
+  // --- AÇÕES DE MATÉRIA ---
   const salvarMateria = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nomeForm.trim()) return;
-    setSalvando(true);
-    setErroForm('');
-
+    if (!formMateria.trim()) return;
     try {
-      if (modoEdicao) {
-        await api.put('/materias', { id: modoEdicao.id, nome: nomeForm });
+      if (materiaEdicao) {
+        await api.put('/materias', { id: materiaEdicao.id, nome: formMateria });
       } else {
-        await api.post('/materias', { nome: nomeForm });
+        await api.post('/materias', { nome: formMateria });
       }
-      setModalFormAberto(false);
+      setModalMateriaOpen(false);
       carregarMaterias();
     } catch (error: any) {
-      setErroForm(error.response?.data?.mensagem || 'Erro ao salvar.');
-    } finally {
-      setSalvando(false);
+      alert(error.response?.data?.mensagem || "Erro ao salvar.");
     }
   };
 
-  // --- Ações (Arquivar / Excluir) ---
-  const confirmarAcao = (materia: Materia, tipo: 'arquivar' | 'desarquivar' | 'excluir') => {
-    // 1. Exclusão (DELETE)
-    if (tipo === 'excluir') {
-      setModalConfirmacao({
-        aberto: true,
-        titulo: 'Excluir Matéria',
-        mensagem: `Tem certeza que deseja excluir "${materia.nome}" permanentemente? Se ela já tiver estudos registrados, o sistema impedirá.`,
-        acao: async () => {
-          try {
-            await api.delete(`/materias/${materia.id}`);
-            carregarMaterias();
-            setModalConfirmacao(prev => ({ ...prev, aberto: false }));
-          } catch (error: any) {
-            // Mostra o erro do backend (ex: "Não pode excluir pois tem registros")
-            alert(error.response?.data || "Não foi possível excluir.");
-          }
-        }
-      });
-      return;
-    }
-
-    // 2. Arquivamento (PATCH)
-    const isArquivar = tipo === 'arquivar';
-    setModalConfirmacao({
+  const confirmarExclusaoMateria = (materia: Materia) => {
+    setConfirmacao({
       aberto: true,
-      titulo: isArquivar ? 'Arquivar Matéria' : 'Desarquivar Matéria',
-      mensagem: isArquivar 
-        ? `Deseja mover "${materia.nome}" para o arquivo?`
-        : `Deseja restaurar "${materia.nome}" para a lista ativa?`,
+      titulo: `Excluir ${materia.nome}?`,
+      msg: "CUIDADO: Se houver estudos vinculados, a exclusão será bloqueada. Prefira arquivar.",
       acao: async () => {
         try {
-          await api.patch(`/materias/${materia.id}/${tipo}`);
+          await api.delete(`/materias/${materia.id}`);
           carregarMaterias();
-          setModalConfirmacao(prev => ({ ...prev, aberto: false }));
+          if (materiaAbertaId === materia.id) setMateriaAbertaId(null);
+          setConfirmacao(p => ({ ...p, aberto: false }));
         } catch (error: any) {
-          alert(error.response?.data || "Erro ao alterar status.");
+          alert(error.response?.data?.mensagem || "Erro ao excluir (provavelmente tem vínculos).");
         }
       }
     });
   };
 
-  const listaExibida = materias.filter(m => mostrarArquivadas ? m.arquivada : !m.arquivada);
+  const arquivarMateria = async (materia: Materia) => {
+    try {
+      const endpoint = materia.arquivada ? 'desarquivar' : 'arquivar';
+      await api.patch(`/materias/${materia.id}/${endpoint}`);
+      carregarMaterias();
+    } catch (e) { alert("Erro ao alterar status."); }
+  };
+
+  // --- AÇÕES DE TÓPICO ---
+  const confirmarExclusaoTopico = (topico: Topico) => {
+    setConfirmacao({
+      aberto: true,
+      titulo: `Excluir Tópico?`,
+      msg: `Deseja remover "${topico.nome}"? Se já estudou isso, o sistema bloqueará.`,
+      acao: async () => {
+        try {
+          await api.delete(`/topicos/${topico.id}`);
+          // Recarrega lista
+          if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
+          setConfirmacao(p => ({ ...p, aberto: false }));
+        } catch (error: any) {
+          // Exibe a mensagem bonita que criamos no Java
+          alert(error.response?.data || "Erro ao excluir.");
+        }
+      }
+    });
+  };
+
+  const arquivarTopico = async (topico: Topico) => {
+    try {
+      const endpoint = topico.arquivado ? 'desarquivar' : 'arquivar';
+      await api.patch(`/topicos/${topico.id}/${endpoint}`);
+      if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
+    } catch (e) { alert("Erro ao alterar status."); }
+  };
+
+  // Filtra visualmente as matérias (apenas ativas por padrão, ou implementar filtro global depois)
+  const listaMaterias = materias.filter(m => !m.arquivada); // Por enquanto mostra só ativas na lista principal
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6"> {/* max-w-4xl igual concursos */}
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
       
       {/* Cabeçalho */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Matérias</h1>
-          <p className="text-sm text-gray-500">Gerencie o que você estuda</p>
+          <h1 className="text-2xl font-bold text-gray-800">Matérias e Tópicos</h1>
+          <p className="text-sm text-gray-500">Organize o que você estuda</p>
         </div>
-        <button onClick={() => abrirModalForm()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm">
-          <Plus size={18} /> Nova Matéria
+        <button 
+          onClick={() => { setMateriaEdicao(null); setFormMateria(''); setModalMateriaOpen(true); }} 
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
+        >
+          <Plus size={20} /> Nova Matéria
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
-        <div className="flex items-center gap-2 text-gray-500 text-sm px-2">
-          <Search size={16} /> <span>{listaExibida.length} matérias</span>
-        </div>
-        <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600">
-          <span>Ver Arquivadas</span>
-          <div className="relative">
-            <input type="checkbox" checked={mostrarArquivadas} onChange={(e) => setMostrarArquivadas(e.target.checked)} className="sr-only peer" />
-            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-          </div>
-        </label>
+      {/* Lista de Cards (Sanfona) */}
+      <div className="space-y-3">
+        {loading ? <div className="text-center text-gray-400 py-10">Carregando...</div> :
+         listaMaterias.length === 0 ? 
+         <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+           <Book size={48} className="mx-auto text-gray-300 mb-3" />
+           <p className="text-gray-500">Nenhuma matéria cadastrada.</p>
+         </div> :
+         listaMaterias.map(materia => (
+           <div key={materia.id} className={`bg-white rounded-xl border transition-all duration-300 ${materiaAbertaId === materia.id ? 'border-blue-300 shadow-md ring-1 ring-blue-100' : 'border-gray-200 hover:border-blue-200'}`}>
+             
+             {/* CABEÇALHO DO CARD (Clicável) */}
+             <div 
+               className="p-4 flex items-center justify-between cursor-pointer select-none"
+               onClick={() => toggleMateria(materia.id)}
+             >
+               <div className="flex items-center gap-3">
+                 <div className={`p-2 rounded-lg ${materiaAbertaId === materia.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                   <Book size={20} />
+                 </div>
+                 <span className="font-semibold text-gray-800 text-lg">{materia.nome}</span>
+               </div>
+               
+               <div className="flex items-center gap-2">
+                 {/* Ações da Matéria (Só aparecem no hover ou se aberto) */}
+                 <div className="flex gap-1 mr-2" onClick={e => e.stopPropagation()}>
+                   <button onClick={() => { setMateriaEdicao(materia); setFormMateria(materia.nome); setModalMateriaOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar Nome"><Pencil size={16}/></button>
+                   <button onClick={() => arquivarMateria(materia)} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="Arquivar"><Archive size={16}/></button>
+                   <button onClick={() => confirmarExclusaoMateria(materia)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Excluir"><Trash2 size={16}/></button>
+                 </div>
+                 {materiaAbertaId === materia.id ? <ChevronUp size={20} className="text-blue-500"/> : <ChevronDown size={20} className="text-gray-400"/>}
+               </div>
+             </div>
+
+             {/* CORPO DO CARD (Tópicos) */}
+             {materiaAbertaId === materia.id && (
+               <div className="border-t border-gray-100 bg-gray-50/50 p-4 animate-fade-in-down">
+                 
+                 {/* Barra de Ferramentas dos Tópicos */}
+                 <div className="flex justify-between items-center mb-4">
+                   <div className="flex items-center gap-2">
+                     <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none hover:text-gray-700">
+                       <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${mostrarArquivados ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                         <div className={`w-3 h-3 bg-white rounded-full shadow-sm transform transition-transform ${mostrarArquivados ? 'translate-x-4' : ''}`} />
+                       </div>
+                       <input type="checkbox" className="hidden" checked={mostrarArquivados} onChange={toggleFiltroArquivados} />
+                       Mostrar Arquivados
+                     </label>
+                   </div>
+                   <button 
+                     onClick={() => { setTopicoEdicao(null); setModalTopicoOpen(true); }}
+                     className="bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 flex items-center gap-1 shadow-sm"
+                   >
+                     <Plus size={16} /> Novo Tópico
+                   </button>
+                 </div>
+
+                 {/* Lista de Tópicos */}
+                 {loadingTopicos ? (
+                   <div className="text-center text-gray-400 py-4 text-sm">Carregando assuntos...</div>
+                 ) : topicos.length === 0 ? (
+                   <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg">
+                     <p className="text-gray-400 text-sm">Nenhum tópico encontrado.</p>
+                     <p className="text-gray-400 text-xs mt-1">Clique em "Novo Tópico" para adicionar.</p>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 gap-2">
+                     {topicos.map(topico => (
+                       <div key={topico.id} className={`flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-all ${topico.arquivado ? 'opacity-60 bg-gray-50 border-gray-200' : 'border-gray-100 hover:border-blue-200'}`}>
+                         <div className="flex items-center gap-3">
+                           {topico.arquivado ? <Box size={16} className="text-gray-400"/> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500"/>}
+                           <span className={`text-sm ${topico.arquivado ? 'text-gray-500 line-through' : 'text-gray-700 font-medium'}`}>{topico.nome}</span>
+                         </div>
+                         
+                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-100">
+                           {!topico.arquivado && (
+                             <button onClick={() => { setTopicoEdicao(topico); setModalTopicoOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 rounded"><Pencil size={14}/></button>
+                           )}
+                           <button onClick={() => arquivarTopico(topico)} className="p-1.5 text-gray-400 hover:text-orange-500 rounded" title={topico.arquivado ? "Restaurar" : "Arquivar"}>
+                             {topico.arquivado ? <RefreshCw size={14}/> : <Archive size={14}/>}
+                           </button>
+                           <button onClick={() => confirmarExclusaoTopico(topico)} className="p-1.5 text-gray-400 hover:text-red-600 rounded"><Trash2 size={14}/></button>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+             )}
+           </div>
+         ))
+        }
       </div>
 
-      {/* LISTA */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center text-gray-400">Carregando...</div>
-        ) : listaExibida.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            {mostrarArquivadas ? "O arquivo está vazio." : "Cadastre suas matérias para começar."}
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {listaExibida.map((materia) => (
-              <div key={materia.id} className="group flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3 pl-2">
-                  <div className={`w-1.5 h-1.5 rounded-full ${materia.arquivada ? 'bg-orange-400' : 'bg-blue-500'}`} />
-                  <span className={`font-medium text-gray-700 ${materia.arquivada ? 'line-through text-gray-400' : ''}`}>
-                    {materia.nome}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                  <button onClick={() => abrirModalForm(materia)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar">
-                    <Pencil size={16} />
-                  </button>
-                  <button onClick={() => confirmarAcao(materia, materia.arquivada ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${materia.arquivada ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={materia.arquivada ? "Restaurar" : "Arquivar"}>
-                    {materia.arquivada ? <RefreshCw size={16} /> : <Archive size={16} />}
-                  </button>
-                  {/* Botão EXCLUIR */}
-                  <button onClick={() => confirmarAcao(materia, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir Permanentemente">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Modais */}
-      <Modal isOpen={modalFormAberto} onClose={() => setModalFormAberto(false)} title={modoEdicao ? 'Editar Matéria' : 'Nova Matéria'}>
+      {/* --- MODAIS --- */}
+      
+      {/* Modal Matéria */}
+      <Modal isOpen={modalMateriaOpen} onClose={() => setModalMateriaOpen(false)} title={materiaEdicao ? 'Editar Matéria' : 'Nova Matéria'}>
         <form onSubmit={salvarMateria}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-            <input autoFocus type="text" value={nomeForm} onChange={e => setNomeForm(e.target.value)} placeholder="Ex: Português" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-          </div>
-          {erroForm && <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-md flex items-center gap-2"><AlertCircle size={16} />{erroForm}</div>}
-          <div className="flex justify-end gap-2 mt-6">
-            <button type="button" onClick={() => setModalFormAberto(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
-            <button type="submit" disabled={salvando || !nomeForm.trim()} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50">{salvando ? 'Salvando...' : 'Salvar'}</button>
+          <div className="space-y-4">
+            <input autoFocus placeholder="Nome da Matéria" value={formMateria} onChange={e=>setFormMateria(e.target.value)} className="w-full border p-2 rounded outline-none focus:ring-2 focus:ring-blue-500"/>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={()=>setModalMateriaOpen(false)} className="text-gray-500 px-3">Cancelar</button>
+              <button className="bg-blue-600 text-white px-4 py-2 rounded">Salvar</button>
+            </div>
           </div>
         </form>
       </Modal>
 
-      <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao(p => ({...p, aberto: false}))} title={modalConfirmacao.titulo}>
+      {/* Modal Tópico (NOVO) */}
+      <ModalTopico 
+        isOpen={modalTopicoOpen} 
+        onClose={() => setModalTopicoOpen(false)} 
+        materiaId={materiaAbertaId}
+        topicoEdicao={topicoEdicao}
+        onSalvo={() => materiaAbertaId && carregarTopicos(materiaAbertaId, mostrarArquivados)}
+      />
+
+      {/* Modal Confirmação */}
+      <Modal isOpen={confirmacao.aberto} onClose={() => setConfirmacao(p => ({...p, aberto: false}))} title={confirmacao.titulo}>
         <div className="space-y-4">
-          <p className="text-gray-600">{modalConfirmacao.mensagem}</p>
-          <div className="flex justify-end gap-2 pt-2">
-            <button onClick={() => setModalConfirmacao(p => ({...p, aberto: false}))} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
-            <button onClick={modalConfirmacao.acao} className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md">Confirmar</button>
+          <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg text-red-800 text-sm">
+            <AlertCircle className="shrink-0 mt-0.5" size={18}/>
+            {confirmacao.msg}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setConfirmacao(p => ({...p, aberto: false}))} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancelar</button>
+            <button onClick={confirmacao.acao} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold">Confirmar Exclusão</button>
           </div>
         </div>
       </Modal>
+
     </div>
   );
 }

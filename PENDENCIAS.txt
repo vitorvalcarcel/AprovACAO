@@ -117,3 +117,54 @@ Arquivo de Pendências e Melhorias Futuras (Backlog)
 
 
 O tabanho da tela de ciclos no Dashboard está limitado e aparece barra de rolagem quando ultrapassa, ele deve ficar com altura automática para caber todo o conteúdo sem rolagem.
+
+Arquivo de Pendências e Melhorias Futuras (Backlog)
+
+1. Segurança e Infraestrutura
+[ ] Variáveis de Ambiente: Remover senhas do application.properties.
+[x] CORS: Configurado via WebConfig e SecurityConfigurations.
+[ ] Docker de Produção: Criar Dockerfile otimizado.
+[ ] Testes Automatizados: Criar testes unitários.
+[ ] Refatoração de Erros (Backend): Padronizar retornos de erro (Problem Details).
+
+2. Módulo de Identidade (Usuário)
+[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
+[x] Senha Forte: Validação de complexidade no Backend.
+[ ] Recuperação de Senha (Esqueci minha senha).
+[ ] Confirmação de E-mail.
+[ ] Tela de Perfil (Alterar nome/senha).
+
+3. Módulo de Inventário (Matérias)
+[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
+[x] Validação de Unicidade e Integridade.
+
+4. Módulo de Estratégia (Concursos)
+[x] CRUD Completo.
+[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
+[ ] Edição Rápida de Vínculo: Botão de editar na lista do modal de disciplinas.
+[ ] Gestão de "Concurso Principal" (Estrela) para priorizar no Dashboard.
+
+5. Módulo de Planejamento (Ciclos)
+[x] Algoritmo de Sugestão de Horas.
+[x] Edição Manual da Sugestão.
+[x] Visualização em Lista com Barra de Progresso.
+[x] Widget de Ciclo no Dashboard (com precisão de segundos).
+[x] "Auto-Link": Vínculo automático de registros ao ciclo ativo.
+
+6. Módulo de Execução (Registro)
+[x] Cronômetro com Pausa/Retomada (Layout Compacto).
+[x] Registro Manual.
+[x] Validação Lógica (Acertos <= Questões).
+[x] Persistência em Segundos (Banco de Dados).
+[ ] Cadastro Rápido de Tópicos: Criar tópico "on-the-fly" no select de registro.
+
+7. Módulo de Monitoramento (Dashboard)
+[x] Filtros Avançados (Datas, Múltipla escolha, "Máximo").
+[x] Cards de Resumo (Horas, Questões, Taxa de Acertos).
+[x] Widget de Progresso do Ciclo Ativo.
+[x] Atualização em Tempo Real (Registro avisa Dashboard).
+[ ] Gráficos de Evolução: Gráfico de barras/linha por dia (Próximo Passo).
+
+8. UX / Front-end
+[ ] Feedback Visual: Substituir alerts() por Toasts (notificações flutuantes).
+[ ] Skeleton Screens: Melhorar a experiência de carregamento (loading).
