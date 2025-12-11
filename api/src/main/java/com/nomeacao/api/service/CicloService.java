@@ -10,102 +10,86 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 public class CicloService {
 
-    @Autowired
-    private CicloRepository repository;
+    @Autowired private CicloRepository repository;
+    @Autowired private ConcursoRepository concursoRepository;
+    @Autowired private ConcursoMateriaRepository concursoMateriaRepository;
+    @Autowired private MateriaRepository materiaRepository;
 
-    @Autowired
-    private ConcursoRepository concursoRepository;
+    // 1. Gera apenas a sugestão matemática (não salva nada)
+    public List<DadosSugestaoCiclo> sugerir(Long concursoId, Double horasMeta, Integer questoesMeta) {
+        List<ConcursoMateria> materias = concursoMateriaRepository.findAllByConcursoId(concursoId);
+        if (materias.isEmpty()) throw new RuntimeException("Este concurso não possui matérias cadastradas.");
 
-    @Autowired
-    private ConcursoMateriaRepository vinculoRepository;
-
-    @Autowired
-    private MateriaRepository materiaRepository;
-
-    // 1. GERAR SUGESTÃO (Cálculo Matemático)
-    public List<DadosSugestaoCiclo> sugerirCiclo(Long concursoId, Double horasMeta, Usuario usuario) {
-        var concurso = concursoRepository.findById(concursoId)
-                .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
-        
-        if (!concurso.getUsuario().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Acesso negado!");
-        }
-
-        var vinculos = vinculoRepository.findAllByConcursoId(concursoId);
-        if (vinculos.isEmpty()) {
-            throw new RuntimeException("Adicione disciplinas ao concurso antes de gerar o ciclo.");
-        }
-
-        // Soma total de pontos (Peso * Questões)
-        double pontuacaoTotal = vinculos.stream()
-                .mapToDouble(v -> v.getPeso() * v.getQuestoesProva())
-                .sum();
-
-        if (pontuacaoTotal == 0) {
-            throw new RuntimeException("Os pesos e questões estão zerados. Ajuste as disciplinas.");
-        }
+        double somaPesos = materias.stream().mapToDouble(ConcursoMateria::getPeso).sum();
+        if (somaPesos == 0) somaPesos = 1;
 
         List<DadosSugestaoCiclo> sugestao = new ArrayList<>();
         
-        for (ConcursoMateria v : vinculos) {
-            double score = v.getPeso() * v.getQuestoesProva();
-            double proporcao = score / pontuacaoTotal;
+        // Garante que questoesMeta não seja nulo para o cálculo
+        int qMeta = (questoesMeta != null) ? questoesMeta : 0;
+
+        for (ConcursoMateria cm : materias) {
+            double pesoRelativo = cm.getPeso() / somaPesos;
             
-            // Regra de 3 para horas
-            double horas = Math.round((horasMeta * proporcao) * 100.0) / 100.0;
-            double percentual = Math.round(proporcao * 100.0 * 10.0) / 10.0;
+            double hSugeridas = Math.round((horasMeta * pesoRelativo) * 10.0) / 10.0; // 1 casa decimal
+            int qSugeridas = (int) Math.ceil(qMeta * pesoRelativo); // Arredonda pra cima
 
             sugestao.add(new DadosSugestaoCiclo(
-                v.getMateria().getId(),
-                v.getMateria().getNome(),
-                v.getPeso(),
-                v.getQuestoesProva(),
-                horas,
-                percentual
+                cm.getMateria().getId(),
+                cm.getMateria().getNome(),
+                cm.getPeso(),
+                hSugeridas,
+                qSugeridas,
+                pesoRelativo * 100.0
             ));
         }
         
-        // Ordena por quem tem mais horas primeiro
-        sugestao.sort((a, b) -> b.horasSugeridas().compareTo(a.horasSugeridas()));
+        // Ordena por maior carga horária
+        sugestao.sort(Comparator.comparing(DadosSugestaoCiclo::horasSugeridas).reversed());
         return sugestao;
     }
 
-    // 2. SALVAR CICLO
+    // 2. Salva o ciclo definitivo (com os itens que o usuário editou)
     @Transactional
-    public void criarCiclo(DadosCriacaoCiclo dados, Usuario usuario) {
+    public void gerarCiclo(DadosCriacaoCiclo dados, Usuario usuario) {
         var concurso = concursoRepository.findById(dados.concursoId())
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
 
-        if (!concurso.getUsuario().getId().equals(usuario.getId())) {
-            throw new RuntimeException("Acesso negado!");
-        }
+        if (!concurso.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso negado.");
 
-        // Desativa ciclo anterior se existir
-        repository.findByConcursoIdAndAtivoTrue(concurso.getId())
-                .ifPresent(c -> c.setAtivo(false));
+        // Desativa anterior
+        repository.findFirstByUsuarioAndAtivoTrue(usuario).ifPresent(c -> {
+            c.setAtivo(false);
+            repository.save(c);
+        });
 
         var ciclo = new Ciclo();
         ciclo.setConcurso(concurso);
-        ciclo.setDescricao(dados.descricao());
-        ciclo.setTotalHoras(dados.totalHoras());
         ciclo.setAtivo(true);
-
-        // Adiciona os itens aprovados pelo usuário
-        for (var itemDto : dados.itens()) {
-            var materia = materiaRepository.getReferenceById(itemDto.materiaId());
-            
-            var item = new ItemCiclo();
-            item.setMateria(materia);
-            item.setHorasMeta(itemDto.horasMeta());
-            item.setOrdem(itemDto.ordem());
-            
-            ciclo.adicionarItem(item); // Usa o método do Model
+        
+        List<ItemCiclo> itensEntidade = new ArrayList<>();
+        
+        if (dados.itens() != null) {
+            for (var itemDto : dados.itens()) {
+                var materia = materiaRepository.findById(itemDto.materiaId()).orElseThrow();
+                
+                var item = new ItemCiclo();
+                item.setCiclo(ciclo);
+                item.setMateria(materia);
+                item.setHorasMeta(itemDto.horasMeta());
+                item.setQuestoesMeta(itemDto.questoesMeta() != null ? itemDto.questoesMeta() : 0);
+                item.setOrdem(itemDto.ordem());
+                
+                itensEntidade.add(item);
+            }
         }
 
+        ciclo.setItens(itensEntidade);
         repository.save(ciclo);
     }
 }

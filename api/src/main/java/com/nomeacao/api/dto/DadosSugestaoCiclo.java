@@ -4,7 +4,7 @@ public record DadosSugestaoCiclo(
     Long materiaId,
     String nomeMateria,
     Double peso,
-    Integer questoes,
     Double horasSugeridas,
+    Integer questoesSugeridas,
     Double percentual
 ) {}

@@ -15,17 +15,17 @@ public class ItemCiclo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "horas_meta", nullable = false)
-    private Double horasMeta;
-    
-    @Column(nullable = false)
-    private Integer ordem;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ciclo_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "ciclo_id")
     private Ciclo ciclo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "materia_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "materia_id")
     private Materia materia;
+
+    private Integer ordem;
+
+    private Double horasMeta;
+    
+    private Integer questoesMeta = 0;
 }

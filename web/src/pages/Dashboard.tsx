@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Target, CheckCircle, BarChart2, AlertCircle, Plus, BookOpen, Trophy } from 'lucide-react';
+import { Target, CheckCircle, BarChart2, AlertCircle, Plus, BookOpen, Trophy, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import RegistroRapido from '../components/RegistroRapido';
 import Filtros, { type FiltrosState } from '../components/Filtros';
+import GraficoEvolucao from '../components/GraficoEvolucao';
 
 interface ItemProgresso {
   nomeMateria: string;
+  // Horas
   metaHoras: number;
   segundosRealizados: number;
   saldoSegundos: number;
-  percentual: number;
+  percentualHoras: number;
+  // Questões
+  metaQuestoes: number;
+  questoesRealizadas: number;
+  saldoQuestoes: number;
+  percentualQuestoes: number;
 }
 
 interface DashboardData {
@@ -20,6 +27,7 @@ interface DashboardData {
   cicloId: number | null;
   nomeConcurso: string | null;
   progressoGeral: number;
+  evolucaoDiaria: any[];
   itens: ItemProgresso[];
 }
 
@@ -35,9 +43,7 @@ export default function Dashboard() {
     setFiltrosAtivos(novosFiltros);
   };
 
-  useEffect(() => {
-    carregarDashboard();
-  }, [filtrosAtivos]);
+  useEffect(() => { carregarDashboard(); }, [filtrosAtivos]);
 
   const carregarDashboard = async () => {
     setLoading(true);
@@ -89,9 +95,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="font-bold text-gray-800 text-sm">Meu Ciclo Atual</h3>
                 {data?.nomeConcurso && (
-                  <p className="text-xs text-gray-500 font-medium">
-                    {data.nomeConcurso}
-                  </p>
+                  <p className="text-xs text-gray-500 font-medium">{data.nomeConcurso}</p>
                 )}
               </div>
             </div>
@@ -115,51 +119,62 @@ export default function Dashboard() {
                   <AlertCircle size={24} />
                 </div>
                 <p className="text-gray-600 text-sm font-medium mb-1">Nenhum ciclo ativo encontrado.</p>
-                <p className="text-gray-400 text-xs mb-4">Crie um plano de estudos para acompanhar seu progresso.</p>
-                <Link to="/app/concursos" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                <Link to="/app/concursos" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm mt-3">
                   <Plus size={16} /> Criar Novo Ciclo
                 </Link>
               </div>
             ) : (
-              // AUMENTADO AQUI: max-h-96 (~380px)
-              <div className="max-h-96 overflow-y-auto scrollbar-thin">
+              // LISTA DE ITENS DO CICLO
+              <div className="max-h-[420px] overflow-y-auto scrollbar-thin">
                 <div className="divide-y divide-gray-50">
                   {data.itens.map((item, idx) => (
-                    <div key={idx} className="group px-5 py-3 hover:bg-blue-50/40 transition-colors">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          {/* Nome da Matéria um pouco maior */}
-                          <span className="text-sm font-semibold text-gray-700 truncate">{item.nomeMateria}</span>
-                          <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
-                            Meta {item.metaHoras}h
-                          </span>
-                        </div>
-                        
-                        <div className="text-right whitespace-nowrap flex items-center justify-end gap-3">
-                          <span className="text-sm font-bold text-gray-700 font-mono bg-gray-50 px-2 py-0.5 rounded">
-                            {formatarTempo(item.segundosRealizados)}
-                          </span>
-                          
-                          <span className={`text-xs px-2.5 py-1 rounded-md font-bold shadow-sm border flex items-center gap-1 ${
-                            item.saldoSegundos > 0 
-                              ? 'bg-red-50 text-red-700 border-red-100' 
-                              : 'bg-green-50 text-green-700 border-green-100'
-                          }`}>
-                            {item.saldoSegundos > 0 ? (
-                              <>Faltam {formatarTempo(item.saldoSegundos)}</>
-                            ) : (
-                              <><CheckCircle size={12}/> Concluído</>
-                            )}
-                          </span>
-                        </div>
-                      </div>
+                    <div key={idx} className="group px-5 py-4 hover:bg-blue-50/40 transition-colors">
                       
-                      {/* Barra um pouco mais grossa */}
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden relative">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-700 ${item.percentual >= 100 ? 'bg-green-500' : 'bg-blue-500'}`} 
-                          style={{ width: `${item.percentual}%` }} 
-                        />
+                      {/* Título da Matéria */}
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-bold text-gray-700 truncate">{item.nomeMateria}</span>
+                        {/* Status Geral (Se ambos concluídos) */}
+                        {item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 && (
+                          <span className="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded-full">
+                            <CheckCircle size={12}/> Matéria Fechada!
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        
+                        {/* BARRA DE HORAS (Azul) */}
+                        <div>
+                          <div className="flex justify-between items-end mb-1">
+                            <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                              <Clock size={10} className="text-blue-500"/> Teoria ({item.metaHoras}h)
+                            </span>
+                            <span className={`text-[10px] font-bold ${item.saldoSegundos > 0 ? 'text-blue-600' : 'text-green-600'}`}>
+                              {item.saldoSegundos > 0 ? `${formatarTempo(item.segundosRealizados)}` : 'Concluído'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-500 h-1.5 rounded-full transition-all duration-700" style={{ width: `${item.percentualHoras}%` }} />
+                          </div>
+                        </div>
+
+                        {/* BARRA DE QUESTÕES (Roxa) - Só aparece se tiver meta */}
+                        {item.metaQuestoes > 0 && (
+                          <div>
+                            <div className="flex justify-between items-end mb-1">
+                              <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                <BookOpen size={10} className="text-purple-500"/> Questões ({item.metaQuestoes})
+                              </span>
+                              <span className={`text-[10px] font-bold ${item.saldoQuestoes > 0 ? 'text-purple-600' : 'text-green-600'}`}>
+                                {item.questoesRealizadas} feitas
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                              <div className="bg-purple-500 h-1.5 rounded-full transition-all duration-700" style={{ width: `${item.percentualQuestoes}%` }} />
+                            </div>
+                          </div>
+                        )}
+
                       </div>
                     </div>
                   ))}
@@ -172,7 +187,10 @@ export default function Dashboard() {
         {/* 2. FILTROS */}
         <Filtros onChange={handleFiltrosChange} />
 
-        {/* 3. CARDS DE RESUMO */}
+        {/* 3. GRÁFICO DE EVOLUÇÃO */}
+        <GraficoEvolucao dados={data?.evolucaoDiaria || []} loading={loading} />
+
+        {/* 4. CARDS DE RESUMO */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
             <div>
@@ -206,11 +224,6 @@ export default function Dashboard() {
             </div>
             <div className="bg-green-50 p-3 rounded-full text-green-600"><Trophy size={24} /></div>
           </div>
-        </div>
-
-        {/* 4. GRÁFICOS FUTUROS */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[250px] flex items-center justify-center text-gray-400 text-sm">
-          Gráfico de Evolução Semanal (Em Breve)
         </div>
 
       </div>

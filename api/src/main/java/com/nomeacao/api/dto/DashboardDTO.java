@@ -10,6 +10,7 @@ public record DashboardDTO(
     Long cicloId,
     String nomeConcurso,
     Double progressoGeral,
+    List<DadosGrafico> evolucaoDiaria,
     List<ItemProgresso> itens
 ) {
     public record ItemProgresso(
@@ -17,6 +18,11 @@ public record DashboardDTO(
         Double metaHoras,
         Long segundosRealizados,
         Long saldoSegundos,
-        Double percentual
+        Double percentualHoras,
+        
+        Integer metaQuestoes,
+        Long questoesRealizadas,
+        Long saldoQuestoes,
+        Double percentualQuestoes
     ) {}
 }

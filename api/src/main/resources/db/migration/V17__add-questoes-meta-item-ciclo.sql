@@ -1,0 +1,1 @@
+ALTER TABLE itens_ciclo ADD COLUMN questoes_meta INTEGER DEFAULT 0;

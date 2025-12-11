@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, Calculator, Save, AlertCircle, ArrowRight, RotateCcw, CheckCircle } from 'lucide-react';
+import { Clock, Calculator, Save, ArrowRight, RotateCcw, CheckCircle, BookOpen } from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
 
@@ -12,10 +12,13 @@ interface ItemSugestao {
   materiaId: number;
   nomeMateria: string;
   peso: number;
-  questoes: number;
-  horasSugeridas: number;
-  horasEditadas: number;
   percentual: number;
+  // Sugeridos pelo backend
+  horasSugeridas: number;
+  questoesSugeridas: number;
+  // Editados pelo usuário
+  horasEditadas: number;
+  questoesEditadas: number;
 }
 
 interface ModalGerarCicloProps {
@@ -25,11 +28,11 @@ interface ModalGerarCicloProps {
 }
 
 export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGerarCicloProps) {
-  // Passos: 1=Meta, 2=Tabela, 3=Sucesso
   const [step, setStep] = useState(1);
   
-  // SOLUÇÃO DO "TOC": Usamos string para permitir limpar o campo (ficar vazio)
+  // Inputs Step 1
   const [totalHorasStr, setTotalHorasStr] = useState('20'); 
+  const [totalQuestoesStr, setTotalQuestoesStr] = useState('500'); 
   
   const [itens, setItens] = useState<ItemSugestao[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,20 +43,22 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
       setStep(1);
       setItens([]);
       setErro('');
-      setTotalHorasStr('20'); // Valor padrão ao abrir
+      // Valores padrão
+      setTotalHorasStr('20');
+      setTotalQuestoesStr('500');
     }
   }, [isOpen]);
 
-  // Passo 1: Buscar Sugestão do Java
+  // Passo 1 -> Passo 2
   const gerarSugestao = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
 
-    // Converte para número apenas na hora de usar
     const horasNum = parseFloat(totalHorasStr);
+    const questoesNum = parseInt(totalQuestoesStr);
 
     if (!concurso || isNaN(horasNum) || horasNum <= 0) {
-      setErro("Por favor, insira uma quantidade válida de horas.");
+      setErro("Insira uma carga horária válida.");
       return;
     }
     
@@ -61,157 +66,199 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
 
     try {
       const response = await api.get<ItemSugestao[]>('/ciclos/sugestao', {
-        params: { concursoId: concurso.id, horas: horasNum }
+        params: { 
+          concursoId: concurso.id, 
+          horas: horasNum,
+          questoes: isNaN(questoesNum) ? 0 : questoesNum
+        }
       });
 
-      // Prepara os dados para edição
+      // Inicializa os campos editáveis com a sugestão
       const dados = response.data.map(item => ({
         ...item,
-        horasEditadas: item.horasSugeridas
+        horasEditadas: item.horasSugeridas,
+        questoesEditadas: item.questoesSugeridas
       }));
 
       setItens(dados);
       setStep(2);
     } catch (error: any) {
-      setErro(error.response?.data?.mensagem || "Erro ao gerar sugestão. O concurso tem matérias?");
+      setErro(error.response?.data?.mensagem || "Erro ao gerar sugestão. O concurso possui matérias com pesos?");
     } finally {
       setLoading(false);
     }
   };
 
-  // Passo 2: Salvar no Banco
+  // Passo 2 -> Salvar
   const salvarCiclo = async () => {
     if (!concurso) return;
     setLoading(true);
     setErro('');
 
-    // Recalcula total real
-    const totalFinal = itens.reduce((acc, i) => acc + i.horasEditadas, 0);
-    const horasMetaInicial = parseFloat(totalHorasStr);
+    const totalHorasReal = itens.reduce((acc, i) => acc + i.horasEditadas, 0);
+    const totalQuestoesReal = itens.reduce((acc, i) => acc + i.questoesEditadas, 0);
 
     try {
       const payload = {
         concursoId: concurso.id,
-        // Usa o nome baseado na meta inicial para referência
-        descricao: `Ciclo ${isNaN(horasMetaInicial) ? totalFinal.toFixed(0) : horasMetaInicial}h`,
-        totalHoras: totalFinal,
+        descricao: `Ciclo ${totalHorasReal.toFixed(0)}h / ${totalQuestoesReal}q`,
+        totalHoras: totalHorasReal,
+        totalQuestoes: totalQuestoesReal,
         itens: itens.map((item, index) => ({
           materiaId: item.materiaId,
           horasMeta: item.horasEditadas,
+          questoesMeta: item.questoesEditadas,
           ordem: index + 1
         }))
       };
 
       await api.post('/ciclos', payload);
-      
-      // SOLUÇÃO DO POPUP: Vai para o Passo 3 (Sucesso) em vez de alert()
       setStep(3);
-
-      // Fecha sozinho após 1.5s
+      
+      // Auto-fecha
       setTimeout(() => {
         onClose();
+        // Recarrega a página ou contexto se necessário
+        window.location.reload(); 
       }, 1500);
 
     } catch (error: any) {
       setErro(error.response?.data?.mensagem || "Erro ao salvar ciclo.");
-      setLoading(false); // Só para loading se der erro, se der sucesso o modal vai fechar
+      setLoading(false);
     }
   };
 
-  // Atualiza valor editado na tabela
-  const atualizarItem = (index: number, valor: string) => {
-    // Permite digitar e apagar livremente na tabela também
+  // Atualizadores da Tabela
+  const atualizarHoras = (index: number, valor: string) => {
     const novaLista = [...itens];
-    if (valor === '') {
-        novaLista[index].horasEditadas = 0; // Ou mantém como string se quiser refinar mais
-    } else {
-        const num = parseFloat(valor);
-        if (!isNaN(num) && num >= 0) {
-            novaLista[index].horasEditadas = num;
-        }
+    if (valor === '') novaLista[index].horasEditadas = 0;
+    else {
+      const num = parseFloat(valor);
+      if (!isNaN(num) && num >= 0) novaLista[index].horasEditadas = num;
     }
     setItens(novaLista);
   };
 
-  const totalAtual = itens.reduce((acc, i) => acc + i.horasEditadas, 0);
+  const atualizarQuestoes = (index: number, valor: string) => {
+    const novaLista = [...itens];
+    if (valor === '') novaLista[index].questoesEditadas = 0;
+    else {
+      const num = parseInt(valor);
+      if (!isNaN(num) && num >= 0) novaLista[index].questoesEditadas = num;
+    }
+    setItens(novaLista);
+  };
+
+  const totalHorasAtual = itens.reduce((acc, i) => acc + i.horasEditadas, 0);
+  const totalQuestoesAtual = itens.reduce((acc, i) => acc + i.questoesEditadas, 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={step === 1 ? "Novo Ciclo" : (step === 3 ? "Sucesso!" : `Planejando: ${concurso?.nome}`)}>
       
-      {/* PASSO 1: INPUT DE HORAS (Limpo) */}
+      {/* --- PASSO 1: DEFINIÇÃO DE METAS --- */}
       {step === 1 && (
         <form onSubmit={gerarSugestao} className="space-y-6">
           <div className="text-center py-4">
             <div className="bg-blue-50 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
               <Clock className="text-blue-600" size={28} />
             </div>
-            <h3 className="font-semibold text-gray-800">Defina sua meta</h3>
-            <p className="text-sm text-gray-500">Quantas horas totais terá este ciclo?</p>
+            <h3 className="font-semibold text-gray-800">Defina suas metas globais</h3>
+            <p className="text-sm text-gray-500">O sistema distribuirá proporcionalmente aos pesos.</p>
           </div>
 
-          <div className="flex justify-center">
-            <div className="flex items-center gap-2">
-              <input 
-                type="number" autoFocus min="1" max="500"
-                // Valor agora é string, permite ficar vazio
-                value={totalHorasStr} 
-                onChange={e => setTotalHorasStr(e.target.value)}
-                placeholder="0"
-                className="w-24 text-center text-2xl font-bold border rounded-lg py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-              <span className="text-gray-500 font-medium">horas</span>
+          <div className="grid grid-cols-2 gap-4">
+            {/* Input Horas */}
+            <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+              <label className="text-xs font-bold text-blue-600 uppercase mb-2">Horas Totais</label>
+              <div className="flex items-center gap-1">
+                <input 
+                  type="number" autoFocus min="1"
+                  value={totalHorasStr} onChange={e => setTotalHorasStr(e.target.value)}
+                  className="w-20 text-center text-2xl font-bold bg-white border border-blue-200 rounded-lg py-1 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <span className="text-blue-400 font-medium">h</span>
+              </div>
+            </div>
+
+            {/* Input Questões */}
+            <div className="flex flex-col items-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <label className="text-xs font-bold text-purple-600 uppercase mb-2">Questões Totais</label>
+              <div className="flex items-center gap-1">
+                <input 
+                  type="number" min="0"
+                  value={totalQuestoesStr} onChange={e => setTotalQuestoesStr(e.target.value)}
+                  className="w-20 text-center text-2xl font-bold bg-white border border-purple-200 rounded-lg py-1 focus:ring-2 focus:ring-purple-500 outline-none"
+                />
+                <span className="text-purple-400 font-medium">q</span>
+              </div>
             </div>
           </div>
 
           {erro && <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded animate-pulse">{erro}</div>}
 
-          <button type="submit" disabled={loading || !totalHorasStr} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <button type="submit" disabled={loading || !totalHorasStr} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
             {loading ? 'Calculando...' : <>Gerar Sugestão <ArrowRight size={18}/></>}
           </button>
         </form>
       )}
 
-      {/* PASSO 2: TABELA DE AJUSTES */}
+      {/* --- PASSO 2: TABELA DE AJUSTES --- */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-100">
-            <div className="flex items-center gap-2 text-blue-800 text-sm">
-              <Calculator size={16} />
-              Total Planejado: <strong>{totalAtual.toFixed(1)}h</strong>
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <div className="flex gap-4 text-sm">
+              <div className="flex items-center gap-1.5 text-blue-700">
+                <Calculator size={14} /> <strong>{totalHorasAtual.toFixed(1)}h</strong>
+              </div>
+              <div className="flex items-center gap-1.5 text-purple-700">
+                <BookOpen size={14} /> <strong>{totalQuestoesAtual}q</strong>
+              </div>
             </div>
-            <button type="button" onClick={() => setStep(1)} className="text-xs text-blue-600 hover:underline flex gap-1 items-center">
+            <button type="button" onClick={() => setStep(1)} className="text-xs text-gray-500 hover:text-gray-800 flex gap-1 items-center hover:underline">
               <RotateCcw size={12}/> Recalcular
             </button>
           </div>
 
           <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white scrollbar-thin">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0">
+              <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
                 <tr>
                   <th className="px-3 py-2">Matéria</th>
-                  <th className="px-3 py-2 w-16 text-center">Peso</th>
-                  <th className="px-3 py-2 w-20 text-center">Horas</th>
+                  <th className="px-3 py-2 w-14 text-center text-xs">Peso</th>
+                  <th className="px-2 py-2 w-20 text-center text-blue-600">Horas</th>
+                  <th className="px-2 py-2 w-20 text-center text-purple-600">Questões</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {itens.map((item, idx) => (
                   <tr key={item.materiaId} className="hover:bg-gray-50">
                     <td className="px-3 py-2">
-                      <div className="font-medium text-gray-800">{item.nomeMateria}</div>
+                      <div className="font-medium text-gray-800 truncate max-w-[150px]" title={item.nomeMateria}>{item.nomeMateria}</div>
                       <div className="w-full bg-gray-100 h-1 rounded-full mt-1 overflow-hidden">
-                        <div className="bg-blue-500 h-1 rounded-full transition-all duration-500" style={{width: `${Math.min(item.percentual, 100)}%`}} />
+                        <div className="bg-blue-400 h-1 rounded-full" style={{width: `${Math.min(item.percentual, 100)}%`}} />
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-center text-xs text-gray-500">
+                    <td className="px-3 py-2 text-center text-xs text-gray-500 font-mono">
                       {item.peso}
                     </td>
-                    <td className="px-3 py-2">
+                    
+                    {/* Input Horas */}
+                    <td className="px-2 py-2">
                       <input 
                         type="number" step="0.1" min="0"
-                        // Exibindo o valor numérico (se for 0, mostra 0)
                         value={item.horasEditadas}
-                        onChange={e => atualizarItem(idx, e.target.value)}
-                        className="w-full border rounded px-1 py-1 text-center font-bold text-gray-700 focus:border-blue-500 outline-none focus:ring-1 focus:ring-blue-500"
+                        onChange={e => atualizarHoras(idx, e.target.value)}
+                        className="w-full border border-blue-100 bg-blue-50/50 rounded px-1 py-1 text-center font-bold text-blue-700 focus:border-blue-500 outline-none focus:bg-white transition-colors"
+                      />
+                    </td>
+
+                    {/* Input Questões */}
+                    <td className="px-2 py-2">
+                      <input 
+                        type="number" min="0"
+                        value={item.questoesEditadas}
+                        onChange={e => atualizarQuestoes(idx, e.target.value)}
+                        className="w-full border border-purple-100 bg-purple-50/50 rounded px-1 py-1 text-center font-bold text-purple-700 focus:border-purple-500 outline-none focus:bg-white transition-colors"
                       />
                     </td>
                   </tr>
@@ -219,8 +266,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
               </tbody>
             </table>
           </div>
-
-          {erro && <div className="text-red-600 text-xs text-center">{erro}</div>}
 
           <div className="flex justify-end gap-2 pt-2 border-t">
             <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm transition-colors">Cancelar</button>
@@ -231,10 +276,10 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
         </div>
       )}
 
-      {/* PASSO 3: SUCESSO (Feedback Visual) */}
+      {/* --- PASSO 3: SUCESSO --- */}
       {step === 3 && (
         <div className="flex flex-col items-center justify-center py-8 space-y-4 animate-fade-in">
-          <div className="bg-green-100 text-green-600 p-4 rounded-full">
+          <div className="bg-green-100 text-green-600 p-4 rounded-full animate-bounce">
             <CheckCircle size={48} />
           </div>
           <h3 className="text-xl font-bold text-gray-800">Ciclo Criado!</h3>
