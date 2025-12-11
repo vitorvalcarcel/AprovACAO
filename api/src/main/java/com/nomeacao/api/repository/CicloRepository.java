@@ -5,6 +5,7 @@ import com.nomeacao.api.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.util.List;
 import java.util.Optional;
 
 public interface CicloRepository extends JpaRepository<Ciclo, Long> {
@@ -13,6 +14,8 @@ public interface CicloRepository extends JpaRepository<Ciclo, Long> {
     Optional<Ciclo> findFirstByUsuarioAndAtivoTrue(@Param("usuario") Usuario usuario);
 
     Optional<Ciclo> findByConcursoIdAndAtivoTrue(Long concursoId);
+    
+    List<Ciclo> findAllByConcursoIdOrderByDataInicioDesc(Long concursoId);
 
     @Query("""
            SELECT COUNT(i) > 0 

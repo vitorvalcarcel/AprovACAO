@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, Long>, JpaSpecificationExecutor<RegistroEstudo> {
@@ -29,4 +30,19 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
         GROUP BY r.materia.id
     """)
     List<com.nomeacao.api.dto.ResumoHistoricoDTO> somarEstudosPorConcurso(@Param("concursoId") Long concursoId);
+
+    @Query("""
+        SELECT SUM(r.segundos) 
+        FROM RegistroEstudo r 
+        WHERE r.usuario.id = :usuarioId 
+          AND r.materia.id = :materiaId 
+          AND r.dataInicio BETWEEN :inicio AND :fim 
+          AND r.contarHorasNoCiclo = true
+    """)
+    Long somarSegundosPorMateriaEPeriodo(
+        @Param("usuarioId") Long usuarioId, 
+        @Param("materiaId") Long materiaId, 
+        @Param("inicio") LocalDateTime inicio, 
+        @Param("fim") LocalDateTime fim
+    );
 }

@@ -11,6 +11,7 @@ import Historico from './pages/Historico';
 import TiposEstudo from './pages/TiposEstudo';
 import Estatisticas from './pages/Estatisticas';
 import Perfil from './pages/Perfil';
+import MeusCiclos from './pages/MeusCiclos';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/app" element={<Dashboard />} />
             <Route path="/app/materias" element={<Materias />} />
             <Route path="/app/concursos" element={<Concursos />} />
+            <Route path="/app/ciclos" element={<MeusCiclos />} />
             <Route path="/app/historico" element={<Historico />} />
             <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
             <Route path="/app/estatisticas" element={<Estatisticas />} />

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Target, CheckCircle, BarChart2, AlertCircle, Plus, BookOpen, Clock, ChevronRight } from 'lucide-react';
+import { Target, CheckCircle, BarChart2, Plus, StopCircle, AlertTriangle, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import RegistroRapido from '../components/RegistroRapido';
+import Modal from '../components/Modal';
 
 interface ItemProgresso {
   nomeMateria: string;
@@ -26,6 +27,9 @@ interface DashboardData {
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Modal de Confirmação
+  const [modalEncerrarOpen, setModalEncerrarOpen] = useState(false);
 
   const carregarDashboard = async () => {
     setLoading(true);
@@ -41,6 +45,17 @@ export default function Dashboard() {
 
   useEffect(() => { carregarDashboard(); }, []);
 
+  const handleEncerrarCiclo = async () => {
+    if (!data?.cicloId) return;
+    try {
+      await api.patch(`/ciclos/${data.cicloId}/encerrar`);
+      setModalEncerrarOpen(false);
+      carregarDashboard();
+    } catch (error) {
+      alert("Erro ao encerrar ciclo.");
+    }
+  };
+
   const formatarTempo = (totalSegundos: number) => {
     const total = Math.abs(totalSegundos);
     const h = Math.floor(total / 3600);
@@ -51,7 +66,6 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-start pb-20 max-w-[1600px] mx-auto min-h-screen">
       
-      {/* --- COLUNA PRINCIPAL (ESQUERDA) --- */}
       <div className="flex-1 w-full min-w-0 flex flex-col">
         
         <div className="mb-6 flex justify-between items-center">
@@ -64,15 +78,27 @@ export default function Dashboard() {
             )}
           </div>
           
-          {data?.cicloId && (
-            <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-3 shadow-sm">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Conclusão</span>
-              <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500" style={{ width: `${data.progressoGeral}%` }} />
+          <div className="flex items-center gap-3">
+            {data?.cicloId && (
+              <button 
+                onClick={() => setModalEncerrarOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg text-xs font-bold transition-colors uppercase"
+                title="Encerrar Ciclo"
+              >
+                <StopCircle size={16} /> Encerrar
+              </button>
+            )}
+
+            {data?.cicloId && (
+              <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-3 shadow-sm">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Conclusão</span>
+                <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500" style={{ width: `${data.progressoGeral}%` }} />
+                </div>
+                <span className="text-sm font-bold text-green-700">{data.progressoGeral}%</span>
               </div>
-              <span className="text-sm font-bold text-green-700">{data.progressoGeral}%</span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -90,8 +116,6 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-            
-            {/* CABEÇALHO (Agora rola junto com a página e tem fonte menor) */}
             <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider rounded-t-2xl">
               <div className="col-span-4">Matéria</div>
               <div className="col-span-4 text-center">Progresso</div>
@@ -99,27 +123,19 @@ export default function Dashboard() {
               <div className="col-span-2 text-right">Saldo Questões</div>
             </div>
 
-            {/* LISTA COMPLETA */}
             <div className="divide-y divide-gray-50">
               {data.itens.map((item, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-2.5 items-center hover:bg-blue-50/30 transition-colors group">
-                  
-                  {/* 1. NOME DA MATÉRIA */}
                   <div className="col-span-4 flex items-center gap-3">
                     <div className={`w-1.5 h-10 rounded-full shrink-0 ${item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-gray-700 text-sm leading-tight line-clamp-2" title={item.nomeMateria}>
-                        {item.nomeMateria}
-                      </h4>
+                      <h4 className="font-bold text-gray-700 text-sm leading-tight line-clamp-2" title={item.nomeMateria}>{item.nomeMateria}</h4>
                       {item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 && (
-                        <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-0.5">
-                          <CheckCircle size={10} /> Concluído
-                        </span>
+                        <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</span>
                       )}
                     </div>
                   </div>
 
-                  {/* 2. BARRAS DUPLAS */}
                   <div className="col-span-4 flex flex-col justify-center gap-1.5 px-2">
                     <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden" title={`Horas: ${item.percentualHoras.toFixed(0)}%`}>
                       <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoSegundos <= 0 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${item.percentualHoras}%` }} />
@@ -131,31 +147,19 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* 3. SALDOS */}
                   <div className="col-span-2 text-right">
-                    <div className="text-sm font-bold text-gray-700 font-mono">
-                      {formatarTempo(item.segundosRealizados)} 
-                    </div>
-                    <div className="text-[10px] text-gray-400">
-                      de {item.metaHoras}h
-                    </div>
+                    <div className="text-sm font-bold text-gray-700 font-mono">{formatarTempo(item.segundosRealizados)}</div>
+                    <div className="text-[10px] text-gray-400">de {item.metaHoras}h</div>
                   </div>
 
                   <div className="col-span-2 text-right">
                     {item.metaQuestoes > 0 ? (
                       <>
-                        <div className="text-sm font-bold text-gray-700 font-mono">
-                          {item.questoesRealizadas}
-                        </div>
-                        <div className="text-[10px] text-gray-400">
-                          de {item.metaQuestoes}
-                        </div>
+                        <div className="text-sm font-bold text-gray-700 font-mono">{item.questoesRealizadas}</div>
+                        <div className="text-[10px] text-gray-400">de {item.metaQuestoes}</div>
                       </>
-                    ) : (
-                      <span className="text-xs text-gray-300">-</span>
-                    )}
+                    ) : <span className="text-xs text-gray-300">-</span>}
                   </div>
-
                 </div>
               ))}
             </div>
@@ -163,9 +167,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* --- COLUNA LATERAL (REGISTRO) --- */}
       <div className="w-full xl:w-96 shrink-0 xl:sticky xl:top-8 flex flex-col gap-4">
-        
         <RegistroRapido onRegistroSalvo={carregarDashboard} />
         
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group shrink-0">
@@ -179,6 +181,20 @@ export default function Dashboard() {
           <BarChart2 className="absolute -bottom-4 -right-4 text-white opacity-10 w-32 h-32 transform group-hover:scale-110 transition-transform duration-500" />
         </div>
       </div>
+
+      {/* Modal Confirmar Encerramento */}
+      <Modal isOpen={modalEncerrarOpen} onClose={() => setModalEncerrarOpen(false)} title="Encerrar Ciclo">
+        <div className="space-y-4">
+          <div className="bg-orange-50 p-4 rounded-lg flex gap-3 text-orange-800 text-sm items-start">
+            <AlertTriangle className="shrink-0" size={20}/>
+            <p>Tem certeza? Ao encerrar o ciclo, ele deixará de aparecer no Dashboard. Seus registros de estudo serão mantidos.</p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setModalEncerrarOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Cancelar</button>
+            <button onClick={handleEncerrarCiclo} className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-bold">Sim, Encerrar</button>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );
