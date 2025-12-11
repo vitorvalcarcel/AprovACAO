@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
 import { useState } from 'react';
 
 export default function Layout() {
@@ -16,8 +16,9 @@ export default function Layout() {
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/app' },
     { label: 'Concursos', icon: Target, path: '/app/concursos' },
-    { label: 'Matérias & Tópicos', icon: Book, path: '/app/materias' },
+    { label: 'Matérias & Assuntos', icon: Book, path: '/app/materias' },
     { label: 'Histórico', icon: History, path: '/app/historico' },
+    { label: 'Tipos de Estudo', icon: Tag, path: '/app/tipos-estudo' }, // Item novo
   ];
 
   return (
@@ -81,7 +82,7 @@ export default function Layout() {
       </aside>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen"> {/* h-screen para travar rolagem no main se precisar, ou min-h-screen */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
         
         {/* Header Mobile */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:hidden flex-shrink-0">

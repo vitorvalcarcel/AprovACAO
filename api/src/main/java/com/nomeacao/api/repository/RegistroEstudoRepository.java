@@ -15,6 +15,7 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
     boolean existsByMateriaId(Long materiaId);
     boolean existsByTopicoId(Long topicoId);
     boolean existsByConcursoId(Long concursoId);
+    boolean existsByTipoEstudoId(Long tipoEstudoId);
 
     @Query("""
         SELECT new com.nomeacao.api.dto.ResumoHistoricoDTO(

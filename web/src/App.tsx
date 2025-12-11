@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import Materias from './pages/Materias';
 import Concursos from './pages/Concursos';
 import Historico from './pages/Historico';
+import TiposEstudo from './pages/TiposEstudo';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/app/materias" element={<Materias />} />
             <Route path="/app/concursos" element={<Concursos />} />
             <Route path="/app/historico" element={<Historico />} />
+            <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
           </Route>
           
           <Route path="/" element={<Navigate to="/app" replace />} />

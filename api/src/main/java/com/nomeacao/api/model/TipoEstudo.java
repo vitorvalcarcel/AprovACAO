@@ -17,6 +17,8 @@ public class TipoEstudo {
 
     @Column(nullable = false)
     private String nome;
+    
+    private Boolean arquivado = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")

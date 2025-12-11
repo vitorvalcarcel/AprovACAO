@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface TipoEstudoRepository extends JpaRepository<TipoEstudo, Long> {
     List<TipoEstudo> findAllByUsuario(Usuario usuario);
+    List<TipoEstudo> findAllByUsuarioAndArquivadoFalse(Usuario usuario);
+    boolean existsByUsuarioAndNomeIgnoreCase(Usuario usuario, String nome);
 }
