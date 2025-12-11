@@ -45,4 +45,26 @@ public class RegistroEstudoController {
         var lista = service.listar(inicio, fim, materias, concursos, tipos, usuario);
         return ResponseEntity.ok(lista);
     }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity excluir(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        try {
+            service.excluir(id, usuario);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping
+    @Transactional
+    public ResponseEntity excluirEmLote(@RequestParam List<Long> ids, @AuthenticationPrincipal Usuario usuario) {
+        try {
+            service.excluirEmLote(ids, usuario);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
 }

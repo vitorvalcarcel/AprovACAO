@@ -5,9 +5,10 @@ import com.nomeacao.api.dto.DadosDetalhamentoRegistro;
 import com.nomeacao.api.model.RegistroEstudo;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.Predicate;
 
@@ -104,5 +105,34 @@ public class RegistroEstudoService {
                 .stream()
                 .map(DadosDetalhamentoRegistro::new)
                 .toList();
+    }
+
+    @Transactional
+    public void excluir(Long id, Usuario usuario) {
+        var registro = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Registro não encontrado"));
+
+        if (!registro.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado.");
+        }
+
+        repository.delete(registro);
+    }
+
+    @Transactional
+    public void excluirEmLote(List<Long> ids, Usuario usuario) {
+        if (ids == null || ids.isEmpty()) return;
+
+        var registros = repository.findAllById(ids);
+        
+        // Verifica se todos os registros encontrados pertencem ao usuário
+        boolean todosPertencemAoUsuario = registros.stream()
+                .allMatch(r -> r.getUsuario().getId().equals(usuario.getId()));
+
+        if (!todosPertencemAoUsuario) {
+            throw new RuntimeException("Acesso negado: Um ou mais registros não pertencem a você.");
+        }
+
+        repository.deleteAll(registros);
     }
 }

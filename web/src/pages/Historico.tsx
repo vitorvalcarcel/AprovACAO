@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Clock, CheckCircle, Search } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Trash2, CheckSquare, Square, AlertTriangle, X, GripHorizontal } from 'lucide-react';
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
+import Modal from '../components/Modal';
 
 interface Registro {
   id: number;
@@ -19,15 +20,26 @@ export default function Historico() {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Estado de Seleção e Exclusão
+  const [modoSelecao, setModoSelecao] = useState(false);
+  const [idsSelecionados, setIdsSelecionados] = useState<number[]>([]);
+  const [modalConfirmacao, setModalConfirmacao] = useState<{
+    aberto: boolean;
+    tipo: 'unico' | 'lote';
+    idAlvo?: number; // Usado se for exclusão única
+  }>({ aberto: false, tipo: 'unico' });
+
   // Guardamos o filtro atual para poder recarregar
   const [filtrosAtuais, setFiltrosAtuais] = useState<FiltrosState | null>(null);
 
   const carregarDados = async (filtros: FiltrosState) => {
     setLoading(true);
     setFiltrosAtuais(filtros);
+    // Limpa seleção ao recarregar
+    setIdsSelecionados([]);
+    setModoSelecao(false);
     
     try {
-      // Converte array [1,2] para string "1,2" para passar na URL
       const params: any = {};
       if (filtros.dataInicio) params.inicio = filtros.dataInicio + 'T00:00:00';
       if (filtros.dataFim) params.fim = filtros.dataFim + 'T23:59:59';
@@ -41,6 +53,51 @@ export default function Historico() {
       console.error("Erro ao filtrar", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Funções de Seleção
+  const toggleSelecao = (id: number) => {
+    setIdsSelecionados(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelecionarTudo = () => {
+    if (idsSelecionados.length === registros.length) {
+      setIdsSelecionados([]);
+    } else {
+      setIdsSelecionados(registros.map(r => r.id));
+    }
+  };
+
+  // Funções de Exclusão
+  const confirmarExclusaoUnica = (id: number) => {
+    setModalConfirmacao({ aberto: true, tipo: 'unico', idAlvo: id });
+  };
+
+  const confirmarExclusaoLote = () => {
+    if (idsSelecionados.length === 0) return;
+    setModalConfirmacao({ aberto: true, tipo: 'lote' });
+  };
+
+  const executarExclusao = async () => {
+    try {
+      if (modalConfirmacao.tipo === 'unico' && modalConfirmacao.idAlvo) {
+        await api.delete(`/registros/${modalConfirmacao.idAlvo}`);
+      } else if (modalConfirmacao.tipo === 'lote') {
+        // Axios serializa arrays em params como ?ids=1,2,3
+        await api.delete('/registros', {
+          params: { ids: idsSelecionados.join(',') }
+        });
+      }
+      
+      // Fecha modal e recarrega
+      setModalConfirmacao({ ...modalConfirmacao, aberto: false });
+      if (filtrosAtuais) carregarDados(filtrosAtuais);
+      
+    } catch (error) {
+      alert("Erro ao excluir registros.");
     }
   };
 
@@ -61,12 +118,40 @@ export default function Historico() {
       
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Histórico de Estudos</h1>
-        <div className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border">
-          {registros.length} registros encontrados
+        
+        <div className="flex items-center gap-3">
+          {modoSelecao ? (
+            <>
+              <button 
+                onClick={() => { setModoSelecao(false); setIdsSelecionados([]); }}
+                className="px-3 py-1.5 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <X size={16} /> Cancelar
+              </button>
+              <button 
+                onClick={confirmarExclusaoLote}
+                disabled={idsSelecionados.length === 0}
+                className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} /> Excluir ({idsSelecionados.length})
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => setModoSelecao(true)}
+              className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium flex items-center gap-2 border border-blue-100"
+            >
+              <GripHorizontal size={16} /> Gerenciar
+            </button>
+          )}
+          
+          <div className="text-sm text-gray-500 bg-white px-3 py-1.5 rounded-lg border">
+            {registros.length} registros
+          </div>
         </div>
       </div>
 
-      {/* COMPONENTE DE FILTROS REUTILIZÁVEL */}
+      {/* COMPONENTE DE FILTROS */}
       <Filtros onChange={carregarDados} />
 
       {/* TABELONA */}
@@ -75,22 +160,51 @@ export default function Historico() {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
               <tr>
+                {/* Coluna Checkbox Condicional */}
+                {modoSelecao && (
+                  <th className="px-4 py-3 w-10">
+                    <button onClick={toggleSelecionarTudo} className="text-gray-500 hover:text-blue-600">
+                      {idsSelecionados.length > 0 && idsSelecionados.length === registros.length 
+                        ? <CheckSquare size={18} className="text-blue-600" /> 
+                        : <Square size={18} />}
+                    </button>
+                  </th>
+                )}
+                
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Matéria / Tópico</th>
                 <th className="px-4 py-3">Concurso</th>
                 <th className="px-4 py-3 text-center">Tempo</th>
                 <th className="px-4 py-3 text-center">Questões</th>
                 <th className="px-4 py-3 text-center">Desempenho</th>
+                
+                {/* Coluna Ações: Só mostra se NÃO estiver selecionando, para não poluir */}
+                {!modoSelecao && <th className="px-4 py-3 text-right">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Carregando...</td></tr>
+                <tr><td colSpan={modoSelecao ? 7 : 7} className="p-8 text-center text-gray-400">Carregando...</td></tr>
               ) : registros.length === 0 ? (
-                <tr><td colSpan={6} className="p-12 text-center text-gray-400">Nenhum registro encontrado com esses filtros.</td></tr>
+                <tr><td colSpan={modoSelecao ? 7 : 7} className="p-12 text-center text-gray-400">Nenhum registro encontrado.</td></tr>
               ) : (
                 registros.map(reg => (
-                  <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
+                  <tr 
+                    key={reg.id} 
+                    className={`transition-colors ${idsSelecionados.includes(reg.id) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
+                    onClick={() => modoSelecao && toggleSelecao(reg.id)}
+                  >
+                    {/* Checkbox da Linha */}
+                    {modoSelecao && (
+                      <td className="px-4 py-3">
+                        <button className="text-gray-400">
+                          {idsSelecionados.includes(reg.id) 
+                            ? <CheckSquare size={18} className="text-blue-600" /> 
+                            : <Square size={18} />}
+                        </button>
+                      </td>
+                    )}
+
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {formatarData(reg.dataInicio)}
                     </td>
@@ -119,6 +233,18 @@ export default function Historico() {
                         </div>
                       ) : '-'}
                     </td>
+
+                    {!modoSelecao && (
+                      <td className="px-4 py-3 text-right">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); confirmarExclusaoUnica(reg.id); }}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Excluir Registro"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -126,6 +252,23 @@ export default function Historico() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Confirmação */}
+      <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao({ ...modalConfirmacao, aberto: false })} title="Excluir Registros">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg text-red-800 text-sm">
+            <AlertTriangle className="shrink-0 mt-0.5" size={18}/>
+            {modalConfirmacao.tipo === 'unico' 
+              ? 'Tem certeza que deseja excluir este registro de estudo? Isso afetará suas estatísticas e metas.' 
+              : `Tem certeza que deseja excluir ${idsSelecionados.length} registros selecionados? Esta ação não pode ser desfeita.`}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setModalConfirmacao({ ...modalConfirmacao, aberto: false })} className="text-gray-500 px-3 py-2 rounded hover:bg-gray-100 text-sm font-medium">Cancelar</button>
+            <button onClick={executarExclusao} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-bold text-sm">Confirmar Exclusão</button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }
