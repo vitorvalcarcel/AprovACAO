@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
+import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -20,7 +20,7 @@ export default function Layout() {
     { label: 'Matérias & Assuntos', icon: Book, path: '/app/materias' },
     { label: 'Histórico', icon: History, path: '/app/historico' },
     { label: 'Tipos de Estudo', icon: Tag, path: '/app/tipos-estudo' },
-    { label: 'Minha Conta', icon: User, path: '/app/perfil' },
+    // "Minha Conta" removido daqui
   ];
 
   return (
@@ -46,7 +46,7 @@ export default function Layout() {
             </button>
           </div>
 
-          {/* Links */}
+          {/* Links Principais */}
           <nav className="flex-1 px-4 py-6 space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
@@ -70,8 +70,24 @@ export default function Layout() {
             })}
           </nav>
 
-          {/* Footer Sidebar */}
-          <div className="p-4 border-t border-gray-100">
+          {/* Footer Sidebar (Conta e Logout) */}
+          <div className="p-4 border-t border-gray-100 space-y-1">
+            
+            {/* Minha Conta (Movido para cá) */}
+            <Link
+              to="/app/perfil"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                location.pathname === '/app/perfil'
+                  ? 'bg-blue-50 text-blue-600' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <User size={20} />
+              Minha Conta
+            </Link>
+
+            {/* Logout */}
             <button 
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
