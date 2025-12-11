@@ -4,6 +4,7 @@ import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast/ToastContext';
+import TableSkeleton from '../components/skeletons/TableSkeleton'; // Import novo
 
 interface Registro {
   id: number;
@@ -149,100 +150,102 @@ export default function Historico() {
 
       <Filtros onChange={carregarDados} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col">
-        <div className="overflow-auto flex-1">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
-              <tr>
-                {modoSelecao && (
-                  <th className="px-4 py-3 w-10">
-                    <button onClick={toggleSelecionarTudo} className="text-gray-500 hover:text-blue-600">
-                      {idsSelecionados.length > 0 && idsSelecionados.length === registros.length 
-                        ? <CheckSquare size={18} className="text-blue-600" /> 
-                        : <Square size={18} />}
-                    </button>
-                  </th>
-                )}
-                
-                <th className="px-4 py-3">Data</th>
-                <th className="px-4 py-3">Matéria / Tópico</th>
-                <th className="px-4 py-3">Concurso</th>
-                <th className="px-4 py-3 text-center">Tempo</th>
-                <th className="px-4 py-3 text-center">Questões</th>
-                <th className="px-4 py-3 text-center">Desempenho</th>
-                
-                {!modoSelecao && <th className="px-4 py-3 text-right">Ações</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {loading ? (
-                <tr><td colSpan={7} className="p-8 text-center text-gray-400">Carregando...</td></tr>
-              ) : registros.length === 0 ? (
-                <tr><td colSpan={7} className="p-12 text-center text-gray-400">Nenhum registro encontrado.</td></tr>
-              ) : (
-                registros.map(reg => (
-                  <tr 
-                    key={reg.id} 
-                    className={`transition-colors ${idsSelecionados.includes(reg.id) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
-                    onClick={() => modoSelecao && toggleSelecao(reg.id)}
-                  >
-                    {modoSelecao && (
+      {loading ? (
+        <TableSkeleton />
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col">
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
+                <tr>
+                  {modoSelecao && (
+                    <th className="px-4 py-3 w-10">
+                      <button onClick={toggleSelecionarTudo} className="text-gray-500 hover:text-blue-600">
+                        {idsSelecionados.length > 0 && idsSelecionados.length === registros.length 
+                          ? <CheckSquare size={18} className="text-blue-600" /> 
+                          : <Square size={18} />}
+                      </button>
+                    </th>
+                  )}
+                  
+                  <th className="px-4 py-3">Data</th>
+                  <th className="px-4 py-3">Matéria / Tópico</th>
+                  <th className="px-4 py-3">Concurso</th>
+                  <th className="px-4 py-3 text-center">Tempo</th>
+                  <th className="px-4 py-3 text-center">Questões</th>
+                  <th className="px-4 py-3 text-center">Desempenho</th>
+                  
+                  {!modoSelecao && <th className="px-4 py-3 text-right">Ações</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {registros.length === 0 ? (
+                  <tr><td colSpan={7} className="p-12 text-center text-gray-400">Nenhum registro encontrado.</td></tr>
+                ) : (
+                  registros.map(reg => (
+                    <tr 
+                      key={reg.id} 
+                      className={`transition-colors ${idsSelecionados.includes(reg.id) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
+                      onClick={() => modoSelecao && toggleSelecao(reg.id)}
+                    >
+                      {modoSelecao && (
+                        <td className="px-4 py-3">
+                          <button className="text-gray-400">
+                            {idsSelecionados.includes(reg.id) 
+                              ? <CheckSquare size={18} className="text-blue-600" /> 
+                              : <Square size={18} />}
+                          </button>
+                        </td>
+                      )}
+
+                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                        {formatarData(reg.dataInicio)}
+                      </td>
                       <td className="px-4 py-3">
-                        <button className="text-gray-400">
-                          {idsSelecionados.includes(reg.id) 
-                            ? <CheckSquare size={18} className="text-blue-600" /> 
-                            : <Square size={18} />}
-                        </button>
+                        <div className="font-medium text-gray-800">{reg.nomeMateria}</div>
+                        {reg.nomeTopico && <div className="text-xs text-gray-500">{reg.nomeTopico}</div>}
                       </td>
-                    )}
-
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
-                      {formatarData(reg.dataInicio)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-gray-800">{reg.nomeMateria}</div>
-                      {reg.nomeTopico && <div className="text-xs text-gray-500">{reg.nomeTopico}</div>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {reg.nomeConcurso || '-'}
-                    </td>
-                    <td className="px-4 py-3 text-center font-medium text-blue-700">
-                      <div className="inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                        <Clock size={14} /> {formatarTempo(reg.segundos)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-600">
-                      {reg.questoesFeitas > 0 ? reg.questoesFeitas : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {reg.questoesFeitas > 0 ? (
-                        <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${
-                          (reg.questoesCertas/reg.questoesFeitas) >= 0.8 ? 'bg-green-100 text-green-700' :
-                          (reg.questoesCertas/reg.questoesFeitas) >= 0.6 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {Math.round((reg.questoesCertas / reg.questoesFeitas) * 100)}%
+                      <td className="px-4 py-3 text-gray-500">
+                        {reg.nomeConcurso || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-center font-medium text-blue-700">
+                        <div className="inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
+                          <Clock size={14} /> {formatarTempo(reg.segundos)}
                         </div>
-                      ) : '-'}
-                    </td>
-
-                    {!modoSelecao && (
-                      <td className="px-4 py-3 text-right">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); confirmarExclusaoUnica(reg.id); }}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Excluir Registro"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                      <td className="px-4 py-3 text-center text-gray-600">
+                        {reg.questoesFeitas > 0 ? reg.questoesFeitas : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {reg.questoesFeitas > 0 ? (
+                          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold ${
+                            (reg.questoesCertas/reg.questoesFeitas) >= 0.8 ? 'bg-green-100 text-green-700' :
+                            (reg.questoesCertas/reg.questoesFeitas) >= 0.6 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {Math.round((reg.questoesCertas / reg.questoesFeitas) * 100)}%
+                          </div>
+                        ) : '-'}
+                      </td>
+
+                      {!modoSelecao && (
+                        <td className="px-4 py-3 text-right">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); confirmarExclusaoUnica(reg.id); }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Excluir Registro"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao({ ...modalConfirmacao, aberto: false })} title="Excluir Registros">
         <div className="space-y-4">

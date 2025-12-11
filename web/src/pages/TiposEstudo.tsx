@@ -4,6 +4,7 @@ import api from '../services/api';
 import ModalTipoEstudo from '../components/ModalTipoEstudo';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast/ToastContext';
+import CardListSkeleton from '../components/skeletons/CardListSkeleton';
 
 interface Tipo { 
   id: number; 
@@ -105,8 +106,11 @@ export default function TiposEstudo() {
       </div>
 
       <div className="bg-white rounded-lg border overflow-hidden">
-        {loading ? <div className="p-8 text-center text-gray-400">Carregando...</div> :
-         tipos.length === 0 ? <div className="p-12 text-center text-gray-500">Nenhum tipo de estudo encontrado.</div> :
+        {loading ? (
+          <div className="p-4"><CardListSkeleton /></div>
+        ) : tipos.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">Nenhum tipo de estudo encontrado.</div>
+        ) : (
          <div className="divide-y p-1">
            {tipos.map(t => (
              <div 
@@ -164,7 +168,7 @@ export default function TiposEstudo() {
              </div>
            ))}
          </div>
-        }
+        )}
       </div>
 
       <ModalTipoEstudo isOpen={modalOpen} onClose={() => setModalOpen(false)} edicao={edicao} onSalvo={carregar} />

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Target, Calendar, CheckCircle, StopCircle, Trash2, AlertTriangle, Search } from 'lucide-react';
+import { Target, CheckCircle, StopCircle, Trash2, AlertTriangle, Search } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast/ToastContext';
+import TableSkeleton from '../components/skeletons/TableSkeleton';
 
 interface Concurso {
   id: number;
@@ -24,7 +25,7 @@ export default function MeusCiclos() {
   const [concursoSelecionado, setConcursoSelecionado] = useState<string>('');
   
   const [ciclos, setCiclos] = useState<Ciclo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
@@ -34,12 +35,19 @@ export default function MeusCiclos() {
   }>({ aberto: false, titulo: '', msg: '', acao: async () => {} });
 
   useEffect(() => {
-    api.get<Concurso[]>('/concursos').then(res => {
-      setConcursos(res.data);
-      if (res.data.length > 0) {
-        setConcursoSelecionado(String(res.data[0].id));
-      }
-    });
+    // Mantém loading true enquanto busca concursos
+    api.get<Concurso[]>('/concursos')
+      .then(res => {
+        setConcursos(res.data);
+        if (res.data.length > 0) {
+          // Isso disparará o segundo useEffect, que gerencia o loading dos ciclos
+          setConcursoSelecionado(String(res.data[0].id));
+        } else {
+          // Se não há concursos, paramos o loading aqui
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -128,7 +136,7 @@ export default function MeusCiclos() {
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-gray-400">Carregando histórico...</div>
+        <TableSkeleton />
       ) : ciclos.length === 0 ? (
         <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-12 text-center">
           <Search size={48} className="mx-auto text-gray-300 mb-3" />

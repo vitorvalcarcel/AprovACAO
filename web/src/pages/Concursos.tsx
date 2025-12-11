@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
 import ModalGerarCiclo from '../components/ModalGerarCiclo';
 import { useToast } from '../components/Toast/ToastContext';
+import CardListSkeleton from '../components/skeletons/CardListSkeleton'; // Import novo
 
 interface Concurso {
   id: number;
@@ -15,7 +16,7 @@ interface Concurso {
 }
 
 export default function Concursos() {
-  const { showToast } = useToast(); // Hook de Toast
+  const { showToast } = useToast();
   const [concursos, setConcursos] = useState<Concurso[]>([]);
   const [loading, setLoading] = useState(true);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
@@ -189,7 +190,7 @@ export default function Concursos() {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-400">Carregando...</div>
+          <CardListSkeleton />
         ) : listaExibida.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             {mostrarArquivados ? "O arquivo está vazio." : "Cadastre seu primeiro objetivo de estudo!"}

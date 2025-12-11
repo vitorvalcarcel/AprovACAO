@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Trash2, Book, ChevronDown, ChevronUp, Box, RefreshCw, AlertCircle, Search } from 'lucide-react';
+import { Plus, Pencil, Archive, Trash2, Book, ChevronDown, ChevronUp, Box, RefreshCw, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalTopico from '../components/ModalTopico';
 import { useToast } from '../components/Toast/ToastContext';
+import CardListSkeleton from '../components/skeletons/CardListSkeleton'; // Import novo
 
 // Tipos
 interface Materia {
@@ -188,7 +189,7 @@ export default function Materias() {
       </div>
 
       <div className="space-y-3">
-        {loading ? <div className="text-center text-gray-400 py-10">Carregando...</div> :
+        {loading ? <CardListSkeleton /> :
          listaMaterias.length === 0 ? 
          <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
            <Book size={48} className="mx-auto text-gray-300 mb-3" />
@@ -240,7 +241,7 @@ export default function Materias() {
                  </div>
 
                  {loadingTopicos ? (
-                   <div className="text-center text-gray-400 py-4 text-sm">Carregando assuntos...</div>
+                   <div className="text-center text-gray-400 py-4 text-sm animate-pulse">Carregando assuntos...</div>
                  ) : topicos.length === 0 ? (
                    <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg">
                      <p className="text-gray-400 text-sm">Nenhum tópico encontrado.</p>

@@ -5,6 +5,7 @@ import api from '../services/api';
 import RegistroRapido from '../components/RegistroRapido';
 import Modal from '../components/Modal';
 import { useToast } from '../components/Toast/ToastContext';
+import DashboardSkeleton from '../components/skeletons/DashboardSkeleton'; // Import novo
 
 interface ItemProgresso {
   nomeMateria: string;
@@ -34,7 +35,8 @@ export default function Dashboard() {
   const [modalEncerrarOpen, setModalEncerrarOpen] = useState(false);
 
   const carregarDashboard = async () => {
-    setLoading(true);
+    // Se já temos dados (refresh silencioso), não mostra loading full
+    if (!data) setLoading(true);
     try {
       const response = await api.get<DashboardData>('/dashboard');
       setData(response.data);
@@ -71,102 +73,106 @@ export default function Dashboard() {
       
       <div className="flex-1 w-full min-w-0 flex flex-col">
         
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Meu Ciclo</h1>
-            {data?.nomeConcurso && (
-              <p className="text-gray-500 text-sm flex items-center gap-1 mt-1">
-                <Target size={14} /> Foco: <span className="font-medium text-blue-600">{data.nomeConcurso}</span>
-              </p>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {data?.cicloId && (
-              <button 
-                onClick={() => setModalEncerrarOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg text-xs font-bold transition-colors uppercase"
-                title="Encerrar Ciclo"
-              >
-                <StopCircle size={16} /> Encerrar
-              </button>
-            )}
+        {loading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">Meu Ciclo</h1>
+                {data?.nomeConcurso && (
+                  <p className="text-gray-500 text-sm flex items-center gap-1 mt-1">
+                    <Target size={14} /> Foco: <span className="font-medium text-blue-600">{data.nomeConcurso}</span>
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {data?.cicloId && (
+                  <button 
+                    onClick={() => setModalEncerrarOpen(true)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg text-xs font-bold transition-colors uppercase"
+                    title="Encerrar Ciclo"
+                  >
+                    <StopCircle size={16} /> Encerrar
+                  </button>
+                )}
 
-            {data?.cicloId && (
-              <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-3 shadow-sm">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Conclusão</span>
-                <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500" style={{ width: `${data.progressoGeral}%` }} />
+                {data?.cicloId && (
+                  <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 flex items-center gap-3 shadow-sm">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Conclusão</span>
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500" style={{ width: `${data.progressoGeral}%` }} />
+                    </div>
+                    <span className="text-sm font-bold text-green-700">{data.progressoGeral}%</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {!data?.cicloId ? (
+              <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-16">
+                <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-4 text-blue-500">
+                  <BarChart2 size={40} />
                 </div>
-                <span className="text-sm font-bold text-green-700">{data.progressoGeral}%</span>
+                <h3 className="text-xl font-bold text-gray-800">Nenhum ciclo ativo</h3>
+                <p className="text-gray-500 mb-6 max-w-md text-center">Crie um planejamento baseado no seu edital para começar a acompanhar seu progresso.</p>
+                <Link to="/app/concursos" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
+                  <Plus size={20} /> Criar Planejamento
+                </Link>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+                <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider rounded-t-2xl">
+                  <div className="col-span-4">Matéria</div>
+                  <div className="col-span-4 text-center">Progresso</div>
+                  <div className="col-span-2 text-right">Saldo Horas</div>
+                  <div className="col-span-2 text-right">Saldo Questões</div>
+                </div>
+
+                <div className="divide-y divide-gray-50">
+                  {data.itens.map((item, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-2.5 items-center hover:bg-blue-50/30 transition-colors group">
+                      <div className="col-span-4 flex items-center gap-3">
+                        <div className={`w-1.5 h-10 rounded-full shrink-0 ${item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-gray-700 text-sm leading-tight line-clamp-2" title={item.nomeMateria}>{item.nomeMateria}</h4>
+                          {item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 && (
+                            <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="col-span-4 flex flex-col justify-center gap-1.5 px-2">
+                        <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden" title={`Horas: ${item.percentualHoras.toFixed(0)}%`}>
+                          <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoSegundos <= 0 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${item.percentualHoras}%` }} />
+                        </div>
+                        {item.metaQuestoes > 0 && (
+                          <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden" title={`Questões: ${item.percentualQuestoes.toFixed(0)}%`}>
+                            <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-purple-500'}`} style={{ width: `${item.percentualQuestoes}%` }} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="col-span-2 text-right">
+                        <div className="text-sm font-bold text-gray-700 font-mono">{formatarTempo(item.segundosRealizados)}</div>
+                        <div className="text-[10px] text-gray-400">de {item.metaHoras}h</div>
+                      </div>
+
+                      <div className="col-span-2 text-right">
+                        {item.metaQuestoes > 0 ? (
+                          <>
+                            <div className="text-sm font-bold text-gray-700 font-mono">{item.questoesRealizadas}</div>
+                            <div className="text-[10px] text-gray-400">de {item.metaQuestoes}</div>
+                          </>
+                        ) : <span className="text-xs text-gray-300">-</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>
-        ) : !data?.cicloId ? (
-          <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center p-16">
-            <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mb-4 text-blue-500">
-              <BarChart2 size={40} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-800">Nenhum ciclo ativo</h3>
-            <p className="text-gray-500 mb-6 max-w-md text-center">Crie um planejamento baseado no seu edital para começar a acompanhar seu progresso.</p>
-            <Link to="/app/concursos" className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
-              <Plus size={20} /> Criar Planejamento
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider rounded-t-2xl">
-              <div className="col-span-4">Matéria</div>
-              <div className="col-span-4 text-center">Progresso</div>
-              <div className="col-span-2 text-right">Saldo Horas</div>
-              <div className="col-span-2 text-right">Saldo Questões</div>
-            </div>
-
-            <div className="divide-y divide-gray-50">
-              {data.itens.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-4 px-6 py-2.5 items-center hover:bg-blue-50/30 transition-colors group">
-                  <div className="col-span-4 flex items-center gap-3">
-                    <div className={`w-1.5 h-10 rounded-full shrink-0 ${item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-gray-700 text-sm leading-tight line-clamp-2" title={item.nomeMateria}>{item.nomeMateria}</h4>
-                      {item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 && (
-                        <span className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="col-span-4 flex flex-col justify-center gap-1.5 px-2">
-                    <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden" title={`Horas: ${item.percentualHoras.toFixed(0)}%`}>
-                      <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoSegundos <= 0 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${item.percentualHoras}%` }} />
-                    </div>
-                    {item.metaQuestoes > 0 && (
-                      <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden" title={`Questões: ${item.percentualQuestoes.toFixed(0)}%`}>
-                        <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-purple-500'}`} style={{ width: `${item.percentualQuestoes}%` }} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="col-span-2 text-right">
-                    <div className="text-sm font-bold text-gray-700 font-mono">{formatarTempo(item.segundosRealizados)}</div>
-                    <div className="text-[10px] text-gray-400">de {item.metaHoras}h</div>
-                  </div>
-
-                  <div className="col-span-2 text-right">
-                    {item.metaQuestoes > 0 ? (
-                      <>
-                        <div className="text-sm font-bold text-gray-700 font-mono">{item.questoesRealizadas}</div>
-                        <div className="text-[10px] text-gray-400">de {item.metaQuestoes}</div>
-                      </>
-                    ) : <span className="text-xs text-gray-300">-</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          </>
         )}
       </div>
 

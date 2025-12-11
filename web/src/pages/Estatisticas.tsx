@@ -3,6 +3,7 @@ import { Target, BookOpen, Trophy, BarChart2, Calendar } from 'lucide-react';
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import GraficoEvolucao from '../components/GraficoEvolucao';
+import StatsSkeleton from '../components/skeletons/StatsSkeleton';
 
 interface DashboardData {
   horasLiquidas: number;
@@ -52,6 +53,10 @@ export default function Estatisticas() {
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
+  if (loading && !data) {
+    return <StatsSkeleton />;
+  }
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
       
@@ -70,7 +75,7 @@ export default function Estatisticas() {
           <div className="bg-blue-50 p-3 rounded-xl text-blue-600"><Target size={28} /></div>
           <div>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Horas Líquidas</p>
-            <h3 className="text-3xl font-bold text-gray-800">{loading ? '...' : formatarHoras(data?.horasLiquidas || 0)}</h3>
+            <h3 className="text-3xl font-bold text-gray-800">{formatarHoras(data?.horasLiquidas || 0)}</h3>
           </div>
         </div>
 
@@ -78,7 +83,7 @@ export default function Estatisticas() {
           <div className="bg-purple-50 p-3 rounded-xl text-purple-600"><BookOpen size={28} /></div>
           <div>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Questões</p>
-            <h3 className="text-3xl font-bold text-gray-800">{loading ? '...' : (data?.questoesFeitas || 0)}</h3>
+            <h3 className="text-3xl font-bold text-gray-800">{data?.questoesFeitas || 0}</h3>
           </div>
         </div>
 
@@ -88,7 +93,7 @@ export default function Estatisticas() {
           </div>
           <div>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Desempenho</p>
-            <h3 className="text-3xl font-bold text-gray-800">{loading ? '...' : (data?.taxaAcertos || 0)}%</h3>
+            <h3 className="text-3xl font-bold text-gray-800">{data?.taxaAcertos || 0}%</h3>
           </div>
         </div>
       </div>
