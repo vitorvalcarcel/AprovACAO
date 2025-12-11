@@ -14,8 +14,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
@@ -95,26 +93,34 @@ public class AutenticacaoService implements UserDetailsService {
     }
 
     @Transactional
-    public void excluirConta(Usuario usuarioLogado) {
+    public void excluirConta(String senhaConfirmacao, Usuario usuarioLogado) {
+        var usuario = repository.findById(usuarioLogado.getId())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        // VALIDAÇÃO CRÍTICA DE SEGURANÇA
+        if (!passwordEncoder.matches(senhaConfirmacao, usuario.getSenha())) {
+            throw new RuntimeException("Senha incorreta. A exclusão da conta foi cancelada.");
+        }
+
         // EQUIPE DE LIMPEZA
         // A ordem importa para não violar chaves estrangeiras no banco
 
         // 1. Apagar Registros de Estudo (Dependem de tudo: Matéria, Concurso, Tipo, Usuário)
-        registroRepository.deleteAllByUsuario(usuarioLogado);
+        registroRepository.deleteAllByUsuario(usuario);
 
         // 2. Apagar Concursos (O banco já deleta Ciclos em cascata devido ao ON DELETE CASCADE configurado no Flyway)
-        var concursos = concursoRepository.findAllByUsuario(usuarioLogado);
+        var concursos = concursoRepository.findAllByUsuario(usuario);
         concursoRepository.deleteAll(concursos);
 
         // 3. Apagar Matérias (O banco já deleta Tópicos em cascata)
-        var materias = materiaRepository.findAllByUsuario(usuarioLogado);
+        var materias = materiaRepository.findAllByUsuario(usuario);
         materiaRepository.deleteAll(materias);
 
         // 4. Apagar Tipos de Estudo
-        var tipos = tipoEstudoRepository.findAllByUsuario(usuarioLogado);
+        var tipos = tipoEstudoRepository.findAllByUsuario(usuario);
         tipoEstudoRepository.deleteAll(tipos);
 
         // 5. Finalmente, apagar o usuário
-        repository.delete(usuarioLogado);
+        repository.delete(usuario);
     }
 }
