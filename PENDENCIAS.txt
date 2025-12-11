@@ -168,3 +168,5 @@ Arquivo de Pendências e Melhorias Futuras (Backlog)
 8. UX / Front-end
 [ ] Feedback Visual: Substituir alerts() por Toasts (notificações flutuantes).
 [ ] Skeleton Screens: Melhorar a experiência de carregamento (loading).
+
+teste
