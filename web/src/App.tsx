@@ -10,6 +10,7 @@ import Concursos from './pages/Concursos';
 import Historico from './pages/Historico';
 import TiposEstudo from './pages/TiposEstudo';
 import Estatisticas from './pages/Estatisticas';
+import Perfil from './pages/Perfil';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/app/historico" element={<Historico />} />
             <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
             <Route path="/app/estatisticas" element={<Estatisticas />} />
+            <Route path="/app/perfil" element={<Perfil />} />
           </Route>
           
           <Route path="/" element={<Navigate to="/app" replace />} />

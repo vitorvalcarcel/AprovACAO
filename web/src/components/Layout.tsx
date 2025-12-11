@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
+import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
 import { useState } from 'react';
 
 export default function Layout() {
@@ -20,6 +20,7 @@ export default function Layout() {
     { label: 'Matérias & Assuntos', icon: Book, path: '/app/materias' },
     { label: 'Histórico', icon: History, path: '/app/historico' },
     { label: 'Tipos de Estudo', icon: Tag, path: '/app/tipos-estudo' },
+    { label: 'Minha Conta', icon: User, path: '/app/perfil' },
   ];
 
   return (
