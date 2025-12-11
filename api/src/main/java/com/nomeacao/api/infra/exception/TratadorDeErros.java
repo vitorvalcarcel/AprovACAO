@@ -1,6 +1,8 @@
 package com.nomeacao.api.infra.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,10 +14,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
-
 @RestControllerAdvice
 public class TratadorDeErros {
+
+    private static final Logger logger = LoggerFactory.getLogger(TratadorDeErros.class);
 
     // 404 - Não Encontrado (JPA)
     @ExceptionHandler(EntityNotFoundException.class)
@@ -39,6 +41,8 @@ public class TratadorDeErros {
     // 400 - Erros de Regra de Negócio (Lançados manualmente com RuntimeException)
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity tratarErroRegraDeNegocio(RuntimeException ex) {
+        // Logs de regra de negócio são INFO ou WARN, pois são esperados
+        logger.warn("[REGRA NEGOCIO] {}", ex.getMessage());
         return ResponseEntity.badRequest().body(new DadosErro(ex.getMessage()));
     }
 
@@ -62,7 +66,9 @@ public class TratadorDeErros {
     // 500 - Erro Interno (Genérico)
     @ExceptionHandler(Exception.class)
     public ResponseEntity tratarErro500(Exception ex) {
-        ex.printStackTrace(); // Log no console do servidor
+        // Log de erro CRÍTICO com Stack Trace completa para debug
+        logger.error("[ERRO 500] Exceção não tratada capturada: ", ex);
+        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DadosErro("Erro interno do servidor: " + ex.getLocalizedMessage()));
     }
 

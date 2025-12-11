@@ -1,6 +1,5 @@
 =============================================================================
 SEÇÃO 1: DÉBITOS TÉCNICOS E ARQUITETURA (PRIORIDADE CRÍTICA)
-Estes itens colocam a estabilidade, segurança ou escalabilidade do sistema em risco.
 =============================================================================
 
 [01] Implementação de Testes Automatizados (Backend)
@@ -8,54 +7,46 @@ Estes itens colocam a estabilidade, segurança ou escalabilidade do sistema em r
      - Status: 🔴 PENDENTE
 
 [02] Otimização de Cálculos no Banco de Dados (Performance)
-     - Detalhe: `DashboardService` carrega listas inteiras em memória.
-     - Status: 🔴 PENDENTE
+     - Detalhe: Consultas agregadas via JPQL/Records.
+     - Status: ✅ CONCLUÍDO
 
 [03] Externalização de Segredos (Segurança)
      - Detalhe: Senhas e Secrets expostos no código.
      - Status: 🔴 PENDENTE
 
-[04] Observabilidade e Logs (Infraestrutura)
-     - Detalhe: Ausência de logs estruturados.
+[04] Observabilidade e Logs
      - Status: 🔴 PENDENTE
 
-[05] Dockerização para Produção (Infraestrutura)
-     - Detalhe: Falta Dockerfile da API.
+[05] Dockerização para Produção
      - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 2: UX E FRONT-END (MELHORIA DE EXPERIÊNCIA)
-[STATUS: ✅ CONCLUÍDO]
+SEÇÃO 2: UX E FRONT-END
+[STATUS: ✅ CONCLUÍDO - Itens 06, 07, 08]
 =============================================================================
-
-[06] Sistema de Notificações (Toasts) [FEITO]
-[07] Feedback de Carregamento (Skeleton Screens) [FEITO]
-[08] Tratamento de Erros no Formulário [FEITO]
 
 =============================================================================
 SEÇÃO 3: FUNCIONALIDADES - IDENTIDADE E SEGURANÇA
-Recursos faltantes para gestão de usuários.
 =============================================================================
 
 [09] Recuperação de Senha
-     - Detalhe: Fluxo de "Esqueci minha senha".
      - Status: 🔴 PENDENTE
 
 [10] Confirmação de E-mail
-     - Detalhe: Envio de link de verificação.
      - Status: 🔴 PENDENTE
 
 =============================================================================
 SEÇÃO 4: FUNCIONALIDADES - CORE BUSINESS (ESTUDOS)
 =============================================================================
 
-[11] Recomendação Inteligente de Estudo
+[11] Recomendação Inteligente de Estudo ("O que estudar?")
+     - Detalhe: Algoritmo que sugere a próxima matéria baseada no déficit.
      - Status: 🔴 PENDENTE
 
-[12] Simulador de Nota (Projeção)
+[12] Simulador de Nota
      - Status: 🔴 PENDENTE
 
-[13] Importação em Lote de Matérias
+[13] Importação em Lote
      - Status: 🔴 PENDENTE
 
 [14] Status do Concurso
@@ -68,8 +59,9 @@ SEÇÃO 4: FUNCIONALIDADES - CORE BUSINESS (ESTUDOS)
 SEÇÃO 5: FUNCIONALIDADES - ANALYTICS AVANÇADO
 =============================================================================
 
-[16] Gráficos de Evolução Histórica (Query Group By)
-     - Status: 🔴 PENDENTE
+[16] Gráficos de Evolução Histórica
+     - Detalhe: Implementado junto com a otimização do Dashboard.
+     - Status: ✅ CONCLUÍDO
 
 [17] Dashboard Macro (Visão de Vida)
      - Status: 🔴 PENDENTE
