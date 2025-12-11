@@ -1,63 +1,58 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import { useToast } from '../components/Toast/ToastContext';
+
+interface CampoErro {
+  campo: string;
+  mensagem: string;
+}
 
 export default function Cadastro() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   
-  const [erro, setErro] = useState('');
-  const [sucesso, setSucesso] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Estado para armazenar erros específicos de campo vindos do backend
+  const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErro('');
-    setSucesso('');
+    setErrosCampos({});
 
-    // 1. Validações Locais
-    if (!nome.trim() || !email.trim() || !senha.trim()) {
-      setErro('Por favor, preencha todos os campos.');
-      return;
-    }
-
+    // Validação local simples
     if (senha !== confirmarSenha) {
-      setErro('As senhas não coincidem!');
+      setErrosCampos({ confirmarSenha: 'As senhas não coincidem!' });
+      showToast('error', 'Erro de Validação', 'Verifique os campos destacados.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // 2. Chama o Backend
-      await api.post('/usuarios', {
-        nome,
-        email,
-        senha
-      });
+      await api.post('/usuarios', { nome, email, senha });
 
-      // 3. Sucesso Personalizado (Sem Alert)
-      setSucesso('Conta criada com sucesso! Redirecionando...');
-      
-      // Espera 2 segundos para o usuário ler a mensagem antes de ir pro login
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      showToast('success', 'Conta criada!', 'Redirecionando para login...');
+      setTimeout(() => navigate('/login'), 2000);
 
     } catch (error: any) {
-      console.error(error);
-      
-      // 4. Tratamento de Erro Real do Backend
-      // Se o backend mandou uma mensagem (ex: "Senha fraca"), mostramos ela.
-      if (error.response && error.response.data && error.response.data.mensagem) {
-        setErro(error.response.data.mensagem);
-      } else {
-        setErro('Erro ao conectar com o servidor. Tente novamente.');
-      }
+      // Se o backend retornar um array (Lista de DadosErroValidacao)
+      // O interceptor ignorou (return Promise.reject), então tratamos aqui
+      if (error.response && Array.isArray(error.response.data)) {
+        const novosErros: Record<string, string> = {};
+        error.response.data.forEach((err: CampoErro) => {
+          novosErros[err.campo] = err.mensagem;
+        });
+        setErrosCampos(novosErros);
+        showToast('error', 'Dados Inválidos', 'Por favor, corrija os campos em vermelho.');
+      } 
+      // Se não for array, o interceptor já mostrou o Toast (ex: "Email já existe")
     } finally {
       setLoading(false);
     }
@@ -82,9 +77,12 @@ export default function Cadastro() {
               type="text"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
+                errosCampos.nome ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
               placeholder="Seu nome"
             />
+            {errosCampos.nome && <p className="text-xs text-red-500 mt-1">{errosCampos.nome}</p>}
           </div>
 
           <div>
@@ -93,9 +91,12 @@ export default function Cadastro() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
+                errosCampos.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
               placeholder="seu@email.com"
             />
+            {errosCampos.email && <p className="text-xs text-red-500 mt-1">{errosCampos.email}</p>}
           </div>
 
           <div>
@@ -104,10 +105,16 @@ export default function Cadastro() {
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Mín. 8 caracteres, letras, números e símbolos"
+              className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
+                errosCampos.senha ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
+              placeholder="Mín. 8 caracteres, Maiúsculas e Símbolos"
             />
-            <p className="text-xs text-gray-400 mt-1">Ex: SenhaForte@123</p>
+            {errosCampos.senha ? (
+              <p className="text-xs text-red-500 mt-1">{errosCampos.senha}</p>
+            ) : (
+              <p className="text-xs text-gray-400 mt-1">Ex: SenhaForte@123</p>
+            )}
           </div>
 
           <div>
@@ -117,27 +124,12 @@ export default function Cadastro() {
               value={confirmarSenha}
               onChange={(e) => setConfirmarSenha(e.target.value)}
               className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:outline-none ${
-                confirmarSenha && senha !== confirmarSenha 
-                  ? 'border-red-500 focus:ring-red-500' 
-                  : 'border-gray-300 focus:ring-blue-500'
+                errosCampos.confirmarSenha ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
               }`}
               placeholder="********"
             />
+            {errosCampos.confirmarSenha && <p className="text-xs text-red-500 mt-1">{errosCampos.confirmarSenha}</p>}
           </div>
-
-          {/* Área de Erro (Vermelho) */}
-          {erro && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded animate-pulse">
-              <p className="text-red-700 text-sm font-medium">{erro}</p>
-            </div>
-          )}
-
-          {/* Área de Sucesso (Verde) */}
-          {sucesso && (
-            <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded">
-              <p className="text-green-700 text-sm font-bold">{sucesso}</p>
-            </div>
-          )}
 
           <button
             type="submit"

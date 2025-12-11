@@ -3,6 +3,7 @@ import { Plus, Pencil, Archive, Trash2, Book, ChevronDown, ChevronUp, Box, Refre
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalTopico from '../components/ModalTopico';
+import { useToast } from '../components/Toast/ToastContext';
 
 // Tipos
 interface Materia {
@@ -18,13 +19,14 @@ interface Topico {
 }
 
 export default function Materias() {
+  const { showToast } = useToast();
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Controle da Sanfona: Qual matéria está aberta?
+  // Controle da Sanfona
   const [materiaAbertaId, setMateriaAbertaId] = useState<number | null>(null);
   
-  // Dados da matéria aberta (Tópicos)
+  // Dados da matéria aberta
   const [topicos, setTopicos] = useState<Topico[]>([]);
   const [loadingTopicos, setLoadingTopicos] = useState(false);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
@@ -37,7 +39,7 @@ export default function Materias() {
   const [modalTopicoOpen, setModalTopicoOpen] = useState(false);
   const [topicoEdicao, setTopicoEdicao] = useState<Topico | null>(null);
 
-  // Modal de Confirmação Genérico
+  // Modal de Confirmação
   const [confirmacao, setConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -45,7 +47,6 @@ export default function Materias() {
     acao: () => Promise<void>;
   }>({ aberto: false, titulo: '', msg: '', acao: async () => {} });
 
-  // --- CARREGAMENTO INICIAL ---
   const carregarMaterias = async () => {
     setLoading(true);
     try {
@@ -60,13 +61,12 @@ export default function Materias() {
 
   useEffect(() => { carregarMaterias(); }, []);
 
-  // --- LÓGICA DA SANFONA ---
   const toggleMateria = async (id: number) => {
     if (materiaAbertaId === id) {
-      setMateriaAbertaId(null); // Fecha se já estava aberta
+      setMateriaAbertaId(null);
     } else {
       setMateriaAbertaId(id);
-      setMostrarArquivados(false); // Reseta filtro ao abrir
+      setMostrarArquivados(false);
       carregarTopicos(id, false);
     }
   };
@@ -79,13 +79,12 @@ export default function Materias() {
       });
       setTopicos(res.data);
     } catch (e) {
-      alert("Erro ao carregar tópicos.");
+      showToast('error', 'Erro', "Erro ao carregar tópicos.");
     } finally {
       setLoadingTopicos(false);
     }
   };
 
-  // Switch de Arquivados dentro da matéria
   const toggleFiltroArquivados = () => {
     if (!materiaAbertaId) return;
     const novoValor = !mostrarArquivados;
@@ -93,20 +92,21 @@ export default function Materias() {
     carregarTopicos(materiaAbertaId, novoValor);
   };
 
-  // --- AÇÕES DE MATÉRIA ---
   const salvarMateria = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formMateria.trim()) return;
     try {
       if (materiaEdicao) {
         await api.put('/materias', { id: materiaEdicao.id, nome: formMateria });
+        showToast('success', 'Matéria atualizada!');
       } else {
         await api.post('/materias', { nome: formMateria });
+        showToast('success', 'Matéria criada!');
       }
       setModalMateriaOpen(false);
       carregarMaterias();
     } catch (error: any) {
-      alert(error.response?.data?.mensagem || "Erro ao salvar.");
+      showToast('error', 'Erro', error.response?.data?.mensagem || "Erro ao salvar.");
     }
   };
 
@@ -118,11 +118,12 @@ export default function Materias() {
       acao: async () => {
         try {
           await api.delete(`/materias/${materia.id}`);
+          showToast('success', 'Matéria excluída.');
           carregarMaterias();
           if (materiaAbertaId === materia.id) setMateriaAbertaId(null);
           setConfirmacao(p => ({ ...p, aberto: false }));
         } catch (error: any) {
-          alert(error.response?.data?.mensagem || "Erro ao excluir (provavelmente tem vínculos).");
+          showToast('error', 'Não foi possível excluir', error.response?.data?.mensagem || "Erro desconhecido.");
         }
       }
     });
@@ -132,11 +133,13 @@ export default function Materias() {
     try {
       const endpoint = materia.arquivada ? 'desarquivar' : 'arquivar';
       await api.patch(`/materias/${materia.id}/${endpoint}`);
+      showToast('success', materia.arquivada ? 'Matéria restaurada' : 'Matéria arquivada');
       carregarMaterias();
-    } catch (e) { alert("Erro ao alterar status."); }
+    } catch (e) { 
+      showToast('error', 'Erro', "Erro ao alterar status.");
+    }
   };
 
-  // --- AÇÕES DE TÓPICO ---
   const confirmarExclusaoTopico = (topico: Topico) => {
     setConfirmacao({
       aberto: true,
@@ -145,12 +148,11 @@ export default function Materias() {
       acao: async () => {
         try {
           await api.delete(`/topicos/${topico.id}`);
-          // Recarrega lista
+          showToast('success', 'Tópico excluído.');
           if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
           setConfirmacao(p => ({ ...p, aberto: false }));
         } catch (error: any) {
-          // Exibe a mensagem bonita que criamos no Java
-          alert(error.response?.data || "Erro ao excluir.");
+          showToast('error', 'Erro', error.response?.data || "Erro ao excluir.");
         }
       }
     });
@@ -160,17 +162,18 @@ export default function Materias() {
     try {
       const endpoint = topico.arquivado ? 'desarquivar' : 'arquivar';
       await api.patch(`/topicos/${topico.id}/${endpoint}`);
+      showToast('success', topico.arquivado ? 'Tópico restaurado' : 'Tópico arquivado');
       if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
-    } catch (e) { alert("Erro ao alterar status."); }
+    } catch (e) { 
+      showToast('error', 'Erro', "Erro ao alterar status.");
+    }
   };
 
-  // Filtra visualmente as matérias (apenas ativas por padrão, ou implementar filtro global depois)
-  const listaMaterias = materias.filter(m => !m.arquivada); // Por enquanto mostra só ativas na lista principal
+  const listaMaterias = materias.filter(m => !m.arquivada);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       
-      {/* Cabeçalho */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Matérias e Tópicos</h1>
@@ -184,7 +187,6 @@ export default function Materias() {
         </button>
       </div>
 
-      {/* Lista de Cards (Sanfona) */}
       <div className="space-y-3">
         {loading ? <div className="text-center text-gray-400 py-10">Carregando...</div> :
          listaMaterias.length === 0 ? 
@@ -195,7 +197,6 @@ export default function Materias() {
          listaMaterias.map(materia => (
            <div key={materia.id} className={`bg-white rounded-xl border transition-all duration-300 ${materiaAbertaId === materia.id ? 'border-blue-300 shadow-md ring-1 ring-blue-100' : 'border-gray-200 hover:border-blue-200'}`}>
              
-             {/* CABEÇALHO DO CARD (Clicável) */}
              <div 
                className="p-4 flex items-center justify-between cursor-pointer select-none"
                onClick={() => toggleMateria(materia.id)}
@@ -208,7 +209,6 @@ export default function Materias() {
                </div>
                
                <div className="flex items-center gap-2">
-                 {/* Ações da Matéria (Só aparecem no hover ou se aberto) */}
                  <div className="flex gap-1 mr-2" onClick={e => e.stopPropagation()}>
                    <button onClick={() => { setMateriaEdicao(materia); setFormMateria(materia.nome); setModalMateriaOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar Nome"><Pencil size={16}/></button>
                    <button onClick={() => arquivarMateria(materia)} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="Arquivar"><Archive size={16}/></button>
@@ -218,11 +218,9 @@ export default function Materias() {
                </div>
              </div>
 
-             {/* CORPO DO CARD (Tópicos) */}
              {materiaAbertaId === materia.id && (
                <div className="border-t border-gray-100 bg-gray-50/50 p-4 animate-fade-in-down">
                  
-                 {/* Barra de Ferramentas dos Tópicos */}
                  <div className="flex justify-between items-center mb-4">
                    <div className="flex items-center gap-2">
                      <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none hover:text-gray-700">
@@ -241,7 +239,6 @@ export default function Materias() {
                    </button>
                  </div>
 
-                 {/* Lista de Tópicos */}
                  {loadingTopicos ? (
                    <div className="text-center text-gray-400 py-4 text-sm">Carregando assuntos...</div>
                  ) : topicos.length === 0 ? (
@@ -278,9 +275,6 @@ export default function Materias() {
         }
       </div>
 
-      {/* --- MODAIS --- */}
-      
-      {/* Modal Matéria */}
       <Modal isOpen={modalMateriaOpen} onClose={() => setModalMateriaOpen(false)} title={materiaEdicao ? 'Editar Matéria' : 'Nova Matéria'}>
         <form onSubmit={salvarMateria}>
           <div className="space-y-4">
@@ -293,7 +287,6 @@ export default function Materias() {
         </form>
       </Modal>
 
-      {/* Modal Tópico (NOVO) */}
       <ModalTopico 
         isOpen={modalTopicoOpen} 
         onClose={() => setModalTopicoOpen(false)} 
@@ -302,7 +295,6 @@ export default function Materias() {
         onSalvo={() => materiaAbertaId && carregarTopicos(materiaAbertaId, mostrarArquivados)}
       />
 
-      {/* Modal Confirmação */}
       <Modal isOpen={confirmacao.aberto} onClose={() => setConfirmacao(p => ({...p, aberto: false}))} title={confirmacao.titulo}>
         <div className="space-y-4">
           <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg text-red-800 text-sm">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import Modal from './Modal';
 import { Clock } from 'lucide-react';
+import { useToast } from '../components/Toast/ToastContext';
 
 interface TipoEstudo { id?: number; nome: string; contaHorasCiclo?: boolean; }
 
@@ -13,13 +14,13 @@ interface Props {
 }
 
 export default function ModalTipoEstudo({ isOpen, onClose, edicao, onSalvo }: Props) {
+  const { showToast } = useToast();
   const [nome, setNome] = useState('');
-  const [contaHorasCiclo, setContaHorasCiclo] = useState(true); // Padrão ligado
+  const [contaHorasCiclo, setContaHorasCiclo] = useState(true);
   
   useEffect(() => {
     if(isOpen) {
       setNome(edicao?.nome || '');
-      // Se for edição, puxa o valor. Se for novo, padrão true.
       setContaHorasCiclo(edicao?.contaHorasCiclo !== undefined ? edicao.contaHorasCiclo : true);
     }
   }, [isOpen, edicao]);
@@ -29,10 +30,17 @@ export default function ModalTipoEstudo({ isOpen, onClose, edicao, onSalvo }: Pr
     if(!nome.trim()) return;
     try {
       const payload = { nome, contaHorasCiclo };
-      if(edicao?.id) await api.put('/tipos-estudo', { id: edicao.id, ...payload });
-      else await api.post('/tipos-estudo', payload);
+      if(edicao?.id) {
+        await api.put('/tipos-estudo', { id: edicao.id, ...payload });
+        showToast('success', 'Tipo atualizado!');
+      } else {
+        await api.post('/tipos-estudo', payload);
+        showToast('success', 'Novo tipo criado!');
+      }
       onSalvo(); onClose();
-    } catch(e) { alert('Erro ao salvar'); }
+    } catch(e) { 
+      showToast('error', 'Erro', 'Erro ao salvar tipo de estudo.'); 
+    }
   };
 
   return (
@@ -43,7 +51,6 @@ export default function ModalTipoEstudo({ isOpen, onClose, edicao, onSalvo }: Pr
           <input autoFocus value={nome} onChange={e=>setNome(e.target.value)} className="w-full border p-2 rounded focus:ring-2 outline-none" placeholder="Ex: Videoaula"/>
         </div>
 
-        {/* SWITCH CONFIGURAÇÃO */}
         <div className="bg-blue-50 p-3 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock size={18} className="text-blue-600" />

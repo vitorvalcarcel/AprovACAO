@@ -1,172 +1,97 @@
-Arquivo de Pendências e Melhorias Futuras (Backlog) - Atualizado
+RELATÓRIO TÉCNICO E BACKLOG - PROJETO APROVAÇÃO
+Data: 11/12/2025
+Responsável: Arquiteto de Software / Tech Lead
 
-1. Segurança e Infraestrutura (Prioridade Alta)
-[ ] Variáveis de Ambiente: Remover senhas do application.properties.
-[x] CORS: Configurado via WebConfig e SecurityConfigurations.
-[ ] Docker de Produção: Criar Dockerfile otimizado.
-[ ] Testes Automatizados: Criar testes unitários.
+=============================================================================
+SEÇÃO 1: DÉBITOS TÉCNICOS E ARQUITETURA (PRIORIDADE CRÍTICA)
+Estes itens colocam a estabilidade, segurança ou escalabilidade do sistema em risco.
+=============================================================================
 
-2. Módulo de Identidade (Usuário) - Melhorias de UX e Segurança
-[ ] Proteção de Rotas Públicas: Impedir que usuários logados acessem /login e /cadastro (Redirecionar para Dashboard).
-[ ] Senha Forte (Back-end): Validar senha com min 8 caracteres, maiúscula, minúscula, número e especial.
-[ ] Feedback Visual Personalizado: Remover todos os alerts() nativos e usar mensagens de sucesso/erro integradas ao layout.
-[ ] Tratamento de Erros Real: O Back-end deve retornar mensagens claras ("Email já existe") e o Front deve exibir isso, em vez de mensagens genéricas.
-[ ] Recuperação de Senha.
-[ ] Confirmação de E-mail.
+[01] Implementação de Testes Automatizados (Backend)
+     - Detalhe: A pasta `src/test` está vazia. O sistema não possui garantia de qualidade automática.
+     - Ação: Criar testes unitários com JUnit 5 e Mockito para os principais Services (`CicloService`, `RegistroEstudoService`).
+     - Meta: Cobrir cenários críticos de cálculo de horas e validação de regras.
 
-3. Módulo de Inventário (Matérias e Tópicos)
-[ ] Integridade na Exclusão (MateriaService): Impedir exclusão de matérias que tenham registros de estudo ou vínculos com concursos (ou implementar Soft Delete).
-[ ] Importação em Lote: Endpoint para upload de CSV/Excel para cadastrar várias matérias de uma vez.
+[02] Otimização de Cálculos no Banco de Dados (Performance)
+     - Detalhe: `DashboardService` carrega listas inteiras em memória para somar segundos via Java Stream. Isso não escala.
+     - Ação: Refatorar consultas JPQL para usar agregações (SUM, AVG, GROUP BY) diretamente no PostgreSQL.
 
-4. Módulo de Estratégia (Concursos)
-[ ] Visualização da Estratégia: Endpoint GET /concursos/{id}/materias para listar matérias vinculadas mostrando pesos e questões.
-[ ] Status do Concurso: Campo para definir status (Aberto, Edital Publicado, Encerrado).
-[ ] Desvincular Matéria: Endpoint para remover uma matéria de um concurso (DELETE /concursos/vinculos/{id}).
-[ ] Dashboard Concurso: Contagem regressiva para a data da prova.
+[03] Externalização de Segredos (Segurança)
+     - Detalhe: Senhas de banco e Secret JWT estão expostos no `application.properties` e no código.
+     - Ação: Configurar leitura via Variáveis de Ambiente (`System.getenv`) e criar arquivo `.env` (não versionado) para desenvolvimento local.
 
-5. Módulo de Planejamento (Ciclos) - Funcionalidades Avançadas
-[ ] Recomendação de Estudo ("O que estudar agora?"): Endpoint que calcula e retorna qual matéria do ciclo está mais atrasada/necessita atenção.
-[ ] Metas de Questões: Implementar lógica de meta de questões no ciclo (hoje é focado apenas em horas).
-[ ] Simulador de Nota: Calculadora baseada nos pesos e acertos esperados.
-[ ] Importação de Edital: Ler PDF/Texto para preencher matérias e pesos automaticamente.
-[ ] Edição de Ciclo Fechado: Decidir regra de negócio e implementar bloqueio ou recálculo.
-[ ] Dashboard Geral: Visão macro "Horas Totais de Vida" vs "Horas em Concursos".
-[ ] Migração de Estudo: Atribuir um estudo avulso a um concurso posteriormente.
+[04] Observabilidade e Logs (Infraestrutura)
+     - Detalhe: Ausência de logs estruturados. Erros em produção serão invisíveis.
+     - Ação: Adicionar Logback/Slf4j nos Services para registrar fluxos críticos (ex: "Ciclo X criado", "Erro ao processar registro Y").
 
-Questões que apareceram nos testes, mas não foram implementadas ainda:
-[ ] Matéria duplicada: Impedir cadastro de matérias com mesmo nome ignorando acentos e case sensitivity.
+[05] Dockerização para Produção (Infraestrutura)
+     - Detalhe: Existe apenas o Compose do banco. Falta o container da aplicação Java.
+     - Ação: Criar `Dockerfile` otimizado (Multi-stage build) para gerar a imagem leve do .jar da API.
 
-Arquivo de Pendências e Melhorias Futuras (Backlog)
+=============================================================================
+SEÇÃO 2: UX E FRONT-END (MELHORIA DE EXPERIÊNCIA)
+Melhorias necessárias para o sistema deixar de parecer um protótipo.
+=============================================================================
 
-1. Segurança e Infraestrutura (Prioridade Alta)
-[ ] Variáveis de Ambiente: Remover senhas do application.properties.
-[x] CORS: Configurado via WebConfig e SecurityConfigurations.
-[ ] Docker de Produção: Criar Dockerfile otimizado.
-[ ] Testes Automatizados: Criar testes unitários.
-[ ] Refatoração de Erros (Backend): Remover try-catch dos Controllers e centralizar no TratadorDeErros. Alterar retorno de erros de negócio de 403 (Forbidden) para 400 (Bad Request) para evitar logout automático no Front-end.
+[06] Sistema de Notificações (Toasts)
+     - Detalhe: O sistema usa `window.alert()` para erros e sucessos, o que trava o navegador e é visualmente pobre.
+     - Ação: Implementar Context API + Componente de Toast para feedback não bloqueante (Sucesso/Erro/Info).
 
-2. Módulo de Identidade (Usuário)
-[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
-[x] Senha Forte: Validação de complexidade no Backend.
-[ ] Recuperação de Senha.
-[ ] Confirmação de E-mail.
+[07] Feedback de Carregamento (Skeleton Screens)
+     - Detalhe: O uso de texto simples "Carregando..." causa layout shift (pulo de tela).
+     - Ação: Criar componentes de Skeleton (esqueleto cinza pulsante) para Tabelas e Cards do Dashboard.
 
-3. Módulo de Inventário (Matérias)
-[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
-[x] Validação de Unicidade (Nome duplicado).
-[x] Proteção de Integridade (Não excluir se tiver vinculos).
+[08] Tratamento de Erros no Formulário
+     - Detalhe: Mensagens de erro do backend nem sempre são exibidas de forma amigável no input correspondente.
+     - Ação: Padronizar o consumo de exceções da API no front para destacar campos inválidos em vermelho.
 
-4. Módulo de Estratégia (Concursos)
-[x] CRUD Completo.
-[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
-[ ] Edição Rápida de Vínculo: Adicionar botão de editar na lista do modal de disciplinas (hoje precisa remover e adicionar de novo).
+=============================================================================
+SEÇÃO 3: FUNCIONALIDADES - IDENTIDADE E SEGURANÇA
+Recursos faltantes para gestão de usuários.
+=============================================================================
 
-5. UX / Front-end
-[ ] Feedback Visual: Substituir alerts() de erro de rede por Toasts (notificações flutuantes).
-[ ] Tratamento de Erros Real: Exibir mensagens específicas vindas do backend em todos os formulários.
+[09] Recuperação de Senha
+     - Detalhe: Usuário não tem como recuperar conta se esquecer a senha.
+     - Ação: Criar fluxo de "Esqueci minha senha" (Endpoint de solicitação + Envio de token/email + Endpoint de reset).
 
+[10] Confirmação de E-mail
+     - Detalhe: O sistema aceita qualquer e-mail (fake) no cadastro.
+     - Ação: Implementar envio de link de verificação no cadastro e bloquear funcionalidades até a confirmação.
 
-Arquivo de Pendências e Melhorias Futuras (Backlog)
+=============================================================================
+SEÇÃO 4: FUNCIONALIDADES - CORE BUSINESS (ESTUDOS)
+O "coração" do produto que gera valor para o concurseiro.
+=============================================================================
 
-1. Segurança e Infraestrutura (Prioridade Alta)
-[ ] Variáveis de Ambiente: Remover senhas do application.properties.
-[x] CORS: Configurado via WebConfig e SecurityConfigurations.
-[ ] Docker de Produção: Criar Dockerfile otimizado.
-[ ] Testes Automatizados: Criar testes unitários.
-[ ] Refatoração de Erros (Backend): Remover try-catch dos Controllers e centralizar no TratadorDeErros. Alterar retorno de erros de negócio de 403 (Forbidden) para 400 (Bad Request) para evitar logout automático no Front-end.
+[11] Recomendação Inteligente de Estudo ("O que estudar agora?")
+     - Detalhe: O usuário precisa decidir sozinho o que estudar. O sistema deve guiar.
+     - Ação: Criar algoritmo que considera (Peso Matéria x Deficit de Horas) e sugere a próxima matéria do ciclo.
 
-2. Módulo de Identidade (Usuário)
-[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
-[x] Senha Forte: Validação de complexidade no Backend.
-[ ] Recuperação de Senha.
-[ ] Confirmação de E-mail.
+[12] Simulador de Nota (Projeção)
+     - Detalhe: Ferramenta para motivar o usuário.
+     - Ação: Criar calculadora: (Taxa de Acertos Atual * Peso da Matéria) = Nota Projetada na Prova.
 
-3. Módulo de Inventário (Matérias)
-[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
-[x] Validação de Unicidade (Nome duplicado).
-[x] Validação de Integridade (Impedir exclusão se tiver vínculos).
+[13] Importação em Lote de Matérias
+     - Detalhe: Cadastrar 20 matérias uma a uma é tedioso.
+     - Ação: Endpoint para upload de arquivo .csv ou .txt e processamento em lote.
 
-4. Módulo de Estratégia (Concursos)
-[x] CRUD Completo.
-[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
-[ ] Edição Rápida de Vínculo: Adicionar botão de editar na lista do modal de disciplinas.
-[ ] Gestão de Ativos/Inativos: Tela dedicada ou botão "Tornar Principal" (Estrela) para definir qual concurso aparece no Dashboard (evitar conflito de múltiplos ciclos ativos).
+[14] Status do Concurso
+     - Detalhe: Não há distinção visual entre concursos passados e futuros.
+     - Ação: Adicionar campo Status (Previsto, Edital Aberto, Encerrado) e destacar visualmente.
 
-5. Módulo de Planejamento (Ciclos)
-[x] Algoritmo de Sugestão de Horas (Baseado em Peso x Questões).
-[x] Edição Manual da Sugestão.
-[x] Visualização em Tabela com Barra de Progresso.
-[x] "Auto-Link": Vincular registro de estudo ao ciclo ativo automaticamente se o usuário não informar concurso.
+[15] Widget de Contagem Regressiva
+     - Detalhe: A data da prova existe mas não gera senso de urgência.
+     - Ação: Adicionar contador "Faltam X dias" no card do Concurso e no Dashboard principal.
 
-6. Módulo de Execução (Registro)
-[x] Cronômetro com Pausa/Retomada.
-[x] Registro Manual.
-[x] Validação Lógica (Acertos <= Questões).
-[ ] Cadastro de Tópicos: Permitir criar novos tópicos direto na tela de registro (hoje só lista os existentes).
+=============================================================================
+SEÇÃO 5: FUNCIONALIDADES - ANALYTICS AVANÇADO
+Relatórios para análise de longo prazo.
+=============================================================================
 
-7. Módulo de Monitoramento (Dashboard)
-[x] Filtros Avançados (Datas, Múltipla escolha).
-[x] Cards de Resumo (Horas, Questões, %).
-[x] Widget de Progresso do Ciclo.
-[ ] Atualização em Tempo Real: Recarregar gráficos automaticamente após salvar um registro (Implementando agora).
-[ ] Gráficos de Evolução: Linha do tempo de estudos (Semana/Mês).
+[16] Gráficos de Evolução Histórica
+     - Detalhe: O front tem o componente, mas o back precisa agrupar os dados corretamente.
+     - Ação: Implementar query que agrupa horas estudadas por dia (`GROUP BY DATE(data_inicio)`) para alimentar o gráfico de linha.
 
-8. UX / Front-end
-[ ] Feedback Visual: Substituir alerts() de erro de rede por Toasts (notificações flutuantes).
-[ ] Tratamento de Erros Real: Exibir mensagens específicas vindas do backend em todos os formulários.
-
-
-O tabanho da tela de ciclos no Dashboard está limitado e aparece barra de rolagem quando ultrapassa, ele deve ficar com altura automática para caber todo o conteúdo sem rolagem.
-
-Arquivo de Pendências e Melhorias Futuras (Backlog)
-
-1. Segurança e Infraestrutura
-[ ] Variáveis de Ambiente: Remover senhas do application.properties.
-[x] CORS: Configurado via WebConfig e SecurityConfigurations.
-[ ] Docker de Produção: Criar Dockerfile otimizado.
-[ ] Testes Automatizados: Criar testes unitários.
-[ ] Refatoração de Erros (Backend): Padronizar retornos de erro (Problem Details).
-
-2. Módulo de Identidade (Usuário)
-[x] Proteção de Rotas Públicas: Impedir acesso a login/cadastro se logado.
-[x] Senha Forte: Validação de complexidade no Backend.
-[ ] Recuperação de Senha (Esqueci minha senha).
-[ ] Confirmação de E-mail.
-[ ] Tela de Perfil (Alterar nome/senha).
-
-3. Módulo de Inventário (Matérias)
-[x] CRUD Completo (Criar, Listar, Editar, Excluir, Arquivar).
-[x] Validação de Unicidade e Integridade.
-
-4. Módulo de Estratégia (Concursos)
-[x] CRUD Completo.
-[x] Gestão de Disciplinas (Vínculo de Matérias com Peso/Questões).
-[ ] Edição Rápida de Vínculo: Botão de editar na lista do modal de disciplinas.
-[ ] Gestão de "Concurso Principal" (Estrela) para priorizar no Dashboard.
-
-5. Módulo de Planejamento (Ciclos)
-[x] Algoritmo de Sugestão de Horas.
-[x] Edição Manual da Sugestão.
-[x] Visualização em Lista com Barra de Progresso.
-[x] Widget de Ciclo no Dashboard (com precisão de segundos).
-[x] "Auto-Link": Vínculo automático de registros ao ciclo ativo.
-
-6. Módulo de Execução (Registro)
-[x] Cronômetro com Pausa/Retomada (Layout Compacto).
-[x] Registro Manual.
-[x] Validação Lógica (Acertos <= Questões).
-[x] Persistência em Segundos (Banco de Dados).
-[ ] Cadastro Rápido de Tópicos: Criar tópico "on-the-fly" no select de registro.
-
-7. Módulo de Monitoramento (Dashboard)
-[x] Filtros Avançados (Datas, Múltipla escolha, "Máximo").
-[x] Cards de Resumo (Horas, Questões, Taxa de Acertos).
-[x] Widget de Progresso do Ciclo Ativo.
-[x] Atualização em Tempo Real (Registro avisa Dashboard).
-[ ] Gráficos de Evolução: Gráfico de barras/linha por dia (Próximo Passo).
-
-8. UX / Front-end
-[ ] Feedback Visual: Substituir alerts() por Toasts (notificações flutuantes).
-[ ] Skeleton Screens: Melhorar a experiência de carregamento (loading).
-
-teste
+[17] Dashboard Macro (Visão de Vida)
+     - Detalhe: O dashboard atual foca muito no ciclo/concurso atual.
+     - Ação: Criar visão "Total acumulado na plataforma" (Todas as horas já estudadas na vida vs. horas no concurso atual).

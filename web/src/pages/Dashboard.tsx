@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import RegistroRapido from '../components/RegistroRapido';
 import Modal from '../components/Modal';
+import { useToast } from '../components/Toast/ToastContext';
 
 interface ItemProgresso {
   nomeMateria: string;
@@ -25,6 +26,7 @@ interface DashboardData {
 }
 
 export default function Dashboard() {
+  const { showToast } = useToast();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -50,9 +52,10 @@ export default function Dashboard() {
     try {
       await api.patch(`/ciclos/${data.cicloId}/encerrar`);
       setModalEncerrarOpen(false);
+      showToast('success', 'Ciclo Encerrado', 'O ciclo foi finalizado com sucesso.');
       carregarDashboard();
     } catch (error) {
-      alert("Erro ao encerrar ciclo.");
+      showToast('error', 'Erro', "Erro ao encerrar ciclo.");
     }
   };
 

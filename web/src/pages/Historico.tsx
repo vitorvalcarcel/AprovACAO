@@ -3,6 +3,7 @@ import { Clock, Trash2, CheckSquare, Square, AlertTriangle, X, GripHorizontal } 
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import Modal from '../components/Modal';
+import { useToast } from '../components/Toast/ToastContext';
 
 interface Registro {
   id: number;
@@ -17,25 +18,23 @@ interface Registro {
 }
 
 export default function Historico() {
+  const { showToast } = useToast();
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // Estado de Seleção e Exclusão
   const [modoSelecao, setModoSelecao] = useState(false);
   const [idsSelecionados, setIdsSelecionados] = useState<number[]>([]);
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
     tipo: 'unico' | 'lote';
-    idAlvo?: number; // Usado se for exclusão única
+    idAlvo?: number; 
   }>({ aberto: false, tipo: 'unico' });
 
-  // Guardamos o filtro atual para poder recarregar
   const [filtrosAtuais, setFiltrosAtuais] = useState<FiltrosState | null>(null);
 
   const carregarDados = async (filtros: FiltrosState) => {
     setLoading(true);
     setFiltrosAtuais(filtros);
-    // Limpa seleção ao recarregar
     setIdsSelecionados([]);
     setModoSelecao(false);
     
@@ -56,7 +55,6 @@ export default function Historico() {
     }
   };
 
-  // Funções de Seleção
   const toggleSelecao = (id: number) => {
     setIdsSelecionados(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -71,7 +69,6 @@ export default function Historico() {
     }
   };
 
-  // Funções de Exclusão
   const confirmarExclusaoUnica = (id: number) => {
     setModalConfirmacao({ aberto: true, tipo: 'unico', idAlvo: id });
   };
@@ -86,18 +83,17 @@ export default function Historico() {
       if (modalConfirmacao.tipo === 'unico' && modalConfirmacao.idAlvo) {
         await api.delete(`/registros/${modalConfirmacao.idAlvo}`);
       } else if (modalConfirmacao.tipo === 'lote') {
-        // Axios serializa arrays em params como ?ids=1,2,3
         await api.delete('/registros', {
           params: { ids: idsSelecionados.join(',') }
         });
       }
       
-      // Fecha modal e recarrega
       setModalConfirmacao({ ...modalConfirmacao, aberto: false });
+      showToast('success', 'Sucesso', 'Registros excluídos.');
       if (filtrosAtuais) carregarDados(filtrosAtuais);
       
     } catch (error) {
-      alert("Erro ao excluir registros.");
+      showToast('error', 'Erro', "Erro ao excluir registros.");
     }
   };
 
@@ -151,16 +147,13 @@ export default function Historico() {
         </div>
       </div>
 
-      {/* COMPONENTE DE FILTROS */}
       <Filtros onChange={carregarDados} />
 
-      {/* TABELONA */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col">
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
               <tr>
-                {/* Coluna Checkbox Condicional */}
                 {modoSelecao && (
                   <th className="px-4 py-3 w-10">
                     <button onClick={toggleSelecionarTudo} className="text-gray-500 hover:text-blue-600">
@@ -178,15 +171,14 @@ export default function Historico() {
                 <th className="px-4 py-3 text-center">Questões</th>
                 <th className="px-4 py-3 text-center">Desempenho</th>
                 
-                {/* Coluna Ações: Só mostra se NÃO estiver selecionando, para não poluir */}
                 {!modoSelecao && <th className="px-4 py-3 text-right">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={modoSelecao ? 7 : 7} className="p-8 text-center text-gray-400">Carregando...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-gray-400">Carregando...</td></tr>
               ) : registros.length === 0 ? (
-                <tr><td colSpan={modoSelecao ? 7 : 7} className="p-12 text-center text-gray-400">Nenhum registro encontrado.</td></tr>
+                <tr><td colSpan={7} className="p-12 text-center text-gray-400">Nenhum registro encontrado.</td></tr>
               ) : (
                 registros.map(reg => (
                   <tr 
@@ -194,7 +186,6 @@ export default function Historico() {
                     className={`transition-colors ${idsSelecionados.includes(reg.id) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'}`}
                     onClick={() => modoSelecao && toggleSelecao(reg.id)}
                   >
-                    {/* Checkbox da Linha */}
                     {modoSelecao && (
                       <td className="px-4 py-3">
                         <button className="text-gray-400">
@@ -253,7 +244,6 @@ export default function Historico() {
         </div>
       </div>
 
-      {/* Modal de Confirmação */}
       <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao({ ...modalConfirmacao, aberto: false })} title="Excluir Registros">
         <div className="space-y-4">
           <div className="flex items-start gap-3 bg-red-50 p-3 rounded-lg text-red-800 text-sm">

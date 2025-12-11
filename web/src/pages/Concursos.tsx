@@ -4,6 +4,7 @@ import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
 import ModalGerarCiclo from '../components/ModalGerarCiclo';
+import { useToast } from '../components/Toast/ToastContext';
 
 interface Concurso {
   id: number;
@@ -14,6 +15,7 @@ interface Concurso {
 }
 
 export default function Concursos() {
+  const { showToast } = useToast(); // Hook de Toast
   const [concursos, setConcursos] = useState<Concurso[]>([]);
   const [loading, setLoading] = useState(true);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
@@ -25,12 +27,12 @@ export default function Concursos() {
   const [erroForm, setErroForm] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Estado Compartilhado (Qual concurso foi clicado?)
+  // Estado Compartilhado
   const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
 
   // Estados dos Modais Específicos
   const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
-  const [modalCicloAberto, setModalCicloAberto] = useState(false); // <--- NOVO
+  const [modalCicloAberto, setModalCicloAberto] = useState(false);
 
   // Estados de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
@@ -88,7 +90,7 @@ export default function Concursos() {
     setModalDisciplinasAberto(true);
   };
 
-  const abrirGerarCiclo = (concurso: Concurso) => { // <--- NOVO
+  const abrirGerarCiclo = (concurso: Concurso) => {
     setConcursoSelecionado(concurso);
     setModalCicloAberto(true);
   };
@@ -104,8 +106,10 @@ export default function Concursos() {
       const payload = { nome: form.nome, banca: form.banca || null, dataProva: form.dataProva || null };
       if (modoEdicao) {
         await api.put('/concursos', { id: modoEdicao.id, ...payload });
+        showToast('success', 'Concurso atualizado!');
       } else {
         await api.post('/concursos', payload);
+        showToast('success', 'Concurso criado!');
       }
       setModalAberto(false);
       carregarConcursos();
@@ -126,10 +130,11 @@ export default function Concursos() {
         acao: async () => {
           try {
             await api.delete(`/concursos/${concurso.id}`);
+            showToast('success', 'Concurso excluído.');
             carregarConcursos();
             setModalConfirmacao(prev => ({ ...prev, aberto: false }));
           } catch (error: any) {
-            alert(error.response?.data?.mensagem || "Não foi possível excluir.");
+            showToast('error', 'Erro ao excluir', error.response?.data?.mensagem || "Não foi possível excluir.");
           }
         }
       });
@@ -144,10 +149,11 @@ export default function Concursos() {
       acao: async () => {
         try {
           await api.patch(`/concursos/${concurso.id}/${tipo}`);
+          showToast('success', isArquivar ? 'Concurso arquivado' : 'Concurso reativado');
           carregarConcursos();
           setModalConfirmacao(prev => ({ ...prev, aberto: false }));
         } catch (error) {
-          alert("Erro ao alterar status.");
+          showToast('error', 'Erro', "Erro ao alterar status.");
         }
       }
     });
@@ -158,7 +164,6 @@ export default function Concursos() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       
-      {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Concursos</h1>
@@ -169,7 +174,6 @@ export default function Concursos() {
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
         <div className="flex items-center gap-2 text-gray-500 text-sm px-2">
           <Search size={16} /> <span>{listaExibida.length} concursos</span>
@@ -183,7 +187,6 @@ export default function Concursos() {
         </label>
       </div>
 
-      {/* LISTA */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400">Carregando...</div>
@@ -231,7 +234,6 @@ export default function Concursos() {
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       
-                      {/* BOTÃO GERAR CICLO (Novo) */}
                       {!concurso.arquivado && (
                         <button 
                           onClick={() => abrirGerarCiclo(concurso)}
@@ -242,7 +244,6 @@ export default function Concursos() {
                         </button>
                       )}
 
-                      {/* Botão Disciplinas */}
                       {!concurso.arquivado && (
                         <button 
                           onClick={() => abrirDisciplinas(concurso)}
@@ -253,17 +254,14 @@ export default function Concursos() {
                         </button>
                       )}
 
-                      {/* Botão Editar */}
                       <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar">
                         <Pencil size={16} />
                       </button>
                       
-                      {/* Botão Arquivar */}
                       <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={concurso.arquivado ? "Restaurar" : "Arquivar"}>
                         {concurso.arquivado ? <RefreshCw size={16} /> : <Archive size={16} />}
                       </button>
 
-                      {/* Botão Excluir */}
                       <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir Permanentemente">
                         <Trash2 size={16} />
                       </button>
@@ -312,14 +310,12 @@ export default function Concursos() {
         </div>
       </Modal>
 
-      {/* Modal Disciplinas */}
       <ModalDisciplinas 
         isOpen={modalDisciplinasAberto}
         onClose={() => setModalDisciplinasAberto(false)}
         concurso={concursoSelecionado}
       />
 
-      {/* Modal Gerar Ciclo (NOVO) */}
       <ModalGerarCiclo 
         isOpen={modalCicloAberto}
         onClose={() => setModalCicloAberto(false)}

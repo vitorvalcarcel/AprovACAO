@@ -12,34 +12,37 @@ import TiposEstudo from './pages/TiposEstudo';
 import Estatisticas from './pages/Estatisticas';
 import Perfil from './pages/Perfil';
 import MeusCiclos from './pages/MeusCiclos';
+import { ToastProvider } from './components/Toast/ToastContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<PublicRoute />}>
-          <Route path="/login" element={<Login />} />
-          <Route path="/cadastro" element={<Cadastro />} />
-        </Route>
-
-        <Route element={<PrivateRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/app" element={<Dashboard />} />
-            <Route path="/app/materias" element={<Materias />} />
-            <Route path="/app/concursos" element={<Concursos />} />
-            <Route path="/app/ciclos" element={<MeusCiclos />} />
-            <Route path="/app/historico" element={<Historico />} />
-            <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
-            <Route path="/app/estatisticas" element={<Estatisticas />} />
-            <Route path="/app/perfil" element={<Perfil />} />
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
           </Route>
-          
-          <Route path="/" element={<Navigate to="/app" replace />} />
-        </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route element={<PrivateRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/app" element={<Dashboard />} />
+              <Route path="/app/materias" element={<Materias />} />
+              <Route path="/app/concursos" element={<Concursos />} />
+              <Route path="/app/ciclos" element={<MeusCiclos />} />
+              <Route path="/app/historico" element={<Historico />} />
+              <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
+              <Route path="/app/estatisticas" element={<Estatisticas />} />
+              <Route path="/app/perfil" element={<Perfil />} />
+            </Route>
+            
+            <Route path="/" element={<Navigate to="/app" replace />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

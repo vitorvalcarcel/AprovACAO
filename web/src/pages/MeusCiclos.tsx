@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Target, Calendar, CheckCircle, StopCircle, Trash2, AlertTriangle, Search } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import { useToast } from '../components/Toast/ToastContext';
 
 interface Concurso {
   id: number;
@@ -14,17 +15,17 @@ interface Ciclo {
   ativo: boolean;
   dataInicio: string;
   dataFim?: string;
-  progresso: number; // Placeholder
+  progresso: number;
 }
 
 export default function MeusCiclos() {
+  const { showToast } = useToast();
   const [concursos, setConcursos] = useState<Concurso[]>([]);
   const [concursoSelecionado, setConcursoSelecionado] = useState<string>('');
   
   const [ciclos, setCiclos] = useState<Ciclo[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Modal de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -32,17 +33,15 @@ export default function MeusCiclos() {
     acao: () => Promise<void>;
   }>({ aberto: false, titulo: '', msg: '', acao: async () => {} });
 
-  // Carrega Concursos
   useEffect(() => {
     api.get<Concurso[]>('/concursos').then(res => {
       setConcursos(res.data);
       if (res.data.length > 0) {
-        setConcursoSelecionado(String(res.data[0].id)); // Seleciona o primeiro
+        setConcursoSelecionado(String(res.data[0].id));
       }
     });
   }, []);
 
-  // Carrega Ciclos quando muda o Concurso
   useEffect(() => {
     if (concursoSelecionado) {
       carregarCiclos(concursoSelecionado);
@@ -74,10 +73,11 @@ export default function MeusCiclos() {
       acao: async () => {
         try {
           await api.delete(`/ciclos/${ciclo.id}`);
+          showToast('success', 'Ciclo excluído.');
           carregarCiclos(concursoSelecionado);
           setModalConfirmacao(prev => ({ ...prev, aberto: false }));
         } catch (e) {
-          alert('Erro ao excluir ciclo.');
+          showToast('error', 'Erro', 'Erro ao excluir ciclo.');
         }
       }
     });
@@ -91,10 +91,11 @@ export default function MeusCiclos() {
       acao: async () => {
         try {
           await api.patch(`/ciclos/${ciclo.id}/encerrar`);
+          showToast('success', 'Ciclo encerrado com sucesso!');
           carregarCiclos(concursoSelecionado);
           setModalConfirmacao(prev => ({ ...prev, aberto: false }));
         } catch (e) {
-          alert('Erro ao encerrar ciclo.');
+          showToast('error', 'Erro', 'Erro ao encerrar ciclo.');
         }
       }
     });
@@ -109,7 +110,6 @@ export default function MeusCiclos() {
           <p className="text-sm text-gray-500">Histórico de planejamentos e metas</p>
         </div>
         
-        {/* Seletor de Concurso */}
         <div className="w-64">
           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Filtrar por Concurso</label>
           <div className="relative">
@@ -205,7 +205,6 @@ export default function MeusCiclos() {
         </div>
       )}
 
-      {/* Modal Genérico */}
       <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao(p => ({...p, aberto: false}))} title={modalConfirmacao.titulo}>
         <div className="space-y-4">
           <div className="bg-red-50 p-4 rounded-lg flex gap-3 items-start text-red-800">
