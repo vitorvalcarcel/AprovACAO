@@ -20,40 +20,53 @@ public class TipoEstudoService {
         if (repository.existsByUsuarioAndNomeIgnoreCase(usuario, dados.nome())) {
             throw new RuntimeException("Já existe um tipo de estudo com este nome.");
         }
+
         var tipo = new TipoEstudo();
         tipo.setNome(dados.nome());
         tipo.setUsuario(usuario);
         tipo.setArquivado(false);
+        tipo.setContaHorasCiclo(dados.contaHorasCiclo() != null ? dados.contaHorasCiclo() : true);
+        
         return repository.save(tipo);
     }
 
     public void criarPadroes(Usuario usuario) {
-        List<String> padroes = List.of("Videoaula", "PDF / Leitura", "Questões", "Lei Seca", "Revisão");
-        for (String nome : padroes) {
-            var tipo = new TipoEstudo();
-            tipo.setNome(nome);
-            tipo.setUsuario(usuario);
-            tipo.setArquivado(false);
-            repository.save(tipo);
-        }
+        salvarPadrao(usuario, "Videoaula", true);
+        salvarPadrao(usuario, "PDF / Leitura", true);
+        salvarPadrao(usuario, "Questões (Bateria)", false);
+        salvarPadrao(usuario, "Lei Seca", true);
+        salvarPadrao(usuario, "Revisão", true);
+    }
+
+    private void salvarPadrao(Usuario usuario, String nome, boolean contaHoras) {
+        var tipo = new TipoEstudo();
+        tipo.setNome(nome);
+        tipo.setUsuario(usuario);
+        tipo.setArquivado(false);
+        tipo.setContaHorasCiclo(contaHoras);
+        repository.save(tipo);
     }
 
     public List<DadosTipoEstudo> listar(boolean incluirArquivados, Usuario usuario) {
         List<TipoEstudo> lista = incluirArquivados 
             ? repository.findAllByUsuario(usuario)
             : repository.findAllByUsuarioAndArquivadoFalse(usuario);
-            
         return lista.stream().map(DadosTipoEstudo::new).toList();
     }
 
     public void atualizar(DadosTipoEstudo dados, Usuario usuario) {
         var tipo = repository.findById(dados.id()).orElseThrow();
         if (!tipo.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso negado.");
+        
         if (!tipo.getNome().equalsIgnoreCase(dados.nome()) && 
              repository.existsByUsuarioAndNomeIgnoreCase(usuario, dados.nome())) {
             throw new RuntimeException("Já existe um tipo de estudo com este nome.");
         }
+
         tipo.setNome(dados.nome());
+        if (dados.contaHorasCiclo() != null) {
+            tipo.setContaHorasCiclo(dados.contaHorasCiclo());
+        }
     }
 
     public void excluir(Long id, Usuario usuario) {

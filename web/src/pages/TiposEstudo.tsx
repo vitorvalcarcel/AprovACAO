@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Trash2, Tag, RefreshCw, Search, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Archive, Trash2, Tag, RefreshCw, Search, AlertCircle, Clock } from 'lucide-react';
 import api from '../services/api';
 import ModalTipoEstudo from '../components/ModalTipoEstudo';
 import Modal from '../components/Modal';
 
-interface Tipo { id: number; nome: string; arquivado: boolean; }
+interface Tipo { 
+  id: number; 
+  nome: string; 
+  arquivado: boolean; 
+  contaHorasCiclo?: boolean;
+}
 
 export default function TiposEstudo() {
   const [tipos, setTipos] = useState<Tipo[]>([]);
@@ -105,60 +110,60 @@ export default function TiposEstudo() {
                key={t.id} 
                className={`p-3 flex justify-between items-center group transition-all rounded-lg my-0.5 ${
                  t.arquivado 
-                   ? 'bg-gray-100 opacity-60' // Arquivado: Fundo cinza e transparente
-                   : 'bg-white hover:bg-gray-50' // Ativo: Fundo branco
+                   ? 'bg-gray-50 opacity-75' // Visual Arquivado: Cinza e opaco
+                   : 'bg-white hover:bg-gray-50 border-transparent' // Visual Ativo
                }`}
              >
                
                <div className="flex-1">
                  <div className="flex items-center gap-3">
                    {/* Ícone */}
-                   <div className={`p-1.5 rounded-md ${t.arquivado ? 'bg-gray-200 text-gray-500' : 'bg-blue-50 text-blue-600'}`}>
+                   <div className={`p-1.5 rounded-md ${t.arquivado ? 'bg-gray-200 text-gray-400' : 'bg-blue-50 text-blue-600'}`}>
                      <Tag size={18} />
                    </div>
                    
-                   {/* Nome */}
-                   <span className={`font-medium ${t.arquivado ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-                     {t.nome}
-                   </span>
-                   
-                   {/* Etiqueta */}
-                   {t.arquivado && (
-                     <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full border border-gray-300">
-                       Arquivado
+                   <div className="flex flex-col">
+                     {/* Nome */}
+                     <span className={`font-medium ${t.arquivado ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                       {t.nome}
                      </span>
-                   )}
+                     
+                     {/* Indicadores */}
+                     <div className="flex items-center gap-2 mt-0.5">
+                       
+                       {/* Badge de Horas */}
+                       {t.contaHorasCiclo ? (
+                         <span className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded border font-medium ${t.arquivado ? 'bg-gray-100 text-gray-400 border-gray-200' : 'text-green-700 bg-green-50 border-green-100'}`}>
+                           <Clock size={10} /> Conta Horas
+                         </span>
+                       ) : (
+                         <span className={`text-[10px] flex items-center gap-1 px-1.5 py-0.5 rounded border font-medium ${t.arquivado ? 'bg-gray-100 text-gray-400 border-gray-200' : 'text-gray-500 bg-gray-100 border-gray-200'}`}>
+                           Apenas Questões
+                         </span>
+                       )}
+                       
+                       {/* Badge de Arquivado */}
+                       {t.arquivado && (
+                         <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200 font-medium">
+                           Arquivado
+                         </span>
+                       )}
+                     </div>
+                   </div>
                  </div>
                </div>
 
                {/* Ações */}
                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                 
                  {!t.arquivado && (
-                   <button 
-                     onClick={() => { setEdicao(t); setModalOpen(true); }} 
-                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" 
-                     title="Editar"
-                   >
-                     <Pencil size={16}/>
-                   </button>
+                   <button onClick={() => { setEdicao(t); setModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Editar"><Pencil size={16}/></button>
                  )}
                  
-                 <button 
-                   onClick={() => toggleArquivo(t)} 
-                   className={`p-1.5 rounded ${t.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}
-                   title={t.arquivado ? "Restaurar" : "Arquivar"}
-                 >
+                 <button onClick={() => toggleArquivo(t)} className={`p-1.5 rounded ${t.arquivado ? 'text-green-600 hover:bg-green-100' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={t.arquivado ? "Restaurar" : "Arquivar"}>
                    {t.arquivado ? <RefreshCw size={16}/> : <Archive size={16}/>}
                  </button>
 
-                 <button 
-                   onClick={() => confirmarExclusao(t)} 
-                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" 
-                   title="Excluir"
-                 >
-                   <Trash2 size={16}/>
-                 </button>
+                 <button onClick={() => confirmarExclusao(t)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Excluir"><Trash2 size={16}/></button>
                </div>
              </div>
            ))}

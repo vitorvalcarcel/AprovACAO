@@ -20,6 +20,8 @@ public class RegistroEstudo {
     @Column(nullable = false)
     private LocalDateTime dataInicio;
 
+    private Boolean contarHorasNoCiclo = true;
+
     @Column(nullable = false)
     private Integer segundos;
 

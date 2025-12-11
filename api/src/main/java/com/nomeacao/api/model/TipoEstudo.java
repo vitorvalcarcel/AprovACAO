@@ -15,10 +15,11 @@ public class TipoEstudo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String nome;
     
     private Boolean arquivado = false;
+
+    private Boolean contaHorasCiclo = true; 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")

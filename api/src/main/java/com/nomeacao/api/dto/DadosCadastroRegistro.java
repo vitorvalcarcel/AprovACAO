@@ -1,19 +1,21 @@
 package com.nomeacao.api.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 
 public record DadosCadastroRegistro(
     @NotNull Long materiaId,
-    @NotNull LocalDateTime dataInicio,
-    @NotNull @Positive 
-    Integer segundos,
-    
     Long topicoId,
     Long concursoId,
     Long tipoEstudoId,
+    
+    @NotNull LocalDateTime dataInicio,
+    @NotNull Integer segundos,
+    
     Integer questoesFeitas,
     Integer questoesCertas,
+    
+    Boolean contarHorasNoCiclo,
+    
     String anotacoes
 ) {}

@@ -33,6 +33,8 @@ public class RegistroEstudoService {
         registro.setQuestoesFeitas(dados.questoesFeitas());
         registro.setQuestoesCertas(dados.questoesCertas());
         registro.setAnotacoes(dados.anotacoes());
+        
+        registro.setContarHorasNoCiclo(dados.contarHorasNoCiclo() != null ? dados.contarHorasNoCiclo() : true);
 
         var materia = materiaRepository.findById(dados.materiaId())
                 .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
@@ -52,9 +54,7 @@ public class RegistroEstudoService {
             registro.setConcurso(concurso);
         } else {
             cicloRepository.findFirstByUsuarioAndAtivoTrue(usuario)
-                .ifPresent(cicloAtivo -> {
-                    registro.setConcurso(cicloAtivo.getConcurso());
-                });
+                .ifPresent(cicloAtivo -> registro.setConcurso(cicloAtivo.getConcurso()));
         }
 
         if (dados.tipoEstudoId() != null) {
