@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
+import { LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag } from 'lucide-react'; // <--- Adicionei 'Tag' aqui
 import { useState } from 'react';
 
 export default function Layout() {
@@ -14,11 +14,12 @@ export default function Layout() {
   };
 
   const menuItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/app' },
+    { label: 'Ciclo de Estudos', icon: LayoutDashboard, path: '/app' },
+    { label: 'Estatísticas', icon: BarChart2, path: '/app/estatisticas' },
     { label: 'Concursos', icon: Target, path: '/app/concursos' },
     { label: 'Matérias & Assuntos', icon: Book, path: '/app/materias' },
     { label: 'Histórico', icon: History, path: '/app/historico' },
-    { label: 'Tipos de Estudo', icon: Tag, path: '/app/tipos-estudo' }, // Item novo
+    { label: 'Tipos de Estudo', icon: Tag, path: '/app/tipos-estudo' },
   ];
 
   return (

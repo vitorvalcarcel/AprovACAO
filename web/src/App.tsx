@@ -9,6 +9,7 @@ import Materias from './pages/Materias';
 import Concursos from './pages/Concursos';
 import Historico from './pages/Historico';
 import TiposEstudo from './pages/TiposEstudo';
+import Estatisticas from './pages/Estatisticas';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/app/concursos" element={<Concursos />} />
             <Route path="/app/historico" element={<Historico />} />
             <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
+            <Route path="/app/estatisticas" element={<Estatisticas />} />
           </Route>
           
           <Route path="/" element={<Navigate to="/app" replace />} />
