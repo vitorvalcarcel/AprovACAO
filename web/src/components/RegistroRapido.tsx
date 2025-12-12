@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Play, Pause, Save, Clock, Edit3, X, CheckCircle, AlertCircle, Plus, Check, Info } from 'lucide-react';
+import { Play, Pause, Save, Clock, Edit3, X, CheckCircle, AlertCircle, Plus, Check} from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Lock, Trash2, Save, AlertTriangle, X, CheckCircle, Loader2, KeyRound } from 'lucide-react';
+import { User, Mail, Lock, Trash2, Save, AlertTriangle, CheckCircle, Loader2, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Modal from '../components/Modal';

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, BookOpen, Trophy, BarChart2, Calendar } from 'lucide-react';
+import { Target, BookOpen, Trophy, Calendar } from 'lucide-react';
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import GraficoEvolucao from '../components/GraficoEvolucao';
