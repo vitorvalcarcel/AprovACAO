@@ -65,3 +65,5 @@ SEÇÃO 5: FUNCIONALIDADES - ANALYTICS AVANÇADO
 
 [17] Dashboard Macro (Visão de Vida)
      - Status: 🔴 PENDENTE
+
+Mudar senha do app de email no aplication.properties no deployment.

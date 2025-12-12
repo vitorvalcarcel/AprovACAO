@@ -38,15 +38,14 @@ public class TokenService {
             return JWT.require(algoritmo)
                     .withIssuer("API Nome.Acao")
                     .build()
-                    .verify(tokenJWT) // Valida assinatura e data de expiração
-                    .getSubject(); // Devolve o email do usuário
+                    .verify(tokenJWT)
+                    .getSubject();
         } catch (JWTVerificationException exception) {
             throw new RuntimeException("Token JWT inválido ou expirado!");
         }
     }
 
     private Instant dataExpiracao() {
-        // O Token vale por 2 horas. Depois disso, tem que logar de novo.
-        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now().plusHours(14).toInstant(ZoneOffset.of("-03:00"));
     }
 }

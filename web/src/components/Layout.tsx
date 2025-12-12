@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, Menu, X, BarChart2, Tag, List } from 'lucide-react';
 import { useState } from 'react';
+import AvisoExpiracao from './AvisoExpiracao';
 
 export default function Layout() {
   const location = useLocation();
@@ -84,7 +85,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:hidden flex-shrink-0">
           <button onClick={() => setMobileMenuOpen(true)} className="text-gray-600 p-2">
             <Menu size={24} />
@@ -93,6 +94,8 @@ export default function Layout() {
         </header>
         <div className="flex-1 overflow-auto p-4 lg:p-8">
           <Outlet />
+          {/* Aviso de expiração posicionado aqui para garantir visibilidade global na área logada */}
+          <AvisoExpiracao />
         </div>
       </main>
     </div>
