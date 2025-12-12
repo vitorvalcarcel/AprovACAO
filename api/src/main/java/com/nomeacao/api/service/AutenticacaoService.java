@@ -4,6 +4,8 @@ import com.nomeacao.api.dto.DadosAtualizacaoUsuario;
 import com.nomeacao.api.dto.DadosCadastroUsuario;
 import com.nomeacao.api.dto.DadosDetalhamentoUsuario;
 import com.nomeacao.api.dto.DadosTrocaSenha;
+import com.nomeacao.api.infra.security.DadosTokenJWT;
+import com.nomeacao.api.infra.security.TokenService;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.*;
 import jakarta.transaction.Transactional;
@@ -14,23 +16,22 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
-    @Autowired
-    private UsuarioRepository repository;
-
-    @Autowired
-    private TipoEstudoService tipoEstudoService;
-
-    // Injeção dos repositórios para fazer a limpeza
+    @Autowired private UsuarioRepository repository;
+    @Autowired private TipoEstudoService tipoEstudoService;
     @Autowired private RegistroEstudoRepository registroRepository;
     @Autowired private ConcursoRepository concursoRepository;
     @Autowired private MateriaRepository materiaRepository;
     @Autowired private TipoEstudoRepository tipoEstudoRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Autowired private PasswordEncoder passwordEncoder;
+    
+    @Autowired private EmailService emailService;
+    @Autowired private TokenService jwtService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -40,22 +41,94 @@ public class AutenticacaoService implements UserDetailsService {
 
     @Transactional
     public void cadastrar(DadosCadastroUsuario dados) {
-        // 1. Verificar duplicidade
         if (repository.findByEmail(dados.email()).isPresent()) {
             throw new RuntimeException("Este e-mail já está em uso.");
         }
 
-        // 2. Criptografar e Salvar
-        var senhaCriptografada = passwordEncoder.encode(dados.senha());
         var usuario = new Usuario();
         usuario.setNome(dados.nome());
         usuario.setEmail(dados.email());
-        usuario.setSenha(senhaCriptografada);
+        usuario.setSenha(passwordEncoder.encode(dados.senha()));
+        
+        // Identidade
+        usuario.setAtivo(false); // Bloqueia login
+        usuario.setCodigoVerificacao(UUID.randomUUID().toString());
+        usuario.setValidadeCodigo(LocalDateTime.now().plusHours(24));
         
         repository.save(usuario);
         
-        // 3. Criar dados padrão
+        // Cria dados padrão
         tipoEstudoService.criarPadroes(usuario);
+
+        // Envia E-mail
+        emailService.enviarConfirmacao(usuario.getEmail(), usuario.getNome(), usuario.getCodigoVerificacao());
+    }
+
+    @Transactional
+    public DadosTokenJWT confirmarEmail(String token) {
+        var usuario = repository.findByCodigoVerificacao(token)
+                .orElseThrow(() -> new RuntimeException("Link inválido ou inexistente."));
+
+        if (usuario.getValidadeCodigo().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Este link expirou. Solicite um novo.");
+        }
+
+        // Ativa a conta
+        usuario.setAtivo(true);
+        usuario.setCodigoVerificacao(null);
+        usuario.setValidadeCodigo(null);
+        repository.save(usuario);
+
+        // Gera o JWT para Auto-Login
+        var jwt = jwtService.gerarToken(usuario);
+        return new DadosTokenJWT(jwt);
+    }
+
+    @Transactional
+    public void reenviarConfirmacao(String email) {
+        var usuario = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com este e-mail."));
+
+        if (usuario.getAtivo()) {
+            throw new RuntimeException("Esta conta já está ativada. Tente fazer login.");
+        }
+
+        // Gera novo token e renova validade
+        usuario.setCodigoVerificacao(UUID.randomUUID().toString());
+        usuario.setValidadeCodigo(LocalDateTime.now().plusHours(24));
+        repository.save(usuario);
+
+        // Reenvia
+        emailService.enviarConfirmacao(usuario.getEmail(), usuario.getNome(), usuario.getCodigoVerificacao());
+    }
+
+    @Transactional
+    public void solicitarRecuperacaoSenha(String email) {
+        var usuario = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        usuario.setCodigoVerificacao(UUID.randomUUID().toString());
+        usuario.setValidadeCodigo(LocalDateTime.now().plusHours(1)); // 1 hora para senha
+        repository.save(usuario);
+
+        emailService.enviarRecuperacaoSenha(usuario.getEmail(), usuario.getCodigoVerificacao());
+    }
+
+    @Transactional
+    public void redefinirSenha(String token, String novaSenha) {
+        var usuario = repository.findByCodigoVerificacao(token)
+                .orElseThrow(() -> new RuntimeException("Token inválido."));
+
+        if (usuario.getValidadeCodigo().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Link expirado.");
+        }
+
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+        usuario.setCodigoVerificacao(null);
+        usuario.setValidadeCodigo(null);
+        if (!usuario.getAtivo()) usuario.setAtivo(true); 
+        
+        repository.save(usuario);
     }
 
     public DadosDetalhamentoUsuario detalhar(Usuario usuario) {
@@ -66,9 +139,7 @@ public class AutenticacaoService implements UserDetailsService {
     public DadosDetalhamentoUsuario atualizar(DadosAtualizacaoUsuario dados, Usuario usuarioLogado) {
         var usuario = repository.findById(usuarioLogado.getId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-        
         usuario.setNome(dados.nome());
-        // O JPA salva automaticamente ao fim da transação, mas podemos forçar o retorno atualizado
         return new DadosDetalhamentoUsuario(usuario);
     }
 
@@ -77,50 +148,25 @@ public class AutenticacaoService implements UserDetailsService {
         var usuario = repository.findById(usuarioLogado.getId())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        // 1. Validar senha atual
         if (!passwordEncoder.matches(dados.senhaAtual(), usuario.getSenha())) {
             throw new RuntimeException("A senha atual está incorreta.");
         }
-
-        // 2. Validar se a nova senha é igual à antiga (opcional, mas boa prática)
         if (passwordEncoder.matches(dados.novaSenha(), usuario.getSenha())) {
             throw new RuntimeException("A nova senha não pode ser igual à anterior.");
         }
-
-        // 3. Criptografar e atualizar
-        String novaSenhaHash = passwordEncoder.encode(dados.novaSenha());
-        usuario.setSenha(novaSenhaHash);
+        usuario.setSenha(passwordEncoder.encode(dados.novaSenha()));
     }
 
     @Transactional
     public void excluirConta(String senhaConfirmacao, Usuario usuarioLogado) {
-        var usuario = repository.findById(usuarioLogado.getId())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        // VALIDAÇÃO CRÍTICA DE SEGURANÇA
+        var usuario = repository.findById(usuarioLogado.getId()).orElseThrow();
         if (!passwordEncoder.matches(senhaConfirmacao, usuario.getSenha())) {
-            throw new RuntimeException("Senha incorreta. A exclusão da conta foi cancelada.");
+            throw new RuntimeException("Senha incorreta.");
         }
-
-        // EQUIPE DE LIMPEZA
-        // A ordem importa para não violar chaves estrangeiras no banco
-
-        // 1. Apagar Registros de Estudo (Dependem de tudo: Matéria, Concurso, Tipo, Usuário)
         registroRepository.deleteAllByUsuario(usuario);
-
-        // 2. Apagar Concursos (O banco já deleta Ciclos em cascata devido ao ON DELETE CASCADE configurado no Flyway)
-        var concursos = concursoRepository.findAllByUsuario(usuario);
-        concursoRepository.deleteAll(concursos);
-
-        // 3. Apagar Matérias (O banco já deleta Tópicos em cascata)
-        var materias = materiaRepository.findAllByUsuario(usuario);
-        materiaRepository.deleteAll(materias);
-
-        // 4. Apagar Tipos de Estudo
-        var tipos = tipoEstudoRepository.findAllByUsuario(usuario);
-        tipoEstudoRepository.deleteAll(tipos);
-
-        // 5. Finalmente, apagar o usuário
+        concursoRepository.deleteAll(concursoRepository.findAllByUsuario(usuario));
+        materiaRepository.deleteAll(materiaRepository.findAllByUsuario(usuario));
+        tipoEstudoRepository.deleteAll(tipoEstudoRepository.findAllByUsuario(usuario));
         repository.delete(usuario);
     }
 }

@@ -1,15 +1,18 @@
 package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.*;
+import com.nomeacao.api.infra.security.DadosTokenJWT;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.AutenticacaoService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/usuarios")
@@ -18,37 +21,74 @@ public class UsuarioController {
     @Autowired
     private AutenticacaoService service;
 
-    // 1. Cadastro (Público)
+    // 1. Cadastro
     @PostMapping
-    @Transactional
-    public ResponseEntity cadastrar(@RequestBody @Valid DadosCadastroUsuario dados, UriComponentsBuilder uriBuilder) {
+    public ResponseEntity cadastrar(@RequestBody @Valid DadosCadastroUsuario dados) {
         try {
             service.cadastrar(dados);
+            return ResponseEntity.ok().body(new MensagemErro("Cadastro realizado! Verifique seu e-mail para ativar a conta."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MensagemErro(e.getMessage()));
+        }
+    }
+
+    // 2. Confirmar E-mail
+    @PostMapping("/confirmar-email")
+    public ResponseEntity<DadosTokenJWT> confirmarEmail(@RequestParam String token) {
+        try {
+            DadosTokenJWT jwt = service.confirmarEmail(token);
+            return ResponseEntity.ok(jwt);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // 3. Reenviar Confirmação
+    @PostMapping("/reenviar-confirmacao")
+    public ResponseEntity reenviarConfirmacao(@RequestBody DadosReenvioEmail dados) {
+        try {
+            service.reenviarConfirmacao(dados.email());
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new MensagemErro(e.getMessage()));
         }
     }
 
-    // 2. Perfil (Logado)
+    // 4. Solicitar Recuperação
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity esqueciSenha(@RequestBody DadosEsqueciSenha dados) {
+        try {
+            service.solicitarRecuperacaoSenha(dados.email());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.ok().build();
+        }
+    }
+
+    // 5. Redefinir Senha
+    @PostMapping("/redefinir-senha")
+    // ADICIONADO @Valid AQUI
+    public ResponseEntity redefinirSenha(@RequestBody @Valid DadosRedefinirSenha dados) {
+        try {
+            service.redefinirSenha(dados.token(), dados.novaSenha());
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MensagemErro(e.getMessage()));
+        }
+    }
+
     @GetMapping("/me")
     public ResponseEntity<DadosDetalhamentoUsuario> detalhar(@AuthenticationPrincipal Usuario usuario) {
-        var dados = service.detalhar(usuario);
-        return ResponseEntity.ok(dados);
+        return ResponseEntity.ok(service.detalhar(usuario));
     }
 
-    // 3. Atualizar Nome (Logado)
     @PutMapping
-    @Transactional
     public ResponseEntity<DadosDetalhamentoUsuario> atualizar(@RequestBody @Valid DadosAtualizacaoUsuario dados, 
                                                               @AuthenticationPrincipal Usuario usuario) {
-        var atualizado = service.atualizar(dados, usuario);
-        return ResponseEntity.ok(atualizado);
+        return ResponseEntity.ok(service.atualizar(dados, usuario));
     }
 
-    // 4. Trocar Senha (Logado)
     @PatchMapping("/senha")
-    @Transactional
     public ResponseEntity trocarSenha(@RequestBody @Valid DadosTrocaSenha dados, 
                                       @AuthenticationPrincipal Usuario usuario) {
         try {
@@ -59,9 +99,7 @@ public class UsuarioController {
         }
     }
 
-    // 5. Excluir Conta (Logado)
     @DeleteMapping
-    @Transactional
     public ResponseEntity excluirConta(@RequestBody @Valid DadosConfirmacaoSenha dados,
                                        @AuthenticationPrincipal Usuario usuario) {
         try {
@@ -72,6 +110,22 @@ public class UsuarioController {
         }
     }
 
-    // DTO interno simples para devolver JSON de erro
+    // --- DTOs Internos ---
+    public record DadosReenvioEmail(String email) {}
+    public record DadosEsqueciSenha(String email) {}
+    
+    // ATUALIZADO: Agora com validação de senha forte igual ao cadastro
+    public record DadosRedefinirSenha(
+        @NotBlank String token, 
+        
+        @NotBlank
+        @Size(min = 8, message = "A nova senha deve ter no mínimo 8 caracteres")
+        @Pattern(
+            regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).*$", 
+            message = "A nova senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais"
+        )
+        String novaSenha
+    ) {}
+    
     private record MensagemErro(String mensagem) {}
 }

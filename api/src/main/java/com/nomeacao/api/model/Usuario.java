@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,11 +31,18 @@ public class Usuario implements UserDetails {
 
     @Column(nullable = false)
     private String senha;
+    
+    @Column(nullable = false)
+    private Boolean ativo = false;
+
+    @Column(name = "codigo_verificacao")
+    private String codigoVerificacao;
+
+    @Column(name = "validade_codigo")
+    private LocalDateTime validadeCodigo;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Por enquanto, todo usuário tem o perfil "ROLE_USER".
-        // Futuramente, se tiver ADMIN, a lógica entra aqui.
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
     }
 
@@ -65,6 +73,6 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return ativo; 
     }
 }

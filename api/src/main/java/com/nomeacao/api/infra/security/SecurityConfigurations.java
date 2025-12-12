@@ -35,6 +35,10 @@ public class SecurityConfigurations {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/confirmar-email").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/reenviar-confirmacao").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/esqueci-senha").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/redefinir-senha").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )

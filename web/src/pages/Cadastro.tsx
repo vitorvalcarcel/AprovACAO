@@ -18,15 +18,12 @@ export default function Cadastro() {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   
   const [loading, setLoading] = useState(false);
-  
-  // Estado para armazenar erros específicos de campo vindos do backend
   const [errosCampos, setErrosCampos] = useState<Record<string, string>>({});
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrosCampos({});
 
-    // Validação local simples
     if (senha !== confirmarSenha) {
       setErrosCampos({ confirmarSenha: 'As senhas não coincidem!' });
       showToast('error', 'Erro de Validação', 'Verifique os campos destacados.');
@@ -37,13 +34,8 @@ export default function Cadastro() {
 
     try {
       await api.post('/usuarios', { nome, email, senha });
-
-      showToast('success', 'Conta criada!', 'Redirecionando para login...');
-      setTimeout(() => navigate('/login'), 2000);
-
+      navigate('/verificar-email', { state: { email } });
     } catch (error: any) {
-      // Se o backend retornar um array (Lista de DadosErroValidacao)
-      // O interceptor ignorou (return Promise.reject), então tratamos aqui
       if (error.response && Array.isArray(error.response.data)) {
         const novosErros: Record<string, string> = {};
         error.response.data.forEach((err: CampoErro) => {
@@ -52,7 +44,6 @@ export default function Cadastro() {
         setErrosCampos(novosErros);
         showToast('error', 'Dados Inválidos', 'Por favor, corrija os campos em vermelho.');
       } 
-      // Se não for array, o interceptor já mostrou o Toast (ex: "Email já existe")
     } finally {
       setLoading(false);
     }
@@ -70,7 +61,6 @@ export default function Cadastro() {
         </p>
 
         <form onSubmit={handleCadastro} className="space-y-4" noValidate>
-          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
             <input
@@ -138,7 +128,7 @@ export default function Cadastro() {
               ${loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}
             `}
           >
-            {loading ? 'Validando dados...' : 'CRIAR CONTA GRÁTIS'}
+            {loading ? 'Processando...' : 'CRIAR CONTA GRÁTIS'}
           </button>
         </form>
 
@@ -148,7 +138,6 @@ export default function Cadastro() {
             Entrar agora
           </Link>
         </div>
-
       </div>
     </div>
   );

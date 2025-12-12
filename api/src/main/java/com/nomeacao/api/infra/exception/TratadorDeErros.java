@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -32,26 +33,34 @@ public class TratadorDeErros {
         return ResponseEntity.badRequest().body(erros.stream().map(DadosErroValidacao::new).toList());
     }
 
-    // 400 - Erro de JSON inválido ou Regra de Negócio genérica
+    // 400 - Erro de JSON inválido
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity tratarErroJson(HttpMessageNotReadableException ex) {
         return ResponseEntity.badRequest().body(new DadosErro("Formato de requisição inválido."));
     }
 
-    // 400 - Erros de Regra de Negócio (Lançados manualmente com RuntimeException)
+    // 400 - Regra de Negócio Genérica
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity tratarErroRegraDeNegocio(RuntimeException ex) {
-        // Logs de regra de negócio são INFO ou WARN, pois são esperados
         logger.warn("[REGRA NEGOCIO] {}", ex.getMessage());
         return ResponseEntity.badRequest().body(new DadosErro(ex.getMessage()));
     }
 
-    // 401 - Falha na Autenticação
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity tratarErroBadCredentials() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new DadosErro("Credenciais inválidas."));
+    // --- SEGURANÇA ---
+
+    // 400 - Conta Inativa (Retornamos 400 para o front exibir o Toast de erro automaticamente)
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity tratarErroContaInativa() {
+        return ResponseEntity.badRequest().body(new DadosErro("Conta inativa. Verifique seu e-mail para acessar."));
     }
 
+    // 401 - Credenciais Inválidas
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity tratarErroBadCredentials() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new DadosErro("E-mail ou senha incorretos."));
+    }
+
+    // 401 - Outros erros de autenticação
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity tratarErroAuthentication() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new DadosErro("Falha na autenticação."));
@@ -63,24 +72,19 @@ public class TratadorDeErros {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new DadosErro("Acesso negado."));
     }
 
-    // 500 - Erro Interno (Genérico)
+    // 500 - Erro Interno
     @ExceptionHandler(Exception.class)
     public ResponseEntity tratarErro500(Exception ex) {
-        // Log de erro CRÍTICO com Stack Trace completa para debug
         logger.error("[ERRO 500] Exceção não tratada capturada: ", ex);
-        
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new DadosErro("Erro interno do servidor: " + ex.getLocalizedMessage()));
     }
 
-    // --- DTOs de Resposta ---
-
-    // DTO para erros de validação de campos (Lista)
+    // --- DTOs ---
     public record DadosErroValidacao(String campo, String mensagem) {
         public DadosErroValidacao(FieldError erro) {
             this(erro.getField(), erro.getDefaultMessage());
         }
     }
 
-    // DTO para mensagens de erro simples
     public record DadosErro(String mensagem) {}
 }
