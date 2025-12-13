@@ -12,13 +12,13 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/50 backdrop-blur-sm transition-opacity duration-300">
       
-      {/* Container do Modal */}
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
+      {/* Container do Modal - Responsivo: Bottom Sheet no Mobile, Card no Desktop */}
+      <div className="bg-white w-full md:w-full md:max-w-md rounded-t-2xl md:rounded-xl shadow-2xl overflow-hidden animate-slide-up md:animate-fade-in max-h-[90vh] md:max-h-full flex flex-col">
         
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50 shrink-0">
           <h2 className="text-lg font-bold text-gray-800">{title}</h2>
           <button 
             onClick={onClose}
@@ -28,8 +28,8 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           </button>
         </div>
 
-        {/* Conteúdo (O que muda de tela pra tela) */}
-        <div className="p-6">
+        {/* Conteúdo com scroll se necessário */}
+        <div className="p-6 overflow-y-auto">
           {children}
         </div>
 

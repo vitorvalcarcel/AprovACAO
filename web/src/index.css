@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos Globais e Utilitários Extras */
+@layer utilities {
+  /* Suporte para área segura do iPhone (notch/home bar) */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom Scrollbar suave para tabelas */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* gray-300 */
+  border-radius: 20px;
+}
+
+/* Evita o pull-to-refresh nativo no mobile para parecer mais app nativo */
+body {
+  overscroll-behavior-y: none;
+}
