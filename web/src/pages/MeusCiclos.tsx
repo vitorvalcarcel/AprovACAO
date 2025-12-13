@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Target, CheckCircle, StopCircle, Trash2, AlertTriangle, Search } from 'lucide-react';
+import { Target, CheckCircle, StopCircle, Trash2, AlertTriangle, Search, Calendar, Clock, PlayCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
+import MobileActionMenu from '../components/MobileActionMenu'; // Componente padrão
 import { useToast } from '../components/Toast/ToastContext';
 import TableSkeleton from '../components/skeletons/TableSkeleton';
 
@@ -110,15 +111,15 @@ export default function MeusCiclos() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-24 md:pb-20">
       
-      <div className="flex justify-between items-end border-b border-gray-200 pb-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Meus Ciclos</h1>
           <p className="text-sm text-gray-500">Histórico de planejamentos e metas</p>
         </div>
         
-        <div className="w-64">
+        <div className="w-full md:w-64">
           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Filtrar por Concurso</label>
           <div className="relative">
             <select 
@@ -143,74 +144,139 @@ export default function MeusCiclos() {
           <p className="text-gray-500">Nenhum ciclo encontrado para este concurso.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-              <tr>
-                <th className="px-6 py-4">Ciclo / Descrição</th>
-                <th className="px-6 py-4">Período</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {ciclos.map(ciclo => (
-                <tr key={ciclo.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-gray-800">{ciclo.descricao || `Ciclo #${ciclo.id}`}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">ID: {ciclo.id}</p>
-                  </td>
-                  
-                  <td className="px-6 py-4 text-gray-600">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-green-600 w-10">Início</span>
-                        <span>{formatarData(ciclo.dataInicio)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase font-bold text-red-400 w-10">Fim</span>
-                        <span>{formatarData(ciclo.dataFim)}</span>
+        <>
+          {/* --- VERSÃO MOBILE (CARDS) --- */}
+          <div className="md:hidden space-y-3">
+            {ciclos.map(ciclo => (
+              <div key={ciclo.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm relative">
+                
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-lg">{ciclo.descricao || `Ciclo #${ciclo.id}`}</h3>
+                    <p className="text-xs text-gray-400">ID: {ciclo.id}</p>
+                  </div>
+                  {/* Menu de Ações (Excluir) */}
+                  <div className="absolute top-2 right-2">
+                    <MobileActionMenu onDelete={() => confirmarExclusao(ciclo)} />
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="mb-4">
+                  {ciclo.ativo ? (
+                    <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
+                      <PlayCircle size={12} className="fill-green-700 text-green-100" /> ATIVO
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
+                      <StopCircle size={12} /> ENCERRADO
+                    </span>
+                  )}
+                </div>
+
+                {/* Datas */}
+                <div className="grid grid-cols-2 gap-4 text-sm border-t border-gray-50 pt-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-blue-500" />
+                    <div>
+                      <p className="text-[10px] text-gray-400 uppercase font-bold">Início</p>
+                      <p className="text-gray-700 font-medium">{formatarData(ciclo.dataInicio)}</p>
+                    </div>
+                  </div>
+                  {ciclo.dataFim && (
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-orange-500" />
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold">Fim</p>
+                        <p className="text-gray-700 font-medium">{formatarData(ciclo.dataFim)}</p>
                       </div>
                     </div>
-                  </td>
+                  )}
+                </div>
 
-                  <td className="px-6 py-4 text-center">
-                    {ciclo.ativo ? (
-                      <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
-                        <CheckCircle size={12} /> ATIVO
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
-                        <StopCircle size={12} /> ENCERRADO
-                      </span>
-                    )}
-                  </td>
+                {/* Botão de Ação Primária (Encerrar) */}
+                {ciclo.ativo && (
+                  <button 
+                    onClick={() => confirmarEncerramento(ciclo)}
+                    className="w-full mt-4 bg-orange-50 text-orange-700 border border-orange-200 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-orange-100 transition-colors"
+                  >
+                    <StopCircle size={16} /> Encerrar Ciclo
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
 
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {ciclo.ativo && (
-                        <button 
-                          onClick={() => confirmarEncerramento(ciclo)}
-                          className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                          title="Encerrar Ciclo"
-                        >
-                          <StopCircle size={18} />
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => confirmarExclusao(ciclo)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Excluir do Histórico"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+          {/* --- VERSÃO DESKTOP (TABELA) --- */}
+          <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Ciclo / Descrição</th>
+                  <th className="px-6 py-4">Período</th>
+                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-right">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {ciclos.map(ciclo => (
+                  <tr key={ciclo.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-gray-800">{ciclo.descricao || `Ciclo #${ciclo.id}`}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">ID: {ciclo.id}</p>
+                    </td>
+                    
+                    <td className="px-6 py-4 text-gray-600">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-bold text-green-600 w-10">Início</span>
+                          <span>{formatarData(ciclo.dataInicio)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase font-bold text-red-400 w-10">Fim</span>
+                          <span>{formatarData(ciclo.dataFim)}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      {ciclo.ativo ? (
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
+                          <CheckCircle size={12} /> ATIVO
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
+                          <StopCircle size={12} /> ENCERRADO
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {ciclo.ativo && (
+                          <button 
+                            onClick={() => confirmarEncerramento(ciclo)}
+                            className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            title="Encerrar Ciclo"
+                          >
+                            <StopCircle size={18} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => confirmarExclusao(ciclo)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Excluir do Histórico"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <Modal isOpen={modalConfirmacao.aberto} onClose={() => setModalConfirmacao(p => ({...p, aberto: false}))} title={modalConfirmacao.titulo}>

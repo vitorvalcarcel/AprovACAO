@@ -5,12 +5,13 @@ import com.nomeacao.api.dto.DadosDetalhamentoRegistro;
 import com.nomeacao.api.model.RegistroEstudo;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.*;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -69,12 +70,13 @@ public class RegistroEstudoService {
         return new DadosDetalhamentoRegistro(registro);
     }
 
-    public List<DadosDetalhamentoRegistro> listar(
+    public Page<DadosDetalhamentoRegistro> listar(
             LocalDateTime inicio, 
             LocalDateTime fim, 
             List<Long> materias, 
             List<Long> concursos, 
             List<Long> tipos, 
+            Pageable pageable,
             Usuario usuario) {
         
         Specification<RegistroEstudo> spec = (root, query, cb) -> {
@@ -101,10 +103,8 @@ public class RegistroEstudoService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        return repository.findAll(spec, Sort.by(Sort.Direction.DESC, "dataInicio"))
-                .stream()
-                .map(DadosDetalhamentoRegistro::new)
-                .toList();
+        return repository.findAll(spec, pageable)
+                .map(DadosDetalhamentoRegistro::new);
     }
 
     @Transactional
@@ -125,7 +125,6 @@ public class RegistroEstudoService {
 
         var registros = repository.findAllById(ids);
         
-        // Verifica se todos os registros encontrados pertencem ao usuário
         boolean todosPertencemAoUsuario = registros.stream()
                 .allMatch(r -> r.getUsuario().getId().equals(usuario.getId()));
 

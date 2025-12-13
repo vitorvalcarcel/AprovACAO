@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Clock, Trash2, CheckSquare, Square, AlertTriangle, X, GripHorizontal } from 'lucide-react';
+import { Clock, Trash2, CheckSquare, Square, AlertTriangle, X, GripHorizontal, Calendar, Brain, Target } from 'lucide-react';
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import Modal from '../components/Modal';
+import MobileActionMenu from '../components/MobileActionMenu';
 import { useToast } from '../components/Toast/ToastContext';
-import TableSkeleton from '../components/skeletons/TableSkeleton'; // Import novo
+import TableSkeleton from '../components/skeletons/TableSkeleton';
 
 interface Registro {
   id: number;
@@ -18,11 +19,23 @@ interface Registro {
   anotacoes?: string;
 }
 
+// Interface para a resposta paginada do Spring
+interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+}
+
 export default function Historico() {
   const { showToast } = useToast();
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Paginação (MVP: sem infinite scroll complexo ainda, apenas carrega a pag 0 com tamanho maior ou paginação simples)
+  // const [page, setPage] = useState(0); 
+
   const [modoSelecao, setModoSelecao] = useState(false);
   const [idsSelecionados, setIdsSelecionados] = useState<number[]>([]);
   const [modalConfirmacao, setModalConfirmacao] = useState<{
@@ -40,15 +53,16 @@ export default function Historico() {
     setModoSelecao(false);
     
     try {
-      const params: any = {};
+      const params: any = { size: 50 }; // Carrega 50 itens inicialmente para o mobile não ficar vazio
       if (filtros.dataInicio) params.inicio = filtros.dataInicio + 'T00:00:00';
       if (filtros.dataFim) params.fim = filtros.dataFim + 'T23:59:59';
       if (filtros.materiaIds.length) params.materias = filtros.materiaIds.join(',');
       if (filtros.concursoIds.length) params.concursos = filtros.concursoIds.join(',');
       if (filtros.tipoEstudoIds.length) params.tipos = filtros.tipoEstudoIds.join(',');
 
-      const response = await api.get<Registro[]>('/registros', { params });
-      setRegistros(response.data);
+      const response = await api.get<PageResponse<Registro>>('/registros', { params });
+      // O backend agora retorna Page, então os dados estão em .content
+      setRegistros(response.data.content);
     } catch (error) {
       console.error("Erro ao filtrar", error);
     } finally {
@@ -111,10 +125,10 @@ export default function Historico() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 h-[calc(100vh-theme(spacing.24))] flex flex-col">
+    <div className="max-w-6xl mx-auto space-y-6 h-full md:h-[calc(100vh-theme(spacing.24))] flex flex-col">
       
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Histórico de Estudos</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Histórico</h1>
         
         <div className="flex items-center gap-3">
           {modoSelecao ? (
@@ -136,14 +150,14 @@ export default function Historico() {
           ) : (
             <button 
               onClick={() => setModoSelecao(true)}
-              className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium flex items-center gap-2 border border-blue-100"
+              className="hidden md:flex px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm font-medium items-center gap-2 border border-blue-100"
             >
               <GripHorizontal size={16} /> Gerenciar
             </button>
           )}
           
           <div className="text-sm text-gray-500 bg-white px-3 py-1.5 rounded-lg border">
-            {registros.length} registros
+            {registros.length} items
           </div>
         </div>
       </div>
@@ -153,8 +167,50 @@ export default function Historico() {
       {loading ? (
         <TableSkeleton />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col">
-          <div className="overflow-auto flex-1">
+        <div className="bg-transparent md:bg-white md:rounded-xl md:shadow-sm md:border md:border-gray-200 flex-1 overflow-hidden flex flex-col">
+          
+          {/* VIEW MOBILE: CARDS */}
+          <div className="md:hidden space-y-3 pb-20">
+            {registros.map(reg => (
+              <div key={reg.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <Calendar size={12} /> {formatarData(reg.dataInicio)}
+                  </div>
+                  <MobileActionMenu onDelete={() => confirmarExclusaoUnica(reg.id)} />
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">{reg.nomeMateria}</h3>
+                  {reg.nomeTopico && <p className="text-sm text-gray-500 flex items-center gap-1"><Brain size={12}/> {reg.nomeTopico}</p>}
+                  {reg.nomeConcurso && <p className="text-xs text-blue-600 mt-1 flex items-center gap-1"><Target size={10}/> {reg.nomeConcurso}</p>}
+                </div>
+
+                <div className="flex items-center justify-between border-t border-gray-50 pt-3 mt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                      <Clock size={12} /> {formatarTempo(reg.segundos)}
+                    </div>
+                  </div>
+                  
+                  {reg.questoesFeitas > 0 && (
+                    <div className="text-xs font-medium text-gray-600">
+                      {reg.questoesCertas}/{reg.questoesFeitas} acertos
+                      <span className={`ml-2 px-1.5 py-0.5 rounded ${
+                        (reg.questoesCertas/reg.questoesFeitas) >= 0.8 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {Math.round((reg.questoesCertas / reg.questoesFeitas) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {registros.length === 0 && <div className="text-center text-gray-400 py-10">Nenhum registro.</div>}
+          </div>
+
+          {/* VIEW DESKTOP: TABELA */}
+          <div className="hidden md:block overflow-auto flex-1">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
                 <tr>
