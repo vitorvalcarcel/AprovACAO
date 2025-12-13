@@ -7,6 +7,10 @@ import com.nomeacao.api.service.RegistroEstudoService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,16 +38,17 @@ public class RegistroEstudoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DadosDetalhamentoRegistro>> listar(
+    public ResponseEntity<Page<DadosDetalhamentoRegistro>> listar(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @RequestParam(required = false) List<Long> materias,
             @RequestParam(required = false) List<Long> concursos,
             @RequestParam(required = false) List<Long> tipos,
+            @PageableDefault(size = 20, sort = "dataInicio", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal Usuario usuario) {
         
-        var lista = service.listar(inicio, fim, materias, concursos, tipos, usuario);
-        return ResponseEntity.ok(lista);
+        var pagina = service.listar(inicio, fim, materias, concursos, tipos, pageable, usuario);
+        return ResponseEntity.ok(pagina);
     }
 
     @DeleteMapping("/{id}")

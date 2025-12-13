@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Archive, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
+import { Plus, Pencil, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
 import ModalGerarCiclo from '../components/ModalGerarCiclo';
+import MobileActionMenu from '../components/MobileActionMenu'; // Componente de ação mobile
 import { useToast } from '../components/Toast/ToastContext';
-import CardListSkeleton from '../components/skeletons/CardListSkeleton'; // Import novo
+import CardListSkeleton from '../components/skeletons/CardListSkeleton';
 
 interface Concurso {
   id: number;
@@ -163,19 +164,19 @@ export default function Concursos() {
   const listaExibida = concursos.filter(c => mostrarArquivados ? c.arquivado : !c.arquivado);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-24 md:pb-10">
       
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Concursos</h1>
           <p className="text-sm text-gray-500">Defina seus objetivos</p>
         </div>
-        <button onClick={() => abrirModal()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium shadow-sm transition-colors">
+        <button onClick={() => abrirModal()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors active:scale-95">
           <Plus size={18} /> Novo Concurso
         </button>
       </div>
 
-      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
         <div className="flex items-center gap-2 text-gray-500 text-sm px-2">
           <Search size={16} /> <span>{listaExibida.length} concursos</span>
         </div>
@@ -188,15 +189,15 @@ export default function Concursos() {
         </label>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="space-y-4 md:space-y-0 md:bg-white md:rounded-lg md:border md:border-gray-200 md:overflow-hidden">
         {loading ? (
-          <CardListSkeleton />
+          <div className="p-4"><CardListSkeleton /></div>
         ) : listaExibida.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             {mostrarArquivados ? "O arquivo está vazio." : "Cadastre seu primeiro objetivo de estudo!"}
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="flex flex-col md:divide-y md:divide-gray-100">
             {listaExibida.map((concurso) => {
               const dias = calcularDiasRestantes(concurso.dataProva);
               let badgeCor = 'bg-blue-50 text-blue-700';
@@ -209,63 +210,67 @@ export default function Concursos() {
               }
 
               return (
-                <div key={concurso.id} className="group flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                <div key={concurso.id} className="relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
                   
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-1.5 h-1.5 rounded-full ${concurso.arquivado ? 'bg-orange-400' : 'bg-blue-600'}`} />
-                      <span className={`font-medium text-gray-700 ${concurso.arquivado ? 'line-through text-gray-400' : ''}`}>
-                        {concurso.nome}
-                      </span>
-                      {concurso.arquivado && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Arquivado</span>}
+                  {/* --- CARD MOBILE LAYOUT --- */}
+                  <div className="flex flex-col gap-3 md:flex-row md:gap-0 md:flex-1 md:items-center">
+                    
+                    {/* Cabeçalho do Card */}
+                    <div className="flex items-start justify-between md:justify-start md:gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`hidden md:block w-1.5 h-1.5 rounded-full ${concurso.arquivado ? 'bg-orange-400' : 'bg-blue-600'}`} />
+                        <span className={`font-bold text-lg md:text-base md:font-medium text-gray-800 ${concurso.arquivado ? 'line-through text-gray-400' : ''}`}>
+                          {concurso.nome}
+                        </span>
+                        {concurso.arquivado && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Arquivado</span>}
+                      </div>
+                      
+                      {/* Menu de Ações Mobile */}
+                      <div className="md:hidden">
+                        <MobileActionMenu 
+                          onEdit={() => abrirModal(concurso)}
+                          onArchive={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')}
+                          onDelete={() => confirmarAcao(concurso, 'excluir')}
+                          isArchived={concurso.arquivado}
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 pl-4">
-                      {concurso.banca && <div className="flex items-center gap-1"><Building2 size={12} />{concurso.banca}</div>}
-                      {concurso.dataProva && <div className="flex items-center gap-1"><Calendar size={12} />{formatarData(concurso.dataProva)}</div>}
+                    {/* Informações Secundárias */}
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 md:pl-4">
+                      {concurso.banca && <div className="flex items-center gap-1.5"><Building2 size={14} className="text-gray-400" />{concurso.banca}</div>}
+                      {concurso.dataProva && <div className="flex items-center gap-1.5"><Calendar size={14} className="text-gray-400" />{formatarData(concurso.dataProva)}</div>}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {dias !== null && !concurso.arquivado && (
-                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${badgeCor}`}>
-                        <Timer size={12} /> {badgeTexto}
+                  {/* Rodapé do Card / Ações Desktop */}
+                  <div className="flex items-center justify-between mt-3 md:mt-0 md:justify-end md:gap-3">
+                    {/* Badge de Dias */}
+                    {dias !== null && !concurso.arquivado ? (
+                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${badgeCor}`}>
+                        <Timer size={14} /> {badgeTexto}
+                      </div>
+                    ) : <div />}
+
+                    {/* Botões Extras Mobile (Ciclo/Disciplinas) */}
+                    {!concurso.arquivado && (
+                      <div className="flex gap-2 md:hidden">
+                         <button onClick={() => abrirDisciplinas(concurso)} className="p-2 bg-purple-50 text-purple-600 rounded-lg"><BookOpen size={18}/></button>
+                         <button onClick={() => abrirGerarCiclo(concurso)} className="p-2 bg-green-50 text-green-600 rounded-lg"><PlayCircle size={18}/></button>
                       </div>
                     )}
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      
+                    {/* Botões Desktop (Hover) */}
+                    <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!concurso.arquivado && (
-                        <button 
-                          onClick={() => abrirGerarCiclo(concurso)}
-                          className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
-                          title="Gerar Ciclo de Estudos"
-                        >
-                          <PlayCircle size={16} />
-                        </button>
+                        <>
+                          <button onClick={() => abrirGerarCiclo(concurso)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Gerar Ciclo"><PlayCircle size={16} /></button>
+                          <button onClick={() => abrirDisciplinas(concurso)} className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors" title="Disciplinas"><BookOpen size={16} /></button>
+                        </>
                       )}
-
-                      {!concurso.arquivado && (
-                        <button 
-                          onClick={() => abrirDisciplinas(concurso)}
-                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                          title="Gerenciar Disciplinas"
-                        >
-                          <BookOpen size={16} />
-                        </button>
-                      )}
-
-                      <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar">
-                        <Pencil size={16} />
-                      </button>
-                      
-                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`} title={concurso.arquivado ? "Restaurar" : "Arquivar"}>
-                        {concurso.arquivado ? <RefreshCw size={16} /> : <Archive size={16} />}
-                      </button>
-
-                      <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Excluir Permanentemente">
-                        <Trash2 size={16} />
-                      </button>
+                      <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar"><Pencil size={16} /></button>
+                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><RefreshCw size={16} /></button>
+                      <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 </div>
@@ -276,7 +281,6 @@ export default function Concursos() {
       </div>
 
       {/* --- MODAIS --- */}
-
       <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={modoEdicao ? 'Editar Concurso' : 'Novo Concurso'}>
         <form onSubmit={salvar}>
           <div className="mb-4">

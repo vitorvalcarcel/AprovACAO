@@ -3,10 +3,10 @@ import { Plus, Pencil, Archive, Trash2, Book, ChevronDown, ChevronUp, Box, Refre
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalTopico from '../components/ModalTopico';
+import MobileActionMenu from '../components/MobileActionMenu'; // Import Mobile Action
 import { useToast } from '../components/Toast/ToastContext';
-import CardListSkeleton from '../components/skeletons/CardListSkeleton'; // Import novo
+import CardListSkeleton from '../components/skeletons/CardListSkeleton';
 
-// Tipos
 interface Materia {
   id: number;
   nome: string;
@@ -24,10 +24,7 @@ export default function Materias() {
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Controle da Sanfona
   const [materiaAbertaId, setMateriaAbertaId] = useState<number | null>(null);
-  
-  // Dados da matéria aberta
   const [topicos, setTopicos] = useState<Topico[]>([]);
   const [loadingTopicos, setLoadingTopicos] = useState(false);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
@@ -40,7 +37,6 @@ export default function Materias() {
   const [modalTopicoOpen, setModalTopicoOpen] = useState(false);
   const [topicoEdicao, setTopicoEdicao] = useState<Topico | null>(null);
 
-  // Modal de Confirmação
   const [confirmacao, setConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -182,7 +178,7 @@ export default function Materias() {
         </div>
         <button 
           onClick={() => { setMateriaEdicao(null); setFormMateria(''); setModalMateriaOpen(true); }} 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
         >
           <Plus size={20} /> Nova Matéria
         </button>
@@ -198,6 +194,7 @@ export default function Materias() {
          listaMaterias.map(materia => (
            <div key={materia.id} className={`bg-white rounded-xl border transition-all duration-300 ${materiaAbertaId === materia.id ? 'border-blue-300 shadow-md ring-1 ring-blue-100' : 'border-gray-200 hover:border-blue-200'}`}>
              
+             {/* HEADER MATÉRIA */}
              <div 
                className="p-4 flex items-center justify-between cursor-pointer select-none"
                onClick={() => toggleMateria(materia.id)}
@@ -210,15 +207,28 @@ export default function Materias() {
                </div>
                
                <div className="flex items-center gap-2">
-                 <div className="flex gap-1 mr-2" onClick={e => e.stopPropagation()}>
+                 {/* Desktop: Buttons */}
+                 <div className="hidden md:flex gap-1 mr-2" onClick={e => e.stopPropagation()}>
                    <button onClick={() => { setMateriaEdicao(materia); setFormMateria(materia.nome); setModalMateriaOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Editar Nome"><Pencil size={16}/></button>
                    <button onClick={() => arquivarMateria(materia)} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="Arquivar"><Archive size={16}/></button>
                    <button onClick={() => confirmarExclusaoMateria(materia)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Excluir"><Trash2 size={16}/></button>
                  </div>
+                 
+                 {/* Mobile: Action Menu */}
+                 <div className="md:hidden" onClick={e => e.stopPropagation()}>
+                    <MobileActionMenu 
+                      onEdit={() => { setMateriaEdicao(materia); setFormMateria(materia.nome); setModalMateriaOpen(true); }}
+                      onArchive={() => arquivarMateria(materia)}
+                      onDelete={() => confirmarExclusaoMateria(materia)}
+                      isArchived={materia.arquivada}
+                    />
+                 </div>
+
                  {materiaAbertaId === materia.id ? <ChevronUp size={20} className="text-blue-500"/> : <ChevronDown size={20} className="text-gray-400"/>}
                </div>
              </div>
 
+             {/* CORPO ACORDEÃO */}
              {materiaAbertaId === materia.id && (
                <div className="border-t border-gray-100 bg-gray-50/50 p-4 animate-fade-in-down">
                  
@@ -234,7 +244,7 @@ export default function Materias() {
                    </div>
                    <button 
                      onClick={() => { setTopicoEdicao(null); setModalTopicoOpen(true); }}
-                     className="bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 flex items-center gap-1 shadow-sm"
+                     className="bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 flex items-center gap-1 shadow-sm active:bg-blue-100"
                    >
                      <Plus size={16} /> Novo Tópico
                    </button>
@@ -251,12 +261,13 @@ export default function Materias() {
                    <div className="grid grid-cols-1 gap-2">
                      {topicos.map(topico => (
                        <div key={topico.id} className={`flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-all ${topico.arquivado ? 'opacity-60 bg-gray-50 border-gray-200' : 'border-gray-100 hover:border-blue-200'}`}>
-                         <div className="flex items-center gap-3">
-                           {topico.arquivado ? <Box size={16} className="text-gray-400"/> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500"/>}
-                           <span className={`text-sm ${topico.arquivado ? 'text-gray-500 line-through' : 'text-gray-700 font-medium'}`}>{topico.nome}</span>
+                         <div className="flex items-center gap-3 overflow-hidden">
+                           {topico.arquivado ? <Box size={16} className="text-gray-400 shrink-0"/> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"/>}
+                           <span className={`text-sm truncate ${topico.arquivado ? 'text-gray-500 line-through' : 'text-gray-700 font-medium'}`}>{topico.nome}</span>
                          </div>
                          
-                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-100">
+                         {/* Desktop Actions */}
+                         <div className="hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity hover:opacity-100">
                            {!topico.arquivado && (
                              <button onClick={() => { setTopicoEdicao(topico); setModalTopicoOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 rounded"><Pencil size={14}/></button>
                            )}
@@ -264,6 +275,16 @@ export default function Materias() {
                              {topico.arquivado ? <RefreshCw size={14}/> : <Archive size={14}/>}
                            </button>
                            <button onClick={() => confirmarExclusaoTopico(topico)} className="p-1.5 text-gray-400 hover:text-red-600 rounded"><Trash2 size={14}/></button>
+                         </div>
+
+                         {/* Mobile Actions */}
+                         <div className="md:hidden">
+                            <MobileActionMenu 
+                                onEdit={() => { setTopicoEdicao(topico); setModalTopicoOpen(true); }}
+                                onArchive={() => arquivarTopico(topico)}
+                                onDelete={() => confirmarExclusaoTopico(topico)}
+                                isArchived={topico.arquivado}
+                            />
                          </div>
                        </div>
                      ))}
