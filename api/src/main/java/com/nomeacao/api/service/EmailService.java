@@ -1,22 +1,24 @@
 package com.nomeacao.api.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Value("${spring.mail.username}")
-    private String remetente;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    @Value("${resend.from}")
+    private String resendFrom;
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
@@ -39,7 +41,7 @@ public class EmailService {
             <p style="font-size: 12px; word-break: break-all; color: #2563EB;">%s</p>
             """, nome, link, link);
 
-        enviarEmailComTemplate(destinatario, assunto, conteudo);
+        enviarEmailViaResend(destinatario, assunto, conteudo);
     }
 
     @Async
@@ -59,18 +61,13 @@ public class EmailService {
             <p style="font-size: 12px; color: #999;">Se não foi você, ignore este e-mail. Sua senha permanecerá a mesma.</p>
             """, link);
 
-        enviarEmailComTemplate(destinatario, assunto, conteudo);
+        enviarEmailViaResend(destinatario, assunto, conteudo);
     }
 
-    // Método auxiliar que injeta o HTML bonito ao redor do conteúdo
-    private void enviarEmailComTemplate(String para, String assunto, String conteudoPrincipal) {
+    private void enviarEmailViaResend(String para, String assunto, String conteudoPrincipal) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setFrom(remetente);
-            helper.setTo(para);
-            helper.setSubject(assunto);
+            // Instancia o cliente Resend
+            Resend resend = new Resend(resendApiKey);
 
             // Template HTML Base (Design System)
             String htmlFinal = String.format("""
@@ -106,11 +103,22 @@ public class EmailService {
                 </html>
                 """, conteudoPrincipal);
 
-            helper.setText(htmlFinal, true); // true = ativa HTML
+            // Monta o objeto de envio
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from("AprovAÇÃO <" + resendFrom + ">")
+                    .to(para)
+                    .subject(assunto)
+                    .html(htmlFinal)
+                    .build();
 
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            throw new RuntimeException("Erro ao enviar e-mail: " + e.getMessage());
+            // Dispara o envio
+            CreateEmailResponse data = resend.emails().send(params);
+            
+            logger.info("Email enviado via Resend. ID: {}", data.getId());
+
+        } catch (Exception e) {
+            // Logamos o erro mas não quebramos a execução do usuário para garantir resiliência
+            logger.error("Erro CRÍTICO ao enviar e-mail via Resend: {}", e.getMessage(), e);
         }
     }
 }
