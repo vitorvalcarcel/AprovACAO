@@ -70,8 +70,6 @@ export default function Dashboard() {
 
   const handleIniciarCronometro = () => {
     if (isActive) {
-        // Isso será tratado pelo Layout/FloatingBar na verdade, 
-        // mas se o usuário clicar aqui, apenas damos feedback visual
         const event = new CustomEvent('open-timer-modal');
         window.dispatchEvent(event);
     } else {
@@ -138,15 +136,22 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
+                
                 <div className="grid grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   <div className="col-span-5 sm:col-span-4">Matéria</div>
                   <div className="col-span-4 sm:col-span-4 text-center">Progresso</div>
-                  <div className="col-span-3 sm:col-span-2 text-right">Horas</div>
+                  <div className="col-span-3 sm:col-span-2 text-right">
+                    <span className="sm:hidden">Metas</span>
+                    <span className="hidden sm:inline">Horas</span>
+                  </div>
                   <div className="hidden sm:block col-span-2 text-right">Questões</div>
                 </div>
+
                 <div className="divide-y divide-gray-50">
                   {data.itens.map((item, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-2.5 items-center hover:bg-blue-50/30 transition-colors group">
+                      
+                      {/* MATÉRIA */}
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-2 sm:gap-3">
                         <div className={`w-1 sm:w-1.5 h-8 sm:h-10 rounded-full shrink-0 ${item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                         <div className="min-w-0 flex-1">
@@ -156,6 +161,8 @@ export default function Dashboard() {
                           )}
                         </div>
                       </div>
+
+                      {/* BARRAS DE PROGRESSO */}
                       <div className="col-span-4 sm:col-span-4 flex flex-col justify-center gap-1.5 px-1 sm:px-2">
                         <div className="relative w-full h-3 sm:h-2.5 bg-gray-100 rounded-full overflow-hidden">
                           <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-700 ${item.saldoSegundos <= 0 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${item.percentualHoras}%` }} />
@@ -166,18 +173,45 @@ export default function Dashboard() {
                           </div>
                         )}
                       </div>
-                      <div className="col-span-3 sm:col-span-2 text-right">
-                        <div className="text-xs sm:text-sm font-bold text-gray-700 font-mono">{formatarTempo(item.segundosRealizados)}</div>
-                        <div className="text-[9px] sm:text-[10px] text-gray-400">/ {item.metaHoras}h</div>
+
+                      {/* COLUNA HORAS (Mobile unificado / Desktop isolado) */}
+                      <div className="col-span-3 sm:col-span-2 text-right flex flex-col justify-center">
+                        <div className="flex items-baseline justify-end gap-1">
+                          <span className="text-xs sm:text-sm font-bold text-gray-700 font-mono">
+                            {formatarTempo(item.segundosRealizados)}
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] text-gray-400">
+                            / {item.metaHoras}h
+                          </span>
+                        </div>
+
+                        {/* Mobile Only: Questões aparecem aqui embaixo */}
+                        {item.metaQuestoes > 0 && (
+                          <div className="flex items-baseline justify-end gap-1 sm:hidden mt-0.5">
+                            <span className="text-xs font-bold text-gray-700 font-mono">
+                              {item.questoesRealizadas}
+                            </span>
+                            <span className="text-[9px] text-gray-400">
+                              / {item.metaQuestoes}q
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <div className="hidden sm:block col-span-2 text-right">
+
+                      {/* COLUNA QUESTÕES (APENAS DESKTOP - AGORA ALINHADA COM HORAS) */}
+                      <div className="hidden sm:flex col-span-2 text-right flex-col justify-center">
                         {item.metaQuestoes > 0 ? (
-                          <>
-                            <div className="text-sm font-bold text-gray-700 font-mono">{item.questoesRealizadas}</div>
-                            <div className="text-[10px] text-gray-400">/ {item.metaQuestoes}</div>
-                          </>
+                          <div className="flex items-baseline justify-end gap-1">
+                            <span className="text-sm font-bold text-gray-700 font-mono">
+                              {item.questoesRealizadas}
+                            </span>
+                            <span className="text-[10px] text-gray-400">
+                              / {item.metaQuestoes}
+                            </span>
+                          </div>
                         ) : <span className="text-xs text-gray-300">-</span>}
                       </div>
+
                     </div>
                   ))}
                 </div>

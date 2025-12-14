@@ -7,18 +7,20 @@ import Modal from './Modal';
 import RegistroRapido from './RegistroRapido';
 import KeepAliveManager from './KeepAliveManager';
 import FloatingTimerBar from './FloatingTimerBar';
-import { useTimer } from '../contexts/TimerContext';
+import { useTimerState } from '../contexts/TimerContext'; // USANDO O HOOK ESTÁVEL
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isActive } = useTimer(); 
+  
+  // Agora usamos APENAS o estado (isActive), sem os segundos. 
+  // O Layout NÃO vai re-renderizar a cada segundo!
+  const { isActive } = useTimerState(); 
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registroModalOpen, setRegistroModalOpen] = useState(false);
   const [registroMode, setRegistroMode] = useState<'timer' | 'manual'>('timer');
 
-  // Listeners para eventos globais de abertura do modal
   useEffect(() => {
     const handleOpenTimer = () => handleOpenRegistro('timer');
     const handleOpenManual = () => handleOpenRegistro('manual');
@@ -55,14 +57,12 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      
       <KeepAliveManager />
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
       )}
 
-      {/* Sidebar Desktop */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:flex lg:flex-col
@@ -110,12 +110,8 @@ export default function Layout() {
               <User size={20} />
               Minha Conta
             </Link>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <LogOut size={20} />
-              Sair
+            <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+              <LogOut size={20} /> Sair
             </button>
           </div>
         </div>
@@ -132,17 +128,13 @@ export default function Layout() {
         <FloatingTimerBar onMaximize={() => handleOpenRegistro('timer')} />
       )}
 
-      <BottomNavigation 
-        onOpenMenu={() => setMobileMenuOpen(true)} 
-        onOpenRegistro={handleOpenRegistro} 
-      />
+      <BottomNavigation onOpenMenu={() => setMobileMenuOpen(true)} onOpenRegistro={handleOpenRegistro} />
 
-      {/* USO CORRETO DO COMPONENTE MODAL COM CLASSE DE LARGURA */}
       <Modal 
         isOpen={registroModalOpen} 
         onClose={() => setRegistroModalOpen(false)} 
         title={registroMode === 'timer' ? 'Cronômetro' : 'Registro Manual'}
-        className="md:max-w-2xl" 
+        className="md:max-w-3xl"
       >
         <RegistroRapido 
             initialMode={registroMode} 
@@ -153,7 +145,6 @@ export default function Layout() {
             }} 
         />
       </Modal>
-
     </div>
   );
 }
