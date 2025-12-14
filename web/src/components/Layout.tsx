@@ -5,15 +5,13 @@ import AvisoExpiracao from './AvisoExpiracao';
 import BottomNavigation from './BottomNavigation';
 import Modal from './Modal';
 import RegistroRapido from './RegistroRapido';
+import KeepAliveManager from './KeepAliveManager';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Controle do Menu Mobile (Drawer)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Controle Global do Modal de Registro Rápido (Acessível pelo FAB)
   const [registroModalOpen, setRegistroModalOpen] = useState(false);
 
   const handleLogout = () => {
@@ -35,12 +33,15 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       
+      {/* TAREFA D: Gerenciador de Keep-Alive Inserido Aqui */}
+      <KeepAliveManager />
+
       {/* Overlay do Menu Mobile */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
       )}
 
-      {/* Sidebar - Desktop (Fixo) & Mobile (Drawer) */}
+      {/* Sidebar */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:flex lg:flex-col
@@ -52,7 +53,6 @@ export default function Layout() {
               <GraduationCap className="text-blue-600 mr-2" size={32} />
               <span className="text-xl font-bold text-gray-800">Aprov<span className="text-blue-600">AÇÃO</span></span>
             </div>
-            {/* Botão Fechar Menu no Mobile */}
             <button onClick={() => setMobileMenuOpen(false)} className="lg:hidden text-gray-400">
               <X size={24} />
             </button>
@@ -102,7 +102,6 @@ export default function Layout() {
 
       {/* Conteúdo Principal */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
-        {/* pb-24 é necessário no mobile para o conteúdo não ficar atrás da navbar */}
         <div className="flex-1 overflow-auto p-4 lg:p-8 pb-24 lg:pb-8">
           <Outlet />
           <AvisoExpiracao />
@@ -119,9 +118,6 @@ export default function Layout() {
       <Modal isOpen={registroModalOpen} onClose={() => setRegistroModalOpen(false)} title="Registrar Estudo">
         <RegistroRapido onRegistroSalvo={() => {
           setRegistroModalOpen(false);
-          // O Dashboard atualiza automaticamente ao detectar foco ou mudança, 
-          // mas idealmente dispararíamos um evento de refresh global aqui.
-          // Como MVP, recarregar a janela garante sincronia:
           window.location.reload(); 
         }} />
       </Modal>

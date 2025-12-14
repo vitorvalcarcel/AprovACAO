@@ -4,7 +4,7 @@ import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
 import ModalGerarCiclo from '../components/ModalGerarCiclo';
-import MobileActionMenu from '../components/MobileActionMenu'; // Componente de ação mobile
+import MobileActionMenu from '../components/MobileActionMenu'; 
 import { useToast } from '../components/Toast/ToastContext';
 import CardListSkeleton from '../components/skeletons/CardListSkeleton';
 
@@ -22,21 +22,16 @@ export default function Concursos() {
   const [loading, setLoading] = useState(true);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
-  // Estados do Formulário Principal
   const [modalAberto, setModalAberto] = useState(false);
   const [modoEdicao, setModoEdicao] = useState<Concurso | null>(null);
   const [form, setForm] = useState({ nome: '', banca: '', dataProva: '' });
   const [erroForm, setErroForm] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Estado Compartilhado
   const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
-
-  // Estados dos Modais Específicos
   const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
   const [modalCicloAberto, setModalCicloAberto] = useState(false);
 
-  // Estados de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -58,7 +53,6 @@ export default function Concursos() {
 
   useEffect(() => { carregarConcursos(); }, []);
 
-  // --- Helpers ---
   const calcularDiasRestantes = (dataProva?: string) => {
     if (!dataProva) return null;
     const hoje = new Date();
@@ -74,7 +68,6 @@ export default function Concursos() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  // --- Abertura de Modais ---
   const abrirModal = (concurso?: Concurso) => {
     setErroForm('');
     if (concurso) {
@@ -97,7 +90,6 @@ export default function Concursos() {
     setModalCicloAberto(true);
   };
 
-  // --- Salvar Concurso ---
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
@@ -122,7 +114,6 @@ export default function Concursos() {
     }
   };
 
-  // --- Ações de Status ---
   const confirmarAcao = (concurso: Concurso, tipo: 'arquivar' | 'desarquivar' | 'excluir') => {
     if (tipo === 'excluir') {
       setModalConfirmacao({
@@ -210,12 +201,11 @@ export default function Concursos() {
               }
 
               return (
-                <div key={concurso.id} className="relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
+                // TAREFA E: ADICIONADO A CLASSE 'group' AQUI
+                <div key={concurso.id} className="group relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
                   
-                  {/* --- CARD MOBILE LAYOUT --- */}
                   <div className="flex flex-col gap-3 md:flex-row md:gap-0 md:flex-1 md:items-center">
                     
-                    {/* Cabeçalho do Card */}
                     <div className="flex items-start justify-between md:justify-start md:gap-3">
                       <div className="flex items-center gap-3">
                         <div className={`hidden md:block w-1.5 h-1.5 rounded-full ${concurso.arquivado ? 'bg-orange-400' : 'bg-blue-600'}`} />
@@ -225,7 +215,6 @@ export default function Concursos() {
                         {concurso.arquivado && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Arquivado</span>}
                       </div>
                       
-                      {/* Menu de Ações Mobile */}
                       <div className="md:hidden">
                         <MobileActionMenu 
                           onEdit={() => abrirModal(concurso)}
@@ -236,23 +225,19 @@ export default function Concursos() {
                       </div>
                     </div>
 
-                    {/* Informações Secundárias */}
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 md:pl-4">
                       {concurso.banca && <div className="flex items-center gap-1.5"><Building2 size={14} className="text-gray-400" />{concurso.banca}</div>}
                       {concurso.dataProva && <div className="flex items-center gap-1.5"><Calendar size={14} className="text-gray-400" />{formatarData(concurso.dataProva)}</div>}
                     </div>
                   </div>
 
-                  {/* Rodapé do Card / Ações Desktop */}
                   <div className="flex items-center justify-between mt-3 md:mt-0 md:justify-end md:gap-3">
-                    {/* Badge de Dias */}
                     {dias !== null && !concurso.arquivado ? (
                       <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${badgeCor}`}>
                         <Timer size={14} /> {badgeTexto}
                       </div>
                     ) : <div />}
 
-                    {/* Botões Extras Mobile (Ciclo/Disciplinas) */}
                     {!concurso.arquivado && (
                       <div className="flex gap-2 md:hidden">
                          <button onClick={() => abrirDisciplinas(concurso)} className="p-2 bg-purple-50 text-purple-600 rounded-lg"><BookOpen size={18}/></button>
@@ -260,7 +245,7 @@ export default function Concursos() {
                       </div>
                     )}
 
-                    {/* Botões Desktop (Hover) */}
+                    {/* Botões Desktop - Agora visíveis com hover graças à classe group */}
                     <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!concurso.arquivado && (
                         <>
@@ -280,7 +265,7 @@ export default function Concursos() {
         )}
       </div>
 
-      {/* --- MODAIS --- */}
+      {/* --- MODAIS (Sem Alterações) --- */}
       <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={modoEdicao ? 'Editar Concurso' : 'Novo Concurso'}>
         <form onSubmit={salvar}>
           <div className="mb-4">

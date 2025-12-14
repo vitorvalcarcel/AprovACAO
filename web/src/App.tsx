@@ -16,6 +16,7 @@ import TiposEstudo from './pages/TiposEstudo';
 import Estatisticas from './pages/Estatisticas';
 import Perfil from './pages/Perfil';
 import MeusCiclos from './pages/MeusCiclos';
+import Manutencao from './pages/Manutencao';
 import { ToastProvider } from './components/Toast/ToastContext';
 
 function App() {
@@ -23,6 +24,8 @@ function App() {
     <ToastProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/manutencao" element={<Manutencao />} />
+
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />

@@ -13,10 +13,8 @@ interface ItemSugestao {
   nomeMateria: string;
   peso: number;
   percentual: number;
-  // Sugeridos pelo backend
   horasSugeridas: number;
   questoesSugeridas: number;
-  // Editados pelo usuário
   horasEditadas: number;
   questoesEditadas: number;
 }
@@ -29,11 +27,8 @@ interface ModalGerarCicloProps {
 
 export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGerarCicloProps) {
   const [step, setStep] = useState(1);
-  
-  // Inputs Step 1
   const [totalHorasStr, setTotalHorasStr] = useState('20'); 
   const [totalQuestoesStr, setTotalQuestoesStr] = useState('500'); 
-  
   const [itens, setItens] = useState<ItemSugestao[]>([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
@@ -43,17 +38,14 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
       setStep(1);
       setItens([]);
       setErro('');
-      // Valores padrão
       setTotalHorasStr('20');
       setTotalQuestoesStr('500');
     }
   }, [isOpen]);
 
-  // Passo 1 -> Passo 2
   const gerarSugestao = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
-
     const horasNum = parseFloat(totalHorasStr);
     const questoesNum = parseInt(totalQuestoesStr);
 
@@ -63,7 +55,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
     }
     
     setLoading(true);
-
     try {
       const response = await api.get<ItemSugestao[]>('/ciclos/sugestao', {
         params: { 
@@ -72,14 +63,11 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
           questoes: isNaN(questoesNum) ? 0 : questoesNum
         }
       });
-
-      // Inicializa os campos editáveis com a sugestão
       const dados = response.data.map(item => ({
         ...item,
         horasEditadas: item.horasSugeridas,
         questoesEditadas: item.questoesSugeridas
       }));
-
       setItens(dados);
       setStep(2);
     } catch (error: any) {
@@ -89,12 +77,10 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
     }
   };
 
-  // Passo 2 -> Salvar
   const salvarCiclo = async () => {
     if (!concurso) return;
     setLoading(true);
     setErro('');
-
     const totalHorasReal = itens.reduce((acc, i) => acc + i.horasEditadas, 0);
     const totalQuestoesReal = itens.reduce((acc, i) => acc + i.questoesEditadas, 0);
 
@@ -111,24 +97,18 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
           ordem: index + 1
         }))
       };
-
       await api.post('/ciclos', payload);
       setStep(3);
-      
-      // Auto-fecha
       setTimeout(() => {
         onClose();
-        // Recarrega a página ou contexto se necessário
         window.location.reload(); 
       }, 1500);
-
     } catch (error: any) {
       setErro(error.response?.data?.mensagem || "Erro ao salvar ciclo.");
       setLoading(false);
     }
   };
 
-  // Atualizadores da Tabela
   const atualizarHoras = (index: number, valor: string) => {
     const novaLista = [...itens];
     if (valor === '') novaLista[index].horasEditadas = 0;
@@ -155,7 +135,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={step === 1 ? "Novo Ciclo" : (step === 3 ? "Sucesso!" : `Planejando: ${concurso?.nome}`)}>
       
-      {/* --- PASSO 1: DEFINIÇÃO DE METAS --- */}
       {step === 1 && (
         <form onSubmit={gerarSugestao} className="space-y-6">
           <div className="text-center py-4">
@@ -167,7 +146,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Input Horas */}
             <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
               <label className="text-xs font-bold text-blue-600 uppercase mb-2">Horas Totais</label>
               <div className="flex items-center gap-1">
@@ -180,7 +158,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
               </div>
             </div>
 
-            {/* Input Questões */}
             <div className="flex flex-col items-center p-4 bg-purple-50 rounded-xl border border-purple-100">
               <label className="text-xs font-bold text-purple-600 uppercase mb-2">Questões Totais</label>
               <div className="flex items-center gap-1">
@@ -202,10 +179,9 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
         </form>
       )}
 
-      {/* --- PASSO 2: TABELA DE AJUSTES --- */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200 sticky top-0 z-20">
             <div className="flex gap-4 text-sm">
               <div className="flex items-center gap-1.5 text-blue-700">
                 <Calculator size={14} /> <strong>{totalHorasAtual.toFixed(1)}h</strong>
@@ -219,8 +195,10 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
             </button>
           </div>
 
-          <div className="border rounded-lg overflow-hidden max-h-[300px] overflow-y-auto bg-white scrollbar-thin">
-            <table className="w-full text-sm text-left">
+          <div className="border rounded-lg overflow-hidden max-h-[350px] overflow-y-auto bg-white scrollbar-thin">
+            
+            {/* TAREFA E: VISUALIZAÇÃO DESKTOP (TABELA) */}
+            <table className="hidden md:table w-full text-sm text-left">
               <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
                 <tr>
                   <th className="px-3 py-2">Matéria</th>
@@ -241,8 +219,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
                     <td className="px-3 py-2 text-center text-xs text-gray-500 font-mono">
                       {item.peso}
                     </td>
-                    
-                    {/* Input Horas */}
                     <td className="px-2 py-2">
                       <input 
                         type="number" step="0.1" min="0"
@@ -251,8 +227,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
                         className="w-full border border-blue-100 bg-blue-50/50 rounded px-1 py-1 text-center font-bold text-blue-700 focus:border-blue-500 outline-none focus:bg-white transition-colors"
                       />
                     </td>
-
-                    {/* Input Questões */}
                     <td className="px-2 py-2">
                       <input 
                         type="number" min="0"
@@ -265,6 +239,39 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
                 ))}
               </tbody>
             </table>
+
+            {/* TAREFA E: VISUALIZAÇÃO MOBILE (CARDS VERTICAIS) */}
+            <div className="md:hidden divide-y divide-gray-100">
+                {itens.map((item, idx) => (
+                    <div key={item.materiaId} className="p-3">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-sm text-gray-800">{item.nomeMateria}</span>
+                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Peso {item.peso}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Horas</label>
+                                <input 
+                                    type="number" step="0.1"
+                                    value={item.horasEditadas}
+                                    onChange={e => atualizarHoras(idx, e.target.value)}
+                                    className="w-full border border-blue-200 bg-blue-50 rounded p-1.5 text-center font-bold text-blue-700 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] uppercase font-bold text-purple-600 block mb-1">Questões</label>
+                                <input 
+                                    type="number"
+                                    value={item.questoesEditadas}
+                                    onChange={e => atualizarQuestoes(idx, e.target.value)}
+                                    className="w-full border border-purple-200 bg-purple-50 rounded p-1.5 text-center font-bold text-purple-700 text-sm"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t">
@@ -276,7 +283,6 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
         </div>
       )}
 
-      {/* --- PASSO 3: SUCESSO --- */}
       {step === 3 && (
         <div className="flex flex-col items-center justify-center py-8 space-y-4 animate-fade-in">
           <div className="bg-green-100 text-green-600 p-4 rounded-full animate-bounce">
