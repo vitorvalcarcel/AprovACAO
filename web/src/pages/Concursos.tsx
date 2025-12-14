@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
+import { Plus, Pencil, Search, AlertCircle, Archive, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
@@ -254,7 +254,7 @@ export default function Concursos() {
                         </>
                       )}
                       <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar"><Pencil size={16} /></button>
-                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><RefreshCw size={16} /></button>
+                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><Archive size={16} /></button>
                       <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                     </div>
                   </div>

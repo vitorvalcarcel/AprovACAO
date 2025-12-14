@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Lock, Save, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Lock, Save, CheckCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../components/Toast/ToastContext';
 
@@ -13,6 +13,9 @@ export default function RedefinirSenha() {
   const [senha, setSenha] = useState('');
   const [confirma, setConfirma] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Estado sincronizado para visibilidade
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   // Validação Local de Senha Forte
   const validarSenhaForte = (senha: string) => {
@@ -51,7 +54,6 @@ export default function RedefinirSenha() {
       showToast('success', 'Senha Alterada!', 'Sua senha foi redefinida com sucesso.');
       setTimeout(() => navigate('/login'), 2000);
     } catch (error: any) {
-      // Se o backend retornar erro de validação (ex: alguém burlou o front), mostramos aqui
       if (Array.isArray(error.response?.data)) {
         showToast('error', 'Senha Inválida', error.response.data[0].mensagem);
       } else {
@@ -79,13 +81,21 @@ export default function RedefinirSenha() {
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
-                type="password"
+                type={mostrarSenha ? "text" : "password"}
                 value={senha}
                 onChange={e => setSenha(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-10 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Mínimo 8 caracteres"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition-colors"
+                tabIndex={-1}
+              >
+                {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -94,13 +104,21 @@ export default function RedefinirSenha() {
             <div className="relative">
               <CheckCircle className="absolute left-3 top-2.5 text-gray-400" size={18} />
               <input
-                type="password"
+                type={mostrarSenha ? "text" : "password"}
                 value={confirma}
                 onChange={e => setConfirma(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-10 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Repita a senha"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition-colors"
+                tabIndex={-1}
+              >
+                {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
