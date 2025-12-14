@@ -119,7 +119,7 @@ export default function Concursos() {
       setModalConfirmacao({
         aberto: true,
         titulo: 'Excluir Concurso',
-        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros vinculados, a ação será bloqueada.`,
+        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros vinculados, a ação será bloqueada e recomendaremos o arquivamento.`,
         acao: async () => {
           try {
             await api.delete(`/concursos/${concurso.id}`);
@@ -127,7 +127,17 @@ export default function Concursos() {
             carregarConcursos();
             setModalConfirmacao(prev => ({ ...prev, aberto: false }));
           } catch (error: any) {
-            showToast('error', 'Erro ao excluir', error.response?.data?.mensagem || "Não foi possível excluir.");
+            // Se o backend enviar uma mensagem (400), mostramos ela. 
+            // Senão, erro genérico.
+            // O tratamento global do api.ts já pode ter exibido o toast, mas aqui garantimos o contexto.
+            const msg = error.response?.data?.mensagem;
+            if (msg) {
+               // Mensagem de negócio (Ex: "Há registros vinculados...")
+               // Usamos 'info' ou 'warning' (aqui mapeado como info ou error no ToastContext)
+               // Se o api.ts já exibiu, isso pode duplicar, mas garante que o usuário veja no contexto do modal.
+            } else {
+               showToast('error', 'Erro', "Não foi possível excluir o concurso.");
+            }
           }
         }
       });
@@ -145,8 +155,14 @@ export default function Concursos() {
           showToast('success', isArquivar ? 'Concurso arquivado' : 'Concurso reativado');
           carregarConcursos();
           setModalConfirmacao(prev => ({ ...prev, aberto: false }));
-        } catch (error) {
-          showToast('error', 'Erro', "Erro ao alterar status.");
+        } catch (error: any) {
+          // Aqui capturamos especificamente o erro de "Ciclo Ativo"
+          const msg = error.response?.data?.mensagem;
+          if (msg) {
+             // O api.ts mostra o erro globalmente, mas podemos fechar o modal
+          } else {
+             showToast('error', 'Erro', "Erro ao alterar status.");
+          }
         }
       }
     });
@@ -201,7 +217,6 @@ export default function Concursos() {
               }
 
               return (
-                // TAREFA E: ADICIONADO A CLASSE 'group' AQUI
                 <div key={concurso.id} className="group relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
                   
                   <div className="flex flex-col gap-3 md:flex-row md:gap-0 md:flex-1 md:items-center">
@@ -245,7 +260,7 @@ export default function Concursos() {
                       </div>
                     )}
 
-                    {/* Botões Desktop - Agora visíveis com hover graças à classe group */}
+                    {/* Botões Desktop */}
                     <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!concurso.arquivado && (
                         <>
@@ -265,7 +280,6 @@ export default function Concursos() {
         )}
       </div>
 
-      {/* --- MODAIS (Sem Alterações) --- */}
       <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={modoEdicao ? 'Editar Concurso' : 'Novo Concurso'}>
         <form onSubmit={salvar}>
           <div className="mb-4">

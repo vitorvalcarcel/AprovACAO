@@ -43,33 +43,21 @@ public class ConcursoController {
     @Transactional
     public ResponseEntity atualizar(@RequestBody @Valid DadosAtualizacaoConcurso dados,
                                     @AuthenticationPrincipal Usuario usuarioLogado) {
-        try {
-            return ResponseEntity.ok(service.atualizar(dados, usuarioLogado));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        }
+        return ResponseEntity.ok(service.atualizar(dados, usuarioLogado));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity excluir(@PathVariable Long id, @AuthenticationPrincipal Usuario usuarioLogado) {
-        try {
-            service.excluir(id, usuarioLogado);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(403).build();
-        }
+        service.excluir(id, usuarioLogado);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/arquivar")
     @Transactional
     public ResponseEntity arquivar(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
-        try {
-            service.arquivar(id, usuario);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        service.arquivar(id, usuario);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/desarquivar")
@@ -85,43 +73,27 @@ public class ConcursoController {
                                           @RequestBody @Valid DadosVinculoMateria dados,
                                           @AuthenticationPrincipal Usuario usuarioLogado,
                                           UriComponentsBuilder uriBuilder) {
-        try {
-            var dto = vinculoService.vincular(id, dados, usuarioLogado);
-            var uri = uriBuilder.path("/concursos/vinculos/{id}").buildAndExpand(dto.id()).toUri();
-            return ResponseEntity.created(uri).body(dto);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        var dto = vinculoService.vincular(id, dados, usuarioLogado);
+        var uri = uriBuilder.path("/concursos/vinculos/{id}").buildAndExpand(dto.id()).toUri();
+        return ResponseEntity.created(uri).body(dto);
     }
 
     @GetMapping("/{id}/materias")
     public ResponseEntity listarMaterias(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
-        try {
-            return ResponseEntity.ok(vinculoService.listar(id, usuario));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok(vinculoService.listar(id, usuario));
     }
 
     @PutMapping("/materias")
     @Transactional
     public ResponseEntity atualizarVinculo(@RequestBody @Valid DadosAtualizacaoVinculo dados,
                                            @AuthenticationPrincipal Usuario usuarioLogado) {
-        try {
-            return ResponseEntity.ok(vinculoService.atualizar(dados, usuarioLogado));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(vinculoService.atualizar(dados, usuarioLogado));
     }
 
     @DeleteMapping("/materias/{idVinculo}")
     @Transactional
     public ResponseEntity desvincularMateria(@PathVariable Long idVinculo, @AuthenticationPrincipal Usuario usuario) {
-        try {
-            vinculoService.desvincular(idVinculo, usuario);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        vinculoService.desvincular(idVinculo, usuario);
+        return ResponseEntity.noContent().build();
     }
 }
