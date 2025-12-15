@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Search, AlertCircle, RefreshCw, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
+import { Plus, Pencil, Search, AlertCircle, Archive, Calendar, Building2, Timer, Trash2, BookOpen, PlayCircle } from 'lucide-react';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import ModalDisciplinas from '../components/ModalDisciplinas';
 import ModalGerarCiclo from '../components/ModalGerarCiclo';
-import MobileActionMenu from '../components/MobileActionMenu'; // Componente de ação mobile
+import MobileActionMenu from '../components/MobileActionMenu'; 
 import { useToast } from '../components/Toast/ToastContext';
 import CardListSkeleton from '../components/skeletons/CardListSkeleton';
 
@@ -22,21 +22,16 @@ export default function Concursos() {
   const [loading, setLoading] = useState(true);
   const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
-  // Estados do Formulário Principal
   const [modalAberto, setModalAberto] = useState(false);
   const [modoEdicao, setModoEdicao] = useState<Concurso | null>(null);
   const [form, setForm] = useState({ nome: '', banca: '', dataProva: '' });
   const [erroForm, setErroForm] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  // Estado Compartilhado
   const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
-
-  // Estados dos Modais Específicos
   const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
   const [modalCicloAberto, setModalCicloAberto] = useState(false);
 
-  // Estados de Confirmação
   const [modalConfirmacao, setModalConfirmacao] = useState<{
     aberto: boolean;
     titulo: string;
@@ -58,7 +53,6 @@ export default function Concursos() {
 
   useEffect(() => { carregarConcursos(); }, []);
 
-  // --- Helpers ---
   const calcularDiasRestantes = (dataProva?: string) => {
     if (!dataProva) return null;
     const hoje = new Date();
@@ -74,7 +68,6 @@ export default function Concursos() {
     return `${dia}/${mes}/${ano}`;
   };
 
-  // --- Abertura de Modais ---
   const abrirModal = (concurso?: Concurso) => {
     setErroForm('');
     if (concurso) {
@@ -97,7 +90,6 @@ export default function Concursos() {
     setModalCicloAberto(true);
   };
 
-  // --- Salvar Concurso ---
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
@@ -122,13 +114,12 @@ export default function Concursos() {
     }
   };
 
-  // --- Ações de Status ---
   const confirmarAcao = (concurso: Concurso, tipo: 'arquivar' | 'desarquivar' | 'excluir') => {
     if (tipo === 'excluir') {
       setModalConfirmacao({
         aberto: true,
         titulo: 'Excluir Concurso',
-        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros vinculados, a ação será bloqueada.`,
+        mensagem: `Tem certeza que deseja excluir "${concurso.nome}"? Se houver registros vinculados, a ação será bloqueada e recomendaremos o arquivamento.`,
         acao: async () => {
           try {
             await api.delete(`/concursos/${concurso.id}`);
@@ -136,7 +127,17 @@ export default function Concursos() {
             carregarConcursos();
             setModalConfirmacao(prev => ({ ...prev, aberto: false }));
           } catch (error: any) {
-            showToast('error', 'Erro ao excluir', error.response?.data?.mensagem || "Não foi possível excluir.");
+            // Se o backend enviar uma mensagem (400), mostramos ela. 
+            // Senão, erro genérico.
+            // O tratamento global do api.ts já pode ter exibido o toast, mas aqui garantimos o contexto.
+            const msg = error.response?.data?.mensagem;
+            if (msg) {
+               // Mensagem de negócio (Ex: "Há registros vinculados...")
+               // Usamos 'info' ou 'warning' (aqui mapeado como info ou error no ToastContext)
+               // Se o api.ts já exibiu, isso pode duplicar, mas garante que o usuário veja no contexto do modal.
+            } else {
+               showToast('error', 'Erro', "Não foi possível excluir o concurso.");
+            }
           }
         }
       });
@@ -154,8 +155,14 @@ export default function Concursos() {
           showToast('success', isArquivar ? 'Concurso arquivado' : 'Concurso reativado');
           carregarConcursos();
           setModalConfirmacao(prev => ({ ...prev, aberto: false }));
-        } catch (error) {
-          showToast('error', 'Erro', "Erro ao alterar status.");
+        } catch (error: any) {
+          // Aqui capturamos especificamente o erro de "Ciclo Ativo"
+          const msg = error.response?.data?.mensagem;
+          if (msg) {
+             // O api.ts mostra o erro globalmente, mas podemos fechar o modal
+          } else {
+             showToast('error', 'Erro', "Erro ao alterar status.");
+          }
         }
       }
     });
@@ -210,12 +217,10 @@ export default function Concursos() {
               }
 
               return (
-                <div key={concurso.id} className="relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
+                <div key={concurso.id} className="group relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm md:shadow-none md:border-none md:rounded-none md:p-3 md:flex md:items-center md:justify-between hover:bg-gray-50 transition-colors">
                   
-                  {/* --- CARD MOBILE LAYOUT --- */}
                   <div className="flex flex-col gap-3 md:flex-row md:gap-0 md:flex-1 md:items-center">
                     
-                    {/* Cabeçalho do Card */}
                     <div className="flex items-start justify-between md:justify-start md:gap-3">
                       <div className="flex items-center gap-3">
                         <div className={`hidden md:block w-1.5 h-1.5 rounded-full ${concurso.arquivado ? 'bg-orange-400' : 'bg-blue-600'}`} />
@@ -225,7 +230,6 @@ export default function Concursos() {
                         {concurso.arquivado && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Arquivado</span>}
                       </div>
                       
-                      {/* Menu de Ações Mobile */}
                       <div className="md:hidden">
                         <MobileActionMenu 
                           onEdit={() => abrirModal(concurso)}
@@ -236,23 +240,19 @@ export default function Concursos() {
                       </div>
                     </div>
 
-                    {/* Informações Secundárias */}
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 md:pl-4">
                       {concurso.banca && <div className="flex items-center gap-1.5"><Building2 size={14} className="text-gray-400" />{concurso.banca}</div>}
                       {concurso.dataProva && <div className="flex items-center gap-1.5"><Calendar size={14} className="text-gray-400" />{formatarData(concurso.dataProva)}</div>}
                     </div>
                   </div>
 
-                  {/* Rodapé do Card / Ações Desktop */}
                   <div className="flex items-center justify-between mt-3 md:mt-0 md:justify-end md:gap-3">
-                    {/* Badge de Dias */}
                     {dias !== null && !concurso.arquivado ? (
                       <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${badgeCor}`}>
                         <Timer size={14} /> {badgeTexto}
                       </div>
                     ) : <div />}
 
-                    {/* Botões Extras Mobile (Ciclo/Disciplinas) */}
                     {!concurso.arquivado && (
                       <div className="flex gap-2 md:hidden">
                          <button onClick={() => abrirDisciplinas(concurso)} className="p-2 bg-purple-50 text-purple-600 rounded-lg"><BookOpen size={18}/></button>
@@ -260,7 +260,7 @@ export default function Concursos() {
                       </div>
                     )}
 
-                    {/* Botões Desktop (Hover) */}
+                    {/* Botões Desktop */}
                     <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {!concurso.arquivado && (
                         <>
@@ -269,7 +269,7 @@ export default function Concursos() {
                         </>
                       )}
                       <button onClick={() => abrirModal(concurso)} className="p-1.5 text-gray-400 hover:text-blue-600 rounded transition-colors" title="Editar"><Pencil size={16} /></button>
-                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><RefreshCw size={16} /></button>
+                      <button onClick={() => confirmarAcao(concurso, concurso.arquivado ? 'desarquivar' : 'arquivar')} className={`p-1.5 rounded transition-colors ${concurso.arquivado ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:text-orange-500 hover:bg-orange-50'}`}><Archive size={16} /></button>
                       <button onClick={() => confirmarAcao(concurso, 'excluir')} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>
                     </div>
                   </div>
@@ -280,7 +280,6 @@ export default function Concursos() {
         )}
       </div>
 
-      {/* --- MODAIS --- */}
       <Modal isOpen={modalAberto} onClose={() => setModalAberto(false)} title={modoEdicao ? 'Editar Concurso' : 'Novo Concurso'}>
         <form onSubmit={salvar}>
           <div className="mb-4">

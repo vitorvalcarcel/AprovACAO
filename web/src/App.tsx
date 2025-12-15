@@ -16,40 +16,46 @@ import TiposEstudo from './pages/TiposEstudo';
 import Estatisticas from './pages/Estatisticas';
 import Perfil from './pages/Perfil';
 import MeusCiclos from './pages/MeusCiclos';
+import Manutencao from './pages/Manutencao';
 import { ToastProvider } from './components/Toast/ToastContext';
+import { TimerProvider } from './contexts/TimerContext';
 
 function App() {
   return (
     <ToastProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/cadastro" element={<Cadastro />} />
-            <Route path="/verificar-email" element={<VerificarEmail />} />
-            <Route path="/confirmar" element={<ConfirmarConta />} />
-            <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-          </Route>
+      <TimerProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/manutencao" element={<Manutencao />} />
 
-          <Route element={<PrivateRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/app" element={<Dashboard />} />
-              <Route path="/app/materias" element={<Materias />} />
-              <Route path="/app/concursos" element={<Concursos />} />
-              <Route path="/app/ciclos" element={<MeusCiclos />} />
-              <Route path="/app/historico" element={<Historico />} />
-              <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
-              <Route path="/app/estatisticas" element={<Estatisticas />} />
-              <Route path="/app/perfil" element={<Perfil />} />
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/verificar-email" element={<VerificarEmail />} />
+              <Route path="/confirmar" element={<ConfirmarConta />} />
+              <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+              <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             </Route>
-            
-            <Route path="/" element={<Navigate to="/app" replace />} />
-          </Route>
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route element={<PrivateRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/app" element={<Dashboard />} />
+                <Route path="/app/materias" element={<Materias />} />
+                <Route path="/app/concursos" element={<Concursos />} />
+                <Route path="/app/ciclos" element={<MeusCiclos />} />
+                <Route path="/app/historico" element={<Historico />} />
+                <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
+                <Route path="/app/estatisticas" element={<Estatisticas />} />
+                <Route path="/app/perfil" element={<Perfil />} />
+              </Route>
+              
+              <Route path="/" element={<Navigate to="/app" replace />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TimerProvider>
     </ToastProvider>
   );
 }

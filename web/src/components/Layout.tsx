@@ -1,25 +1,48 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, X, BarChart2, Tag, List } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AvisoExpiracao from './AvisoExpiracao';
 import BottomNavigation from './BottomNavigation';
 import Modal from './Modal';
 import RegistroRapido from './RegistroRapido';
+import KeepAliveManager from './KeepAliveManager';
+import FloatingTimerBar from './FloatingTimerBar';
+import { useTimerState } from '../contexts/TimerContext'; // USANDO O HOOK ESTÁVEL
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Controle do Menu Mobile (Drawer)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Agora usamos APENAS o estado (isActive), sem os segundos. 
+  // O Layout NÃO vai re-renderizar a cada segundo!
+  const { isActive } = useTimerState(); 
   
-  // Controle Global do Modal de Registro Rápido (Acessível pelo FAB)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registroModalOpen, setRegistroModalOpen] = useState(false);
+  const [registroMode, setRegistroMode] = useState<'timer' | 'manual'>('timer');
+
+  useEffect(() => {
+    const handleOpenTimer = () => handleOpenRegistro('timer');
+    const handleOpenManual = () => handleOpenRegistro('manual');
+
+    window.addEventListener('open-timer-modal', handleOpenTimer);
+    window.addEventListener('open-manual-modal', handleOpenManual);
+
+    return () => {
+        window.removeEventListener('open-timer-modal', handleOpenTimer);
+        window.removeEventListener('open-manual-modal', handleOpenManual);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     navigate('/login');
+  };
+
+  const handleOpenRegistro = (mode: 'timer' | 'manual') => {
+    setRegistroMode(mode);
+    setRegistroModalOpen(true);
   };
 
   const menuItems = [
@@ -34,8 +57,8 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      
-      {/* Overlay do Menu Mobile */}
+      <KeepAliveManager />
+
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
       )}
@@ -52,7 +75,6 @@ export default function Layout() {
               <GraduationCap className="text-blue-600 mr-2" size={32} />
               <span className="text-xl font-bold text-gray-800">Aprov<span className="text-blue-600">AÇÃO</span></span>
             </div>
-            {/* Botão Fechar Menu no Mobile */}
             <button onClick={() => setMobileMenuOpen(false)} className="lg:hidden text-gray-400">
               <X size={24} />
             </button>
@@ -89,12 +111,8 @@ export default function Layout() {
               <User size={20} />
               Minha Conta
             </Link>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <LogOut size={20} />
-              Sair
+            <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors">
+              <LogOut size={20} /> Sair
             </button>
           </div>
         </div>
@@ -102,30 +120,33 @@ export default function Layout() {
 
       {/* Conteúdo Principal */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
-        {/* pb-24 é necessário no mobile para o conteúdo não ficar atrás da navbar */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8 pb-24 lg:pb-8">
+        <div className="flex-1 overflow-auto p-4 lg:p-8 pb-32 lg:pb-8">
           <Outlet />
           <AvisoExpiracao />
         </div>
       </main>
 
-      {/* Navegação Inferior (Mobile Only) */}
-      <BottomNavigation 
-        onOpenMenu={() => setMobileMenuOpen(true)} 
-        onOpenRegistro={() => setRegistroModalOpen(true)} 
-      />
+      {!registroModalOpen && isActive && (
+        <FloatingTimerBar onMaximize={() => handleOpenRegistro('timer')} />
+      )}
 
-      {/* Modal Global de Registro Rápido */}
-      <Modal isOpen={registroModalOpen} onClose={() => setRegistroModalOpen(false)} title="Registrar Estudo">
-        <RegistroRapido onRegistroSalvo={() => {
-          setRegistroModalOpen(false);
-          // O Dashboard atualiza automaticamente ao detectar foco ou mudança, 
-          // mas idealmente dispararíamos um evento de refresh global aqui.
-          // Como MVP, recarregar a janela garante sincronia:
-          window.location.reload(); 
-        }} />
+      <BottomNavigation onOpenMenu={() => setMobileMenuOpen(true)} onOpenRegistro={handleOpenRegistro} />
+
+      <Modal 
+        isOpen={registroModalOpen} 
+        onClose={() => setRegistroModalOpen(false)} 
+        title={registroMode === 'timer' ? 'Cronômetro' : 'Registro Manual'}
+        className="md:max-w-3xl"
+      >
+        <RegistroRapido 
+            initialMode={registroMode} 
+            onClose={() => setRegistroModalOpen(false)}
+            onRegistroSalvo={() => {
+                setRegistroModalOpen(false);
+                window.location.reload(); 
+            }} 
+        />
       </Modal>
-
     </div>
   );
 }

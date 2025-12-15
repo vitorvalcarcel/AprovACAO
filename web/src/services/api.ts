@@ -1,7 +1,19 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+
+// 1. Interface para controlar as tentativas na configuração da requisição
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retryCount?: number;
+}
+
+// 2. Configurações de Tempo (Estratégia para ~13 segundos totais)
+// 3 tentativas x 4 segundos de espera = 12 segundos + tempo de processamento
+const MAX_RETRIES = 3; 
+const RETRY_DELAY = 4000; 
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  // 3. Define um limite de tempo por requisição (se o back travar processando)
+  timeout: 13000, 
 });
 
 let isRedirecting = false;
@@ -23,12 +35,41 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<any>) => {
+  async (error: AxiosError<any>) => {
     
-    // 1. Erro de Conexão / Network Error
+    const config = error.config as CustomAxiosRequestConfig;
+    const url = config?.url;
+
+    // --- TAREFA C: Lógica de Retry (Espera antes de falhar) ---
+    // Se for erro de rede (!error.response) e ainda tivermos tentativas, esperamos e tentamos de novo.
+    // Isso evita que o usuário veja a tela de manutenção em uma oscilação de 1 segundo.
+    if (!error.response && config && (config._retryCount || 0) < MAX_RETRIES) {
+        // Ignora retry se for o próprio health check (para não ficar preso lá)
+        if (url && !url.includes('/actuator/health')) {
+            config._retryCount = (config._retryCount || 0) + 1;
+            
+            // Pausa a execução por 4 segundos
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            
+            // Tenta a requisição novamente
+            return api(config);
+        }
+    }
+
+    // --- TAREFA C: Detecção de Queda Definitiva (Após as tentativas falharem) ---
+    if (url && !url.includes('/actuator/health')) {
+      // Se não tem resposta (Back off) ou Erro 500+
+      if (!error.response || error.response.status >= 500) {
+        if (window.location.pathname !== '/manutencao') {
+          window.location.href = '/manutencao';
+          return Promise.reject(error);
+        }
+      }
+    }
+
+    // Se chegou aqui e não tem response, rejeita (caso seja health check ou outro erro)
     if (!error.response) {
-      dispatchToast('error', 'Erro de Conexão', 'Não foi possível contatar o servidor. Verifique sua internet.');
-      return Promise.reject(error);
+       return Promise.reject(error);
     }
 
     const status = error.response.status;
@@ -50,22 +91,14 @@ api.interceptors.response.use(
 
     // 3. Erro 400 (Bad Request - Validação ou Negócio)
     if (status === 400) {
-      // Se for uma lista (novo formato do Back para validação de campos), 
-      // NÃO mostramos toast genérico. Deixamos o componente tratar (pintar input de vermelho).
       if (Array.isArray(data)) {
         return Promise.reject(error); 
       }
       
-      // Se for objeto com mensagem (regra de negócio), mostramos Toast
       if (data && data.mensagem) {
         dispatchToast('error', 'Atenção', data.mensagem);
         return Promise.reject(error);
       }
-    }
-
-    // 4. Erro 500 (Server Error)
-    if (status >= 500) {
-      dispatchToast('error', 'Erro no Servidor', 'Ocorreu um erro interno. Tente novamente mais tarde.');
     }
 
     return Promise.reject(error);

@@ -1,69 +1,67 @@
 =============================================================================
-SEÇÃO 1: DÉBITOS TÉCNICOS E ARQUITETURA (PRIORIDADE CRÍTICA)
+SEÇÃO 1: DÉBITOS TÉCNICOS E QUALIDADE
 =============================================================================
 
-[01] Implementação de Testes Automatizados (Backend)
-     - Detalhe: A pasta `src/test` está vazia.
-     - Status: 🔴 PENDENTE
-
-[02] Otimização de Cálculos no Banco de Dados (Performance)
-     - Detalhe: Consultas agregadas via JPQL/Records.
-     - Status: ✅ CONCLUÍDO
-
-[03] Externalização de Segredos (Segurança)
-     - Detalhe: Senhas e Secrets expostos no código.
-     - Status: 🔴 PENDENTE
-
-[04] Observabilidade e Logs
-     - Status: 🔴 PENDENTE
-
-[05] Dockerização para Produção
-     - Status: 🔴 PENDENTE
+1. Implementação de Testes Automatizados (Backend)
+   - Detalhe: A pasta `src/test` contém apenas o arquivo padrão. É necessário
+     criar testes unitários para os Services principais (CicloService, Timer).
+   - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 2: UX E FRONT-END
-[STATUS: ✅ CONCLUÍDO - Itens 06, 07, 08]
+SEÇÃO 2: FUNCIONALIDADES - CORE BUSINESS (O QUE FALTA NO APP)
 =============================================================================
 
+2. Recomendação Inteligente de Estudo
+   - Detalhe: O algoritmo "cérebro" que sugere qual matéria estudar hoje baseada
+     no histórico e nas metas do ciclo.
+   - Status: 🔴 PENDENTE
+
+3. Simulador de Nota
+   - Detalhe: Ferramenta para o usuário projetar sua nota final baseada no
+     desempenho atual de questões.
+   - Status: 🔴 PENDENTE
+
+4. Importação em Lote (Edital)
+   - Detalhe: Funcionalidade para importar matérias e tópicos de um edital
+     (PDF/Texto) automaticamente.
+   - Status: 🔴 PENDENTE
+
+5. Status do Concurso
+   - Detalhe: Indicadores visuais na tela de concursos (Edital Aberto, 
+     Inscrições Abertas, Prova Realizada, etc).
+   - Status: 🔴 PENDENTE
+
+6. Tutorial de Primeiro Acesso (Onboarding)
+   - Detalhe: Um guia passo-a-passo interativo para ensinar o usuário novo a 
+     criar seu primeiro ciclo.
+   - Status: 🔴 PENDENTE
+
+7. Widget de Contagem Regressiva
+   - Detalhe: Um contador de dias para a prova na tela inicial.
+   - Status: 🔴 PENDENTE
+
 =============================================================================
-SEÇÃO 3: FUNCIONALIDADES - IDENTIDADE E SEGURANÇA
+SEÇÃO 3: ANALYTICS & COMUNIDADE
 =============================================================================
 
-[09] Recuperação de Senha
-     - Status: 🔴 PENDENTE
+8. Dashboard Macro (Visão de Vida)
+   - Detalhe: Visão geral de longo prazo, somando todos os concursos e todo
+     o histórico do usuário.
+   - Status: 🔴 PENDENTE
 
-[10] Confirmação de E-mail
-     - Status: 🔴 PENDENTE
-
-=============================================================================
-SEÇÃO 4: FUNCIONALIDADES - CORE BUSINESS (ESTUDOS)
-=============================================================================
-
-[11] Recomendação Inteligente de Estudo ("O que estudar?")
-     - Detalhe: Algoritmo que sugere a próxima matéria baseada no déficit.
-     - Status: 🔴 PENDENTE
-
-[12] Simulador de Nota
-     - Status: 🔴 PENDENTE
-
-[13] Importação em Lote
-     - Status: 🔴 PENDENTE
-
-[14] Status do Concurso
-     - Status: 🔴 PENDENTE
-
-[15] Widget de Contagem Regressiva
-     - Status: 🔴 PENDENTE
+9. Canal de Feedback
+   - Detalhe: Formulário ou modal oficial para usuários reportarem bugs ou
+     sugestões diretamente para a equipe.
+   - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 5: FUNCIONALIDADES - ANALYTICS AVANÇADO
+HISTÓRICO DE CONQUISTAS (JÁ IMPLEMENTADO)
 =============================================================================
-
-[16] Gráficos de Evolução Histórica
-     - Detalhe: Implementado junto com a otimização do Dashboard.
-     - Status: ✅ CONCLUÍDO
-
-[17] Dashboard Macro (Visão de Vida)
-     - Status: 🔴 PENDENTE
-
-Mudar senha do app de email no aplication.properties no deployment.
+✅ [INFRA] Keep-Alive & Tela de Manutenção (Resiliência).
+✅ [SEGURANÇA] Externalização de Segredos (Env Vars) e JWT.
+✅ [OBSERVABILIDADE] Logs de Requisição e Health Check.
+✅ [UX] Cronômetro Global Persistente (TimerContext + LocalStorage).
+✅ [UX] Widget Flutuante de Estudo.
+✅ [UI] Correções visuais Mobile/Desktop e Menu com FAB.
+✅ [PERFORMANCE] Consultas SQL Otimizadas e Paginação.
+✅ [INFRA] Dockerização (Dockerfile + Compose).
