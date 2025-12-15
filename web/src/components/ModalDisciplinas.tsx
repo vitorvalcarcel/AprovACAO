@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, BookOpen, AlertCircle, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Pencil, Check, Loader2 } from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
+import { useToast } from './Toast/ToastContext'; // Importamos o Toast
 
 interface Concurso {
   id: number;
@@ -15,7 +16,7 @@ interface Materia {
 
 interface Vinculo {
   id: number;
-  materiaId: number; // Precisamos do ID da matéria para o select
+  materiaId: number;
   nomeMateria: string;
   peso: number;
   questoesProva: number;
@@ -28,21 +29,17 @@ interface ModalDisciplinasProps {
 }
 
 export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDisciplinasProps) {
+  const { showToast } = useToast(); // Hook para disparar erro manualmente se necessário
   const [vinculos, setVinculos] = useState<Vinculo[]>([]);
   const [materiasDisponiveis, setMateriasDisponiveis] = useState<Materia[]>([]);
   
-  // Estado de Edição
   const [idVinculoEmEdicao, setIdVinculoEmEdicao] = useState<number | null>(null);
 
-  // Formulário
   const [materiaSelecionada, setMateriaSelecionada] = useState('');
   const [peso, setPeso] = useState(1);
   const [questoes, setQuestoes] = useState(10);
   
   const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState('');
-
-  // Modal de confirmação
   const [confirmarExclusao, setConfirmarExclusao] = useState<number | null>(null);
 
   useEffect(() => {
@@ -57,7 +54,6 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
     setPeso(1);
     setQuestoes(10);
     setIdVinculoEmEdicao(null);
-    setErro('');
   };
 
   const carregarDados = async () => {
@@ -77,19 +73,21 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
   const salvarDisciplina = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!concurso) return;
-    setErro('');
+
+    setLoading(true); // Feedback visual imediato
 
     try {
       if (idVinculoEmEdicao) {
-        // --- ATUALIZAR (PUT) ---
         await api.put('/concursos/materias', {
           id: idVinculoEmEdicao,
           peso: Number(peso),
           questoesProva: Number(questoes)
         });
       } else {
-        // --- CRIAR (POST) ---
-        if (!materiaSelecionada) return;
+        if (!materiaSelecionada) {
+            setLoading(false);
+            return;
+        }
         await api.post(`/concursos/${concurso.id}/materias`, {
           materiaId: Number(materiaSelecionada),
           peso: Number(peso),
@@ -98,21 +96,27 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
       }
       
       limparForm();
-      carregarDados();
+      carregarDados(); // Já gerencia o setLoading(false) no finally dele
     } catch (error: any) {
-      setErro(error.response?.data?.mensagem || "Erro ao salvar.");
+      setLoading(false);
+      
+      // TRATAMENTO MANUAL DE ERRO DE VALIDAÇÃO (ARRAY)
+      // O interceptor api.ts ignora arrays, então tratamos aqui para garantir o Toast
+      if (error.response?.data && Array.isArray(error.response.data)) {
+         const msgs = error.response.data.map((err: any) => `${err.campo}: ${err.mensagem}`).join(' | ');
+         showToast('error', 'Erro de Validação', msgs);
+      }
+      // Se não for array (ex: erro de negócio simples), o api.ts já mostrou o Toast.
     }
   };
 
   const prepararEdicao = (vinculo: Vinculo) => {
     const materia = materiasDisponiveis.find(m => m.nome === vinculo.nomeMateria);
-    
     if (materia) {
         setMateriaSelecionada(String(materia.id));
         setPeso(vinculo.peso);
         setQuestoes(vinculo.questoesProva);
         setIdVinculoEmEdicao(vinculo.id);
-        setErro('');
     }
   };
 
@@ -122,9 +126,9 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
       await api.delete(`/concursos/materias/${confirmarExclusao}`);
       carregarDados();
       setConfirmarExclusao(null);
-      if (idVinculoEmEdicao === confirmarExclusao) limparForm(); // Se estava editando o que apagou
+      if (idVinculoEmEdicao === confirmarExclusao) limparForm();
     } catch (error) {
-      setErro("Erro ao remover.");
+      console.log("Erro removendo");
     }
   };
 
@@ -149,10 +153,9 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
                 onChange={e => setMateriaSelecionada(e.target.value)}
                 className="w-full px-2 py-1.5 border rounded-md text-sm bg-white focus:ring-1 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 required
-                disabled={!!idVinculoEmEdicao} // Não pode trocar a matéria na edição, só peso
+                disabled={!!idVinculoEmEdicao}
               >
                 <option value="">Selecione...</option>
-                {/* Se estiver editando, mostra a opção atual mesmo se já vinculada */}
                 {idVinculoEmEdicao 
                   ? <option value={materiaSelecionada}>{materiasDisponiveis.find(m => m.id === Number(materiaSelecionada))?.nome}</option>
                   : materiasParaAdicionar.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)
@@ -162,33 +165,40 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
 
             <div className="w-16">
               <label className="text-xs text-gray-500 font-medium ml-1 block mb-1">Peso</label>
-              <input type="number" step="0.1" min="0.1" value={peso} onChange={e => setPeso(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded-md text-sm outline-none text-center" />
+              {/* Inputs livres para testar validação do back */}
+              <input 
+                type="number" 
+                value={peso} 
+                onChange={e => setPeso(Number(e.target.value))} 
+                className="w-full px-2 py-1.5 border rounded-md text-sm outline-none text-center" 
+              />
             </div>
 
             <div className="w-16">
               <label className="text-xs text-gray-500 font-medium ml-1 block mb-1">Quest.</label>
-              <input type="number" min="1" value={questoes} onChange={e => setQuestoes(Number(e.target.value))} className="w-full px-2 py-1.5 border rounded-md text-sm outline-none text-center" />
+              <input 
+                type="number" 
+                value={questoes} 
+                onChange={e => setQuestoes(Number(e.target.value))} 
+                className="w-full px-2 py-1.5 border rounded-md text-sm outline-none text-center" 
+              />
             </div>
 
             {idVinculoEmEdicao ? (
-               // Botões de Edição (Salvar e Cancelar)
                <div className="flex gap-1">
                    <button type="button" onClick={limparForm} className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded-md h-[34px] w-[34px] flex items-center justify-center" title="Cancelar Edição">
                      <Plus size={18} className="rotate-45" />
                    </button>
-                   <button type="submit" className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md h-[34px] w-[34px] flex items-center justify-center" title="Salvar Alterações">
-                     <Check size={18} />
+                   <button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md h-[34px] w-[34px] flex items-center justify-center disabled:opacity-50" title="Salvar Alterações">
+                     {loading ? <Loader2 size={18} className="animate-spin"/> : <Check size={18} />}
                    </button>
                </div>
             ) : (
-               // Botão Adicionar Padrão
-               <button type="submit" disabled={!materiaSelecionada} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md disabled:opacity-50 h-[34px] w-[34px] flex items-center justify-center" title="Adicionar">
-                 <Plus size={18} />
+               <button type="submit" disabled={!materiaSelecionada || loading} className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md disabled:opacity-50 h-[34px] w-[34px] flex items-center justify-center" title="Adicionar">
+                 {loading ? <Loader2 size={18} className="animate-spin"/> : <Plus size={18} />}
                </button>
             )}
           </div>
-
-          {erro && <div className="mt-2 text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} /> {erro}</div>}
         </form>
 
         <div>
@@ -198,7 +208,7 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
             </h4>
           </div>
           
-          {loading ? (
+          {loading && vinculos.length === 0 ? (
             <p className="text-center text-gray-400 text-xs py-4">Carregando...</p>
           ) : vinculos.length === 0 ? (
             <p className="text-center text-gray-400 text-xs py-8 border border-dashed rounded-md bg-gray-50">Nenhuma matéria vinculada ainda.</p>
@@ -226,7 +236,6 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
       </div>
     </Modal>
 
-    {/* Modal Confirmação de Exclusão */}
     <Modal isOpen={!!confirmarExclusao} onClose={() => setConfirmarExclusao(null)} title="Remover Disciplina">
         <div className="space-y-4">
           <p className="text-gray-600 text-sm">Tem certeza que deseja remover esta disciplina do concurso?</p>

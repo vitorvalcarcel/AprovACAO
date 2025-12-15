@@ -27,8 +27,8 @@ interface ModalGerarCicloProps {
 
 export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGerarCicloProps) {
   const [step, setStep] = useState(1);
-  const [totalHorasStr, setTotalHorasStr] = useState('20'); 
-  const [totalQuestoesStr, setTotalQuestoesStr] = useState('500'); 
+  const [totalHorasStr, setTotalHorasStr] = useState('12'); 
+  const [totalQuestoesStr, setTotalQuestoesStr] = useState('75'); 
   const [itens, setItens] = useState<ItemSugestao[]>([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
@@ -38,8 +38,8 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
       setStep(1);
       setItens([]);
       setErro('');
-      setTotalHorasStr('20');
-      setTotalQuestoesStr('500');
+      setTotalHorasStr('12');
+      setTotalQuestoesStr('75');
     }
   }, [isOpen]);
 

@@ -26,6 +26,10 @@ public class ConcursoMateriaService {
     private MateriaRepository materiaRepository;
 
     public DadosDetalhamentoVinculo vincular(Long concursoId, DadosVinculoMateria dados, Usuario usuario) {
+        if (dados.peso() <= 0 || dados.questoesProva() <= 0) {
+            throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+        }
+
         var concurso = concursoRepository.findById(concursoId)
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
 
@@ -63,9 +67,15 @@ public class ConcursoMateriaService {
         }
 
         if (dados.peso() != null) {
+            if (dados.peso() <= 0) {
+                throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+            }
             vinculo.setPeso(dados.peso());
         }
         if (dados.questoesProva() != null) {
+            if (dados.questoesProva() <= 0) {
+                throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+            }
             vinculo.setQuestoesProva(dados.questoesProva());
         }
 
