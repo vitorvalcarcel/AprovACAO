@@ -63,6 +63,7 @@ export default function Layout() {
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
       )}
 
+      {/* Sidebar - Desktop (Fixo) & Mobile (Drawer) */}
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:flex lg:flex-col
@@ -117,6 +118,7 @@ export default function Layout() {
         </div>
       </aside>
 
+      {/* Conteúdo Principal */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
         <div className="flex-1 overflow-auto p-4 lg:p-8 pb-32 lg:pb-8">
           <Outlet />
