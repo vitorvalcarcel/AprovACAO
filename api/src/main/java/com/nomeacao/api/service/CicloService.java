@@ -23,31 +23,121 @@ public class CicloService {
     @Autowired private MateriaRepository materiaRepository;
     @Autowired private RegistroEstudoRepository registroRepository;
 
-    // 1. Gera apenas a sugestão matemática (não salva nada)
+    // Classe auxiliar interna para o cálculo mutável
+    private static class CalculoItem {
+        ConcursoMateria cm;
+        double score;
+        double horasCalculadas;
+        double restoHoras;
+        int questoesCalculadas;
+        double restoQuestoes;
+
+        public CalculoItem(ConcursoMateria cm) {
+            this.cm = cm;
+            this.score = cm.getPeso() * cm.getQuestoesProva();
+        }
+    }
+
+    // 1. Gera sugestão baseada no Método de Hamilton com Passos Discretos
     public List<DadosSugestaoCiclo> sugerir(Long concursoId, Double horasMeta, Integer questoesMeta) {
         List<ConcursoMateria> materias = concursoMateriaRepository.findAllByConcursoId(concursoId);
         if (materias.isEmpty()) throw new RuntimeException("Este concurso não possui matérias cadastradas.");
 
-        double somaPesos = materias.stream().mapToDouble(ConcursoMateria::getPeso).sum();
-        if (somaPesos == 0) somaPesos = 1;
+        // Passo A: Constantes
+        final double PASSO_HORAS = 0.5;
+        final int PASSO_QUESTOES = 5;
 
-        List<DadosSugestaoCiclo> sugestao = new ArrayList<>();
-        
+        // Passo B: Score e Inicialização
+        List<CalculoItem> itens = materias.stream().map(CalculoItem::new).toList();
+        double scoreTotal = itens.stream().mapToDouble(i -> i.score).sum();
+        if (scoreTotal == 0) scoreTotal = 1;
+
+        // Passo C: Distribuição Inicial (Piso)
         int qMeta = (questoesMeta != null) ? questoesMeta : 0;
 
-        for (ConcursoMateria cm : materias) {
-            double pesoRelativo = cm.getPeso() / somaPesos;
-            
-            double hSugeridas = Math.round((horasMeta * pesoRelativo) * 10.0) / 10.0;
-            int qSugeridas = (int) Math.ceil(qMeta * pesoRelativo);
+        for (CalculoItem item : itens) {
+            // Horas
+            double horasIdeais = (item.score / scoreTotal) * horasMeta;
+            item.horasCalculadas = Math.floor(horasIdeais / PASSO_HORAS) * PASSO_HORAS;
+            item.restoHoras = horasIdeais - item.horasCalculadas;
 
+            // Questões
+            if (qMeta > 0) {
+                double questoesIdeais = (item.score / scoreTotal) * qMeta;
+                item.questoesCalculadas = (int) (Math.floor(questoesIdeais / PASSO_QUESTOES) * PASSO_QUESTOES);
+                item.restoQuestoes = questoesIdeais - item.questoesCalculadas;
+            } else {
+                item.questoesCalculadas = 0;
+                item.restoQuestoes = 0;
+            }
+        }
+
+        // Passo D: Cálculo do Saldo (Deficit devido ao arredondamento para baixo)
+        double somaHoras = itens.stream().mapToDouble(i -> i.horasCalculadas).sum();
+        double saldoHoras = horasMeta - somaHoras;
+        saldoHoras = Math.round(saldoHoras * 10.0) / 10.0; // Correção ponto flutuante
+
+        int somaQuestoes = itens.stream().mapToInt(i -> i.questoesCalculadas).sum();
+        int saldoQuestoes = qMeta - somaQuestoes;
+
+        // Passo E: Distribuição do Saldo - Horas (Loop de Prioridade)
+        while (saldoHoras >= PASSO_HORAS) {
+            // Prioridade 1: Resgate (Matérias zeradas com maior score)
+            List<CalculoItem> zerados = itens.stream()
+                    .filter(i -> i.horasCalculadas == 0)
+                    .sorted(Comparator.comparingDouble((CalculoItem i) -> i.score).reversed())
+                    .toList();
+
+            CalculoItem escolhido;
+            if (!zerados.isEmpty()) {
+                escolhido = zerados.get(0);
+            } else {
+                // Prioridade 2: Justiça (Maior Resto)
+                escolhido = itens.stream()
+                        .max(Comparator.comparingDouble(i -> i.restoHoras))
+                        .orElse(itens.get(0));
+            }
+
+            escolhido.horasCalculadas += PASSO_HORAS;
+            // Remove da fila de prioridade de resto para dar chance a outros
+            escolhido.restoHoras = -1.0; 
+            
+            saldoHoras -= PASSO_HORAS;
+            saldoHoras = Math.round(saldoHoras * 10.0) / 10.0;
+        }
+
+        // Passo E: Distribuição do Saldo - Questões
+        while (saldoQuestoes >= PASSO_QUESTOES) {
+            List<CalculoItem> zerados = itens.stream()
+                    .filter(i -> i.questoesCalculadas == 0)
+                    .sorted(Comparator.comparingDouble((CalculoItem i) -> i.score).reversed())
+                    .toList();
+
+            CalculoItem escolhido;
+            if (!zerados.isEmpty()) {
+                escolhido = zerados.get(0);
+            } else {
+                escolhido = itens.stream()
+                        .max(Comparator.comparingDouble(i -> i.restoQuestoes))
+                        .orElse(itens.get(0));
+            }
+
+            escolhido.questoesCalculadas += PASSO_QUESTOES;
+            escolhido.restoQuestoes = -1.0;
+            saldoQuestoes -= PASSO_QUESTOES;
+        }
+
+        // Conversão para DTO Final
+        List<DadosSugestaoCiclo> sugestao = new ArrayList<>();
+        for (CalculoItem item : itens) {
+            double percentual = (item.score / scoreTotal) * 100.0;
             sugestao.add(new DadosSugestaoCiclo(
-                cm.getMateria().getId(),
-                cm.getMateria().getNome(),
-                cm.getPeso(),
-                hSugeridas,
-                qSugeridas,
-                pesoRelativo * 100.0
+                item.cm.getMateria().getId(),
+                item.cm.getMateria().getNome(),
+                item.cm.getPeso(),
+                item.horasCalculadas,
+                item.questoesCalculadas,
+                percentual
             ));
         }
         
@@ -98,7 +188,7 @@ public class CicloService {
         repository.save(ciclo);
     }
 
-    // 3. Listar Histórico (Agora com cálculo real)
+    // 3. Listar Histórico
     public List<DadosListagemCiclo> listarHistorico(Long concursoId, Usuario usuario) {
         var concurso = concursoRepository.findById(concursoId)
                 .orElseThrow(() -> new RuntimeException("Concurso não encontrado"));
@@ -115,18 +205,15 @@ public class CicloService {
                 .toList();
     }
 
-    // Método auxiliar privado para calcular a % do ciclo
     private Double calcularProgressoReal(Ciclo ciclo, Long usuarioId) {
         if (ciclo.getItens() == null || ciclo.getItens().isEmpty()) return 0.0;
 
-        // Se o ciclo está ativo, a data fim é "agora". Se fechado, usa a dataFim salva.
         LocalDateTime fim = ciclo.getDataFim() != null ? ciclo.getDataFim() : LocalDateTime.now();
         
         double somaPercentuais = 0.0;
         int totalItens = 0;
 
         for (ItemCiclo item : ciclo.getItens()) {
-            // Busca o total de segundos estudados para essa matéria NESTE intervalo de tempo
             Long segundosRealizados = registroRepository.somarSegundosPorMateriaEPeriodo(
                 usuarioId,
                 item.getMateria().getId(),
@@ -136,13 +223,12 @@ public class CicloService {
 
             if (segundosRealizados == null) segundosRealizados = 0L;
 
-            // Calcula % da matéria
             double metaSegundos = item.getHorasMeta() * 3600;
             double percentualItem = 0.0;
             
             if (metaSegundos > 0) {
                 percentualItem = (segundosRealizados / metaSegundos) * 100.0;
-                if (percentualItem > 100.0) percentualItem = 100.0; // Teto de 100%
+                if (percentualItem > 100.0) percentualItem = 100.0;
             }
 
             somaPercentuais += percentualItem;
@@ -150,8 +236,6 @@ public class CicloService {
         }
 
         if (totalItens == 0) return 0.0;
-
-        // Média simples do progresso das matérias
         return Math.round((somaPercentuais / totalItens) * 10.0) / 10.0;
     }
 
@@ -176,7 +260,6 @@ public class CicloService {
         
         if (!ciclo.getConcurso().getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso negado.");
 
-        // O Cascade do Banco já cuida de apagar ItensCiclo e CicloHistorico
         repository.delete(ciclo);
     }
 }
