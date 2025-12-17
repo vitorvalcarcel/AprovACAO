@@ -7,6 +7,14 @@ SEÇÃO 1: DÉBITOS TÉCNICOS E QUALIDADE
      criar testes unitários para os Services principais (CicloService, Timer).
    - Status: 🔴 PENDENTE
 
+2. Refatoração de Fuso Horário (Estratégia Híbrida)
+   - Detalhe: Migrar campos de data (`LocalDateTime`) para `Instant` + `Data Lógica`.
+     O sistema atual usa `LocalDateTime` sem fuso, o que gera inconsistência em
+     relatórios se o servidor não estiver no mesmo fuso do usuário. A estratégia
+     híbrida corrige isso mantendo o histórico absoluto (Instant) e a percepção
+     do usuário (LocalDate).
+   - Status: 🔴 PENDENTE
+
 =============================================================================
 SEÇÃO 2: FUNCIONALIDADES - CORE BUSINESS (O QUE FALTA NO APP)
 =============================================================================

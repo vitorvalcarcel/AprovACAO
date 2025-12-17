@@ -14,6 +14,18 @@ interface RegistroRapidoProps {
   initialMode?: 'timer' | 'manual';
 }
 
+// Helper para formatar data localmente (YYYY-MM-DDTHH:mm:ss) ignorando UTC
+const toLocalISOString = (date: Date) => {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  const seconds = pad(date.getSeconds());
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 // SUB-COMPONENTE: Apenas este pedaço atualiza a cada segundo
 function TimerDisplay() {
   const { seconds } = useTimerSeconds();
@@ -56,7 +68,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
     questoes: '',
     acertos: '',
     anotacoes: '',
-    dataInicioManual: new Date().toISOString().slice(0, 16),
+    dataInicioManual: toLocalISOString(new Date()).slice(0, 16),
     duracaoManual: '' 
   });
 
@@ -145,7 +157,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
     stopTimer();
     setForm({
       materiaId: '', topicoId: '', tipoEstudoId: '', questoes: '', acertos: '', anotacoes: '',
-      dataInicioManual: new Date().toISOString().slice(0, 16), duracaoManual: ''
+      dataInicioManual: toLocalISOString(new Date()).slice(0, 16), duracaoManual: ''
     });
     setModalCancelarAberto(false);
     if (onClose) onClose();
@@ -201,16 +213,16 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
     setLoading(true);
     try {
       let segs = 0;
-      let dtInicio = new Date();
+      let dtInicio = '';
 
       if (modo === 'timer') {
         // AQUI ESTÁ A MÁGICA: Pegamos o tempo exato sob demanda, sem renderizar
         segs = getCurrentSeconds(); 
-        dtInicio = new Date(); 
+        dtInicio = toLocalISOString(new Date()); 
       } else {
         const partes = form.duracaoManual.split(':').map(Number);
         segs = (partes[0] || 0) * 3600 + (partes[1] || 0) * 60 + (partes[2] || 0);
-        dtInicio = new Date(form.dataInicioManual);
+        dtInicio = toLocalISOString(new Date(form.dataInicioManual));
       }
 
       if (segs < 1) { setErro("Tempo inválido (0s)."); setLoading(false); return; }
@@ -219,7 +231,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
         materiaId: Number(form.materiaId),
         topicoId: form.topicoId ? Number(form.topicoId) : null,
         tipoEstudoId: form.tipoEstudoId ? Number(form.tipoEstudoId) : null,
-        dataInicio: dtInicio.toISOString(),
+        dataInicio: dtInicio,
         segundos: segs,
         questoesFeitas: qtdQ,
         questoesCertas: qtdA,
