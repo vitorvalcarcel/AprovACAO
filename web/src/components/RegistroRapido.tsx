@@ -14,7 +14,6 @@ interface RegistroRapidoProps {
   initialMode?: 'timer' | 'manual';
 }
 
-// Helper para formatar data localmente (YYYY-MM-DDTHH:mm:ss) ignorando UTC
 const toLocalISOString = (date: Date) => {
   const pad = (n: number) => n.toString().padStart(2, '0');
   const year = date.getFullYear();
@@ -26,7 +25,6 @@ const toLocalISOString = (date: Date) => {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
-// SUB-COMPONENTE: Apenas este pedaço atualiza a cada segundo
 function TimerDisplay() {
   const { seconds } = useTimerSeconds();
   const formatarTempo = (total: number) => {
@@ -39,7 +37,6 @@ function TimerDisplay() {
 }
 
 export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode = 'timer' }: RegistroRapidoProps) {
-  // ATENÇÃO: NÃO usamos 'seconds' aqui para evitar re-render do formulário
   const { isActive, isPaused, timerData, startTimer, pauseTimer, resumeTimer, stopTimer, updateTimerData, getCurrentSeconds } = useTimerState();
 
   const [modo, setModo] = useState<'manual' | 'timer'>(isActive ? 'timer' : initialMode);
@@ -74,7 +71,6 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
 
   const [contarHoras, setContarHoras] = useState(true);
 
-  // Sincroniza Form com Contexto (apenas quando abre ou quando isActive muda de false para true)
   useEffect(() => {
     if (isActive) {
       setModo('timer');
@@ -86,7 +82,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       }));
       if (timerData.materiaId) carregarTopicos(Number(timerData.materiaId));
     }
-  }, [isActive]); // Como timerData está dentro do objeto estável do contexto, isso não dispara a cada segundo
+  }, [isActive]); 
 
   useEffect(() => {
     carregarMaterias();
@@ -216,7 +212,6 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       let dtInicio = '';
 
       if (modo === 'timer') {
-        // AQUI ESTÁ A MÁGICA: Pegamos o tempo exato sob demanda, sem renderizar
         segs = getCurrentSeconds(); 
         dtInicio = toLocalISOString(new Date()); 
       } else {
@@ -239,7 +234,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
         contarHorasNoCiclo: contarHoras
       });
       
-      stopTimer(); // Zera e limpa o localStorage
+      stopTimer(); 
       
       if (onRegistroSalvo) onRegistroSalvo();
       setModalSucessoAberto(true);
@@ -253,8 +248,6 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       setLoading(false);
     }
   };
-
-  // --- RENDERIZADORES AUXILIARES ---
 
   const MateriaInput = () => criandoMateria ? (
     <div className="flex gap-1 animate-fade-in">
@@ -321,8 +314,8 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
         <div className="space-y-5">
           
           {modo === 'timer' ? (
-            <div className={`text-center py-6 rounded-2xl border mb-2 transition-colors ${isActive && !isPaused ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
-              <div className={`text-6xl font-mono font-bold tracking-wider ${isActive && !isPaused ? 'text-blue-600' : 'text-gray-500'}`}>
+            <div className={`text-center py-4 md:py-6 rounded-2xl border mb-2 transition-colors ${isActive && !isPaused ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div className={`text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-wider ${isActive && !isPaused ? 'text-blue-600' : 'text-gray-500'}`}>
                 <TimerDisplay />
               </div>
               <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-2">
@@ -373,10 +366,10 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
           {isActive && (
             <div className="flex gap-2 mt-4">
               {!isPaused 
-                ? <button onClick={pauseTimer} className="flex-1 py-3 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"><Pause size={20} fill="currentColor" /> PAUSAR</button>
-                : <button onClick={resumeTimer} className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"><Play size={20} fill="currentColor" /> RETOMAR</button>
+                ? <button onClick={pauseTimer} className="flex-1 py-3 md:py-4 text-sm md:text-base bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"><Pause size={20} fill="currentColor" /> PAUSAR</button>
+                : <button onClick={resumeTimer} className="flex-1 py-3 md:py-4 text-sm md:text-base bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"><Play size={20} fill="currentColor" /> RETOMAR</button>
               }
-              <button onClick={() => setModalCancelarAberto(true)} className="px-5 bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors"><X size={24}/></button>
+              <button onClick={() => setModalCancelarAberto(true)} className="px-3 md:px-5 bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors"><X size={24}/></button>
             </div>
           )}
         </div>
