@@ -16,7 +16,6 @@ export default function AvisoExpiracao() {
       }
 
       try {
-        // Decodifica o payload do JWT (parte do meio)
         const payloadBase64 = token.split('.')[1];
         const payloadDecoded = JSON.parse(atob(payloadBase64));
         const exp = payloadDecoded.exp;
@@ -29,7 +28,6 @@ export default function AvisoExpiracao() {
 
         setMinutosRestantes(diffMinutos);
 
-        // ATUALIZADO: Agora mostra o aviso quando faltar 2 horas (120 min) ou menos
         if (diffMinutos <= 120) {
           setVisivel(true);
         } else {
@@ -42,12 +40,8 @@ export default function AvisoExpiracao() {
       }
     };
 
-    // Verifica imediatamente
     verificarExpiracao();
-
-    // Re-verifica a cada minuto
     const intervalo = setInterval(verificarExpiracao, 60000);
-
     return () => clearInterval(intervalo);
   }, []);
 
@@ -59,16 +53,13 @@ export default function AvisoExpiracao() {
 
   if (!visivel || minutosRestantes === null) return null;
 
-  // Definição de Estilos e Textos baseado no tempo
   const isCritico = minutosRestantes <= 30;
   const isExpirado = minutosRestantes <= 0;
 
-  // Estilo Padrão (Alerta Amarelo - entre 120min e 30min)
   let corFundo = 'bg-yellow-50 border-yellow-200';
   let corTexto = 'text-yellow-800';
   let icone = <Clock className="text-yellow-600" size={20} />;
   
-  // Formata a mensagem para ficar mais amigável se for mais de 1 hora
   let tempoFormatado = `${minutosRestantes} min`;
   if (minutosRestantes > 60) {
     const h = Math.floor(minutosRestantes / 60);
@@ -92,18 +83,18 @@ export default function AvisoExpiracao() {
   }
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border border-l-4 ${corFundo} max-w-sm transition-all duration-300`}>
+    <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] md:w-auto flex items-center gap-3 px-4 py-3 rounded-full shadow-xl border ${corFundo} transition-all duration-300 animate-slide-down`}>
       <div className="shrink-0">
         {icone}
       </div>
       
-      <div className="flex-1">
+      <div className="flex-1 text-center md:text-left whitespace-nowrap">
         <p className={`text-sm ${corTexto}`}>{mensagem}</p>
       </div>
 
       <button 
         onClick={handleLogout}
-        className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-bold rounded hover:bg-gray-50 hover:text-red-600 transition-colors flex items-center gap-1"
+        className="px-3 py-1.5 bg-white/80 border border-gray-200 text-gray-600 text-xs font-bold rounded-full hover:bg-white hover:text-red-600 transition-colors flex items-center gap-1 shrink-0"
       >
         <LogOut size={12} />
         {isExpirado ? "Entrar" : "Sair"}

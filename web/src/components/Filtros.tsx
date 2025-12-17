@@ -25,7 +25,7 @@ export default function Filtros({ onChange }: FiltrosProps) {
   const [tiposEstudo, setTiposEstudo] = useState<Opcao[]>([]);
 
   // Seleção
-  const [periodo, setPeriodo] = useState('hoje');
+  const [periodo, setPeriodo] = useState('maximo');
   const [datas, setDatas] = useState({ inicio: '', fim: '' });
   
   const [selConcursos, setSelConcursos] = useState<number[]>([]);
