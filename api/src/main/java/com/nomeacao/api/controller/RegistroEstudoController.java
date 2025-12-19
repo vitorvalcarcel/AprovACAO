@@ -2,6 +2,7 @@ package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.DadosCadastroRegistro;
 import com.nomeacao.api.dto.DadosDetalhamentoRegistro;
+import com.nomeacao.api.dto.DadosAtualizacaoRegistro;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.RegistroEstudoService;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,14 @@ public class RegistroEstudoController {
         var dto = service.registrar(dados, usuario);
         var uri = uriBuilder.path("/registros/{id}").buildAndExpand(dto.id()).toUri();
         return ResponseEntity.created(uri).body(dto);
+    }
+
+    @PutMapping
+    @Transactional
+    public ResponseEntity atualizar(@RequestBody @Valid DadosAtualizacaoRegistro dados,
+                                    @AuthenticationPrincipal Usuario usuario) {
+        var dto = service.atualizar(dados, usuario);
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping

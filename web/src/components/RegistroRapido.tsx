@@ -8,10 +8,26 @@ interface Materia { id: number; nome: string; }
 interface TipoEstudo { id: number; nome: string; contaHorasCiclo: boolean; } 
 interface Topico { id: number; nome: string; }
 
+// Interface do objeto que vem do histórico para edição
+interface RegistroEdicao {
+    id: number;
+    materiaId?: number;
+    nomeMateria: string;
+    topicoId?: number;
+    nomeTopico?: string;
+    tipoEstudoId?: number;
+    dataInicio: string;
+    segundos: number;
+    questoesFeitas: number;
+    questoesCertas: number;
+    anotacoes?: string;
+}
+
 interface RegistroRapidoProps {
   onRegistroSalvo?: () => void;
   onClose?: () => void;
   initialMode?: 'timer' | 'manual';
+  registroParaEditar?: RegistroEdicao | null; // Nova prop
 }
 
 const toLocalISOString = (date: Date) => {
@@ -25,6 +41,14 @@ const toLocalISOString = (date: Date) => {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
+// Converte segundos em HH:MM:SS para o input manual
+const segundosParaString = (total: number) => {
+    const h = Math.floor(total / 3600).toString().padStart(2, '0');
+    const m = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+    const s = (total % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+};
+
 function TimerDisplay() {
   const { seconds } = useTimerSeconds();
   const formatarTempo = (total: number) => {
@@ -36,10 +60,11 @@ function TimerDisplay() {
   return <>{formatarTempo(seconds)}</>;
 }
 
-export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode = 'timer' }: RegistroRapidoProps) {
+export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode = 'timer', registroParaEditar }: RegistroRapidoProps) {
   const { isActive, isPaused, timerData, startTimer, pauseTimer, resumeTimer, stopTimer, updateTimerData, getCurrentSeconds } = useTimerState();
 
-  const [modo, setModo] = useState<'manual' | 'timer'>(isActive ? 'timer' : initialMode);
+  // Se estiver editando, força o modo manual
+  const [modo, setModo] = useState<'manual' | 'timer'>(registroParaEditar ? 'manual' : (isActive ? 'timer' : initialMode));
   
   const [materias, setMaterias] = useState<Materia[]>([]);
   const [tiposEstudo, setTiposEstudo] = useState<TipoEstudo[]>([]);
@@ -71,8 +96,33 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
 
   const [contarHoras, setContarHoras] = useState(true);
 
+  // Efeito de inicialização para EDIÇÃO
   useEffect(() => {
-    if (isActive) {
+    if (registroParaEditar) {
+        const dataLimpa = registroParaEditar.dataInicio 
+            ? registroParaEditar.dataInicio.split('.')[0] 
+            : toLocalISOString(new Date()).slice(0, 19);
+
+        setForm({
+            materiaId: String(registroParaEditar.materiaId || ''),
+            topicoId: registroParaEditar.topicoId ? String(registroParaEditar.topicoId) : '',
+            tipoEstudoId: registroParaEditar.tipoEstudoId ? String(registroParaEditar.tipoEstudoId) : '',
+            questoes: String(registroParaEditar.questoesFeitas || ''),
+            acertos: String(registroParaEditar.questoesCertas || ''),
+            anotacoes: registroParaEditar.anotacoes || '',
+            dataInicioManual: dataLimpa,
+            duracaoManual: segundosParaString(registroParaEditar.segundos)
+        });
+        
+        if (registroParaEditar.materiaId) {
+            carregarTopicos(registroParaEditar.materiaId);
+        }
+    }
+  }, [registroParaEditar]);
+
+  // Sincronia com Timer Ativo (Apenas se NÃO estiver editando)
+  useEffect(() => {
+    if (isActive && !registroParaEditar) {
       setModo('timer');
       setForm(f => ({
         ...f,
@@ -82,7 +132,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       }));
       if (timerData.materiaId) carregarTopicos(Number(timerData.materiaId));
     }
-  }, [isActive]); 
+  }, [isActive, registroParaEditar]); 
 
   useEffect(() => {
     carregarMaterias();
@@ -102,12 +152,12 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
     if (id) {
       const mat = materias.find(m => m.id === Number(id));
       carregarTopicos(Number(id));
-      if (isActive) {
+      if (isActive && !registroParaEditar) {
         updateTimerData({ materiaId: id, materiaNome: mat?.nome, topicoId: '' });
       }
     } else {
       setTopicos([]);
-      if (isActive) {
+      if (isActive && !registroParaEditar) {
         updateTimerData({ materiaId: '', materiaNome: '', topicoId: '' });
       }
     }
@@ -115,12 +165,12 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
 
   const handleTopicoChange = (id: string) => {
     setForm(f => ({ ...f, topicoId: id }));
-    if (isActive) updateTimerData({ topicoId: id });
+    if (isActive && !registroParaEditar) updateTimerData({ topicoId: id });
   };
 
   const handleTipoChange = (id: string) => {
     setForm(f => ({ ...f, tipoEstudoId: id }));
-    if (isActive) updateTimerData({ tipoEstudoId: id });
+    if (isActive && !registroParaEditar) updateTimerData({ tipoEstudoId: id });
   };
 
   useEffect(() => {
@@ -150,7 +200,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
   };
 
   const resetarTudo = () => {
-    stopTimer();
+    if(!registroParaEditar) stopTimer();
     setForm({
       materiaId: '', topicoId: '', tipoEstudoId: '', questoes: '', acertos: '', anotacoes: '',
       dataInicioManual: toLocalISOString(new Date()).slice(0, 16), duracaoManual: ''
@@ -168,7 +218,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       await carregarTopicos(Number(form.materiaId));
       const novoId = String(res.data.id);
       setForm(f => ({ ...f, topicoId: novoId }));
-      if (isActive) updateTimerData({ topicoId: novoId });
+      if (isActive && !registroParaEditar) updateTimerData({ topicoId: novoId });
       setCriandoTopico(false);
       setNovoTopicoNome('');
     } catch (error) { setErro("Erro ao criar tópico"); } finally { setSalvandoTopico(false); }
@@ -195,7 +245,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
   const salvar = async () => {
     setErro('');
     
-    if (modo === 'timer' && isActive && !isPaused) {
+    if (modo === 'timer' && isActive && !isPaused && !registroParaEditar) {
         setErro("Pause o cronômetro para salvar o registro.");
         return;
     }
@@ -211,18 +261,20 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       let segs = 0;
       let dtInicio = '';
 
-      if (modo === 'timer') {
+      if (modo === 'timer' && !registroParaEditar) {
         segs = getCurrentSeconds(); 
         dtInicio = toLocalISOString(new Date()); 
       } else {
         const partes = form.duracaoManual.split(':').map(Number);
         segs = (partes[0] || 0) * 3600 + (partes[1] || 0) * 60 + (partes[2] || 0);
-        dtInicio = toLocalISOString(new Date(form.dataInicioManual));
+        dtInicio = form.dataInicioManual;
+        // Valida se a data manual tem formato ISO completo ou se precisa ajustar
+        if(!dtInicio.includes('T')) dtInicio += 'T00:00:00';
       }
 
       if (segs < 1) { setErro("Tempo inválido (0s)."); setLoading(false); return; }
 
-      await api.post('/registros', {
+      const payload = {
         materiaId: Number(form.materiaId),
         topicoId: form.topicoId ? Number(form.topicoId) : null,
         tipoEstudoId: form.tipoEstudoId ? Number(form.tipoEstudoId) : null,
@@ -232,9 +284,16 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
         questoesCertas: qtdA,
         anotacoes: form.anotacoes,
         contarHorasNoCiclo: contarHoras
-      });
-      
-      stopTimer(); 
+      };
+
+      if (registroParaEditar) {
+          // MODO EDIÇÃO (PUT)
+          await api.put('/registros', { id: registroParaEditar.id, ...payload });
+      } else {
+          // MODO CRIAÇÃO (POST)
+          await api.post('/registros', payload);
+          stopTimer();
+      }
       
       if (onRegistroSalvo) onRegistroSalvo();
       setModalSucessoAberto(true);
@@ -243,6 +302,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       }, 1500);
 
     } catch (error: any) {
+      console.error(error);
       setErro(error.response?.data?.mensagem || "Erro ao salvar.");
     } finally {
       setLoading(false);
@@ -290,21 +350,28 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
     </div>
   );
 
-  const isTimerRunning = modo === 'timer' && isActive && !isPaused;
+  const isTimerRunning = modo === 'timer' && isActive && !isPaused && !registroParaEditar;
 
   return (
     <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col h-auto transition-all">
       
-      {!isActive && (
+      {/* TABS (Só mostra se NÃO estiver editando e não estiver ativo) */}
+      {!isActive && !registroParaEditar && (
         <div className="flex border-b bg-gray-50">
           <button onClick={() => setModo('timer')} className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${modo === 'timer' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500'}`}><Clock size={16} /> Cronômetro</button>
           <button onClick={() => setModo('manual')} className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${modo === 'manual' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-500'}`}><Edit3 size={16} /> Manual</button>
         </div>
       )}
 
-      {isActive && (
+      {isActive && !registroParaEditar && (
         <div className="bg-blue-600 text-white p-2 text-center text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
             <Clock size={14} /> Cronômetro em Andamento
+        </div>
+      )}
+
+      {registroParaEditar && (
+        <div className="bg-orange-50 text-orange-700 p-2 text-center text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 border-b border-orange-100">
+            <Edit3 size={14} /> Editando Registro
         </div>
       )}
 
@@ -313,7 +380,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
         {/* COLUNA ESQUERDA */}
         <div className="space-y-5">
           
-          {modo === 'timer' ? (
+          {modo === 'timer' && !registroParaEditar ? (
             <div className={`text-center py-4 md:py-6 rounded-2xl border mb-2 transition-colors ${isActive && !isPaused ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
               <div className={`text-4xl sm:text-5xl md:text-6xl font-mono font-bold tracking-wider ${isActive && !isPaused ? 'text-blue-600' : 'text-gray-500'}`}>
                 <TimerDisplay />
@@ -357,13 +424,13 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
             </div>
           </div>
 
-          {modo === 'timer' && !isActive && (
+          {modo === 'timer' && !isActive && !registroParaEditar && (
             <button onClick={iniciar} className="w-full mt-4 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all active:scale-95">
               <Play size={20} fill="currentColor" /> INICIAR CRONÔMETRO
             </button>
           )}
           
-          {isActive && (
+          {isActive && !registroParaEditar && (
             <div className="flex gap-2 mt-4">
               {!isPaused 
                 ? <button onClick={pauseTimer} className="flex-1 py-3 md:py-4 text-sm md:text-base bg-yellow-400 hover:bg-yellow-500 text-yellow-900 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"><Pause size={20} fill="currentColor" /> PAUSAR</button>
@@ -396,7 +463,6 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
             </div>
           </div>
 
-          {/* SWITCH INTELIGENTE */}
           <label className="flex items-center gap-2 cursor-pointer select-none bg-gray-50 p-2 rounded-md border border-gray-100 hover:bg-gray-100 transition-colors">
             <div className="relative">
               <input 
@@ -432,7 +498,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
               {isTimerRunning ? (
                 <>Pause para Salvar</>
               ) : (
-                <><Save size={20} /> {loading ? 'Salvando...' : 'SALVAR REGISTRO'}</>
+                <><Save size={20} /> {loading ? 'Salvando...' : (registroParaEditar ? 'ATUALIZAR REGISTRO' : 'SALVAR REGISTRO')}</>
               )}
             </button>
           )}
@@ -441,7 +507,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
 
       <Modal isOpen={modalCancelarAberto} onClose={() => setModalCancelarAberto(false)} title="Descartar?">
         <div className="space-y-4">
-          <p className="text-gray-600 text-sm">Tem certeza que deseja descartar o tempo registrado?</p>
+          <p className="text-gray-600 text-sm">Tem certeza que deseja descartar as alterações?</p>
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={() => setModalCancelarAberto(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Voltar</button>
             <button onClick={resetarTudo} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg">Descartar</button>
@@ -452,7 +518,7 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
       <Modal isOpen={modalSucessoAberto} onClose={() => {}} title="">
         <div className="flex flex-col items-center justify-center py-6 space-y-4">
           <div className="bg-green-100 text-green-600 p-4 rounded-full animate-bounce"><CheckCircle size={48} /></div>
-          <h3 className="text-xl font-bold text-gray-800">Registrado!</h3>
+          <h3 className="text-xl font-bold text-gray-800">{registroParaEditar ? 'Atualizado!' : 'Registrado!'}</h3>
         </div>
       </Modal>
     </div>
