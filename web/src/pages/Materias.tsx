@@ -260,7 +260,7 @@ export default function Materias() {
                  ) : (
                    <div className="grid grid-cols-1 gap-2">
                      {topicos.map(topico => (
-                       <div key={topico.id} className={`flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-all ${topico.arquivado ? 'opacity-60 bg-gray-50 border-gray-200' : 'border-gray-100 hover:border-blue-200'}`}>
+                       <div key={topico.id} className={`group flex justify-between items-center p-3 bg-white rounded-lg border hover:shadow-sm transition-all ${topico.arquivado ? 'opacity-60 bg-gray-50 border-gray-200' : 'border-gray-100 hover:border-blue-200'}`}>
                          <div className="flex items-center gap-3 overflow-hidden">
                            {topico.arquivado ? <Box size={16} className="text-gray-400 shrink-0"/> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"/>}
                            <span className={`text-sm truncate ${topico.arquivado ? 'text-gray-500 line-through' : 'text-gray-700 font-medium'}`}>{topico.nome}</span>

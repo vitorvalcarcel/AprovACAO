@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, BookOpen, Trophy, Calendar } from 'lucide-react';
+import { Target, BookOpen, Trophy } from 'lucide-react';
 import api from '../services/api';
 import Filtros, { type FiltrosState } from '../components/Filtros';
 import GraficoEvolucao from '../components/GraficoEvolucao';
@@ -99,12 +99,7 @@ export default function Estatisticas() {
       </div>
 
       {/* GRÁFICO */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <Calendar size={20} className="text-blue-600"/> Constância Diária
-        </h2>
-        <GraficoEvolucao dados={data?.evolucaoDiaria || []} loading={loading} />
-      </div>
+      <GraficoEvolucao dados={data?.evolucaoDiaria || []} loading={loading} />
     </div>
   );
 }
