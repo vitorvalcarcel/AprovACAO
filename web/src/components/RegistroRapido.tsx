@@ -310,43 +310,43 @@ export default function RegistroRapido({ onRegistroSalvo, onClose, initialMode =
   };
 
   const MateriaInput = () => criandoMateria ? (
-    <div className="flex gap-1 animate-fade-in">
-      <input autoFocus placeholder="Nova matéria..." value={novaMateriaNome} onChange={e=>setNovaMateriaNome(e.target.value)} className="flex-1 border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" onKeyDown={e => e.key === 'Enter' && salvarNovaMateria()} />
-      <button onClick={salvarNovaMateria} disabled={salvandoMateria} className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200"><Check size={18}/></button>
-      <button onClick={()=>{setCriandoMateria(false); setErro('');}} className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"><X size={18}/></button>
+    <div className="flex gap-1 animate-fade-in w-full overflow-hidden">
+      <input autoFocus placeholder="Nova matéria..." value={novaMateriaNome} onChange={e=>setNovaMateriaNome(e.target.value)} className="flex-1 border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-0" onKeyDown={e => e.key === 'Enter' && salvarNovaMateria()} />
+      <button onClick={salvarNovaMateria} disabled={salvandoMateria} className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200 shrink-0"><Check size={18}/></button>
+      <button onClick={()=>{setCriandoMateria(false); setErro('');}} className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 shrink-0"><X size={18}/></button>
     </div>
   ) : (
-    <div className="flex gap-1">
+    <div className="flex gap-1 w-full overflow-hidden">
       <select 
         value={form.materiaId} 
         onChange={e => handleMateriaChange(e.target.value)} 
-        className="flex-1 border rounded p-2 text-sm bg-white disabled:bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none"
+        className="flex-1 w-full min-w-0 border rounded p-2 text-sm bg-white disabled:bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none truncate"
       >
         <option value="">Selecione...</option>
         {materias.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
       </select>
-      <button onClick={()=>setCriandoMateria(true)} className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors" title="Nova Matéria"><Plus size={18}/></button>
+      <button onClick={()=>setCriandoMateria(true)} className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors shrink-0" title="Nova Matéria"><Plus size={18}/></button>
     </div>
   );
 
   const TopicoInput = () => criandoTopico ? (
-    <div className="flex gap-1 animate-fade-in">
-      <input autoFocus placeholder="Novo tópico..." value={novoTopicoNome} onChange={e=>setNovoTopicoNome(e.target.value)} className="flex-1 border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" onKeyDown={e => e.key === 'Enter' && salvarNovoTopico()} />
-      <button onClick={salvarNovoTopico} disabled={salvandoTopico} className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200"><Check size={18}/></button>
-      <button onClick={()=>{setCriandoTopico(false); setErro('');}} className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"><X size={18}/></button>
+    <div className="flex gap-1 animate-fade-in w-full overflow-hidden">
+      <input autoFocus placeholder="Novo tópico..." value={novoTopicoNome} onChange={e=>setNovoTopicoNome(e.target.value)} className="flex-1 border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-0" onKeyDown={e => e.key === 'Enter' && salvarNovoTopico()} />
+      <button onClick={salvarNovoTopico} disabled={salvandoTopico} className="p-2 bg-green-100 text-green-700 rounded hover:bg-green-200 shrink-0"><Check size={18}/></button>
+      <button onClick={()=>{setCriandoTopico(false); setErro('');}} className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 shrink-0"><X size={18}/></button>
     </div>
   ) : (
-    <div className="flex gap-1">
+    <div className="flex gap-1 w-full overflow-hidden">
       <select 
         value={form.topicoId} 
         onChange={e => handleTopicoChange(e.target.value)} 
         disabled={!form.materiaId} 
-        className="flex-1 border rounded p-2 text-sm bg-white disabled:bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none"
+        className="flex-1 w-full min-w-0 border rounded p-2 text-sm bg-white disabled:bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none truncate"
       >
         <option value="">{form.materiaId && topicos.length === 0 ? "Sem tópicos" : "Geral"}</option>
         {topicos.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
       </select>
-      <button onClick={()=>setCriandoTopico(true)} disabled={!form.materiaId} className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors" title="Novo Tópico"><Plus size={18}/></button>
+      <button onClick={()=>setCriandoTopico(true)} disabled={!form.materiaId} className="p-2 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors shrink-0" title="Novo Tópico"><Plus size={18}/></button>
     </div>
   );
 

@@ -10,8 +10,9 @@ import com.nomeacao.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,19 +45,53 @@ public class DashboardService {
         double taxaAcertos = totalQuestoes > 0 ? (double) totalAcertos / totalQuestoes * 100.0 : 0.0;
         taxaAcertos = Math.round(taxaAcertos * 10.0) / 10.0;
 
-        // --- GRÁFICO EVOLUÇÃO (OTIMIZADO) ---
+        // --- GRÁFICO EVOLUÇÃO (Com Gap Filling) ---
         List<EvolucaoDiariaDTO> evolucaoBanco = registroRepository.calcularEvolucaoDiaria(
             usuario, inicio, fim, listaMaterias, listaConcursos, listaTipos
         );
 
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM");
-        List<DadosGrafico> evolucao = evolucaoBanco.stream()
-                .map(dto -> {
-                    String label = sdf.format(dto.data());
-                    Double horasDia = Math.round((dto.totalSegundos() / 3600.0) * 100.0) / 100.0;
-                    return new DadosGrafico(label, horasDia);
-                })
-                .collect(Collectors.toList());
+        // 1. Determinar Range de Datas
+        LocalDate dataFim = (fim != null) ? fim.toLocalDate() : LocalDate.now();
+        LocalDate dataInicio;
+
+        if (inicio != null) {
+            dataInicio = inicio.toLocalDate();
+        } else if (!evolucaoBanco.isEmpty()) {
+            // Se não tem filtro, pega a primeira data do banco
+            dataInicio = evolucaoBanco.stream()
+                    .map(e -> e.data().toLocalDate())
+                    .min(LocalDate::compareTo)
+                    .orElse(LocalDate.now().minusDays(30));
+        } else {
+            // Padrão: Últimos 30 dias se tudo estiver vazio
+            dataInicio = LocalDate.now().minusDays(30);
+        }
+        
+        // Garante que não exploda se o banco tiver datas muito antigas sem filtro (trava em 2 anos)
+        if (inicio == null && ChronoUnit.DAYS.between(dataInicio, dataFim) > 730) {
+            dataInicio = dataFim.minusYears(2);
+        }
+
+        // 2. Mapear dados existentes
+        Map<LocalDate, Double> mapDados = evolucaoBanco.stream()
+            .collect(Collectors.toMap(
+                e -> e.data().toLocalDate(),
+                e -> e.totalSegundos() / 3600.0,
+                (a, b) -> a 
+            ));
+
+        // 3. Preencher buracos (Gap Filling)
+        List<DadosGrafico> evolucao = new ArrayList<>();
+        LocalDate current = dataInicio;
+        
+        while (!current.isAfter(dataFim)) {
+            Double valor = mapDados.getOrDefault(current, 0.0);
+            valor = Math.round(valor * 100.0) / 100.0;
+            
+            // Retorna ISO 8601 para o front tratar
+            evolucao.add(new DadosGrafico(current.toString(), valor));
+            current = current.plusDays(1);
+        }
 
         // --- 2. CICLO ATIVO (Cálculo Duplo) ---
         List<DashboardDTO.ItemProgresso> itensCiclo = new ArrayList<>();
@@ -70,7 +105,6 @@ public class DashboardService {
             cicloId = ciclo.getId();
             nomeConcurso = ciclo.getConcurso().getNome();
 
-            // Busca os totais do histórico para o ciclo
             List<ResumoHistoricoDTO> historico = registroRepository.somarEstudosPorConcurso(ciclo.getConcurso().getId());
             
             Map<Long, Long> segundosPorMateria = historico.stream()
@@ -83,7 +117,6 @@ public class DashboardService {
             int totalItens = 0;
 
             for (ItemCiclo item : ciclo.getItens()) {
-                // --- CÁLCULO HORAS ---
                 long realizadoSeg = segundosPorMateria.getOrDefault(item.getMateria().getId(), 0L);
                 double metaH = item.getHorasMeta();
                 long metaS = (long) (metaH * 3600);
@@ -91,14 +124,12 @@ public class DashboardService {
                 double percH = metaS > 0 ? ((double) realizadoSeg / metaS) * 100.0 : 0.0;
                 if (percH > 100.0) percH = 100.0;
 
-                // --- CÁLCULO QUESTÕES ---
                 long realizadoQ = questoesPorMateria.getOrDefault(item.getMateria().getId(), 0L);
                 int metaQ = item.getQuestoesMeta() != null ? item.getQuestoesMeta() : 0;
                 long saldoQ = metaQ - realizadoQ;
                 double percQ = metaQ > 0 ? ((double) realizadoQ / metaQ) * 100.0 : 0.0;
                 if (percQ > 100.0) percQ = 100.0;
 
-                // Progresso Geral (Média simples dos dois progressos para este item)
                 double progressoItem = (metaQ > 0) ? (percH + percQ) / 2.0 : percH;
                 somaPercentuais += progressoItem;
                 totalItens++;
@@ -110,7 +141,6 @@ public class DashboardService {
                 ));
             }
             
-            // Ordenação: Prioridade para quem deve mais horas
             itensCiclo.sort((a, b) -> b.saldoSegundos().compareTo(a.saldoSegundos()));
             
             if (totalItens > 0) {
