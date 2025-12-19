@@ -2,6 +2,7 @@ package com.nomeacao.api.service;
 
 import com.nomeacao.api.dto.DadosCadastroRegistro;
 import com.nomeacao.api.dto.DadosDetalhamentoRegistro;
+import com.nomeacao.api.dto.DadosAtualizacaoRegistro;
 import com.nomeacao.api.model.RegistroEstudo;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.*;
@@ -30,7 +31,7 @@ public class RegistroEstudoService {
     public DadosDetalhamentoRegistro registrar(DadosCadastroRegistro dados, Usuario usuario) {
         var registro = new RegistroEstudo();
         registro.setUsuario(usuario);
-        registro.setDataInicio(dados.dataInicio());
+        registro.setDataInicio(dados.dataInicio().withNano(0));        
         registro.setSegundos(dados.segundos());
         registro.setQuestoesFeitas(dados.questoesFeitas());
         registro.setQuestoesCertas(dados.questoesCertas());
@@ -57,6 +58,47 @@ public class RegistroEstudoService {
         } else {
             cicloRepository.findFirstByUsuarioAndAtivoTrue(usuario)
                 .ifPresent(cicloAtivo -> registro.setConcurso(cicloAtivo.getConcurso()));
+        }
+
+        if (dados.tipoEstudoId() != null) {
+            var tipo = tipoRepository.findById(dados.tipoEstudoId())
+                    .orElseThrow(() -> new RuntimeException("Tipo de Estudo não encontrado"));
+            if (!tipo.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado ao Tipo");
+            registro.setTipoEstudo(tipo);
+        }
+
+        repository.save(registro);
+        return new DadosDetalhamentoRegistro(registro);
+    }
+
+    @Transactional
+    public DadosDetalhamentoRegistro atualizar(DadosAtualizacaoRegistro dados, Usuario usuario) {
+        var registro = repository.findById(dados.id())
+                .orElseThrow(() -> new RuntimeException("Registro não encontrado"));
+
+        if (!registro.getUsuario().getId().equals(usuario.getId())) {
+            throw new RuntimeException("Acesso negado.");
+        }
+
+        if (dados.dataInicio() != null) registro.setDataInicio(dados.dataInicio().withNano(0));
+        
+        if (dados.segundos() != null) registro.setSegundos(dados.segundos());
+        if (dados.questoesFeitas() != null) registro.setQuestoesFeitas(dados.questoesFeitas());
+        if (dados.questoesCertas() != null) registro.setQuestoesCertas(dados.questoesCertas());
+        if (dados.anotacoes() != null) registro.setAnotacoes(dados.anotacoes());
+        if (dados.contarHorasNoCiclo() != null) registro.setContarHorasNoCiclo(dados.contarHorasNoCiclo());
+
+        if (dados.materiaId() != null) {
+            var materia = materiaRepository.findById(dados.materiaId())
+                    .orElseThrow(() -> new RuntimeException("Matéria não encontrada"));
+            if (!materia.getUsuario().getId().equals(usuario.getId())) throw new RuntimeException("Acesso Negado à Matéria");
+            registro.setMateria(materia);
+        }
+
+        if (dados.topicoId() != null) {
+            var topico = topicoRepository.findById(dados.topicoId())
+                    .orElseThrow(() -> new RuntimeException("Tópico não encontrado"));
+            registro.setTopico(topico);
         }
 
         if (dados.tipoEstudoId() != null) {
