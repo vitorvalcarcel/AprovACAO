@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     function signOut() {
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('usuario'); // Limpa dados antigos se houver
         api.defaults.headers.common['Authorization'] = undefined;
         setUser(null);

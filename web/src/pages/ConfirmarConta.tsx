@@ -7,7 +7,7 @@ export default function ConfirmarConta() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
-  
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
@@ -21,12 +21,13 @@ export default function ConfirmarConta() {
         // Chama API de confirmação
         // O backend retorna o JWT diretamente (Magic Link)
         const response = await api.post(`/usuarios/confirmar-email?token=${token}`);
-        
-        const jwt = response.data.token;
-        localStorage.setItem('token', jwt);
-        
+
+        const { accessToken, refreshToken } = response.data;
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
         setStatus('success');
-        
+
         // Redireciona para o App em 2 segundos
         setTimeout(() => navigate('/app'), 2000);
 
@@ -42,7 +43,7 @@ export default function ConfirmarConta() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-10 text-center">
-        
+
         {status === 'loading' && (
           <div className="flex flex-col items-center gap-4">
             <Loader2 size={48} className="text-blue-600 animate-spin" />
@@ -67,7 +68,7 @@ export default function ConfirmarConta() {
             </div>
             <h2 className="text-xl font-bold text-gray-800">Link Inválido</h2>
             <p className="text-gray-500">Este link de confirmação expirou ou não existe.</p>
-            <button 
+            <button
               onClick={() => navigate('/login')}
               className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700"
             >

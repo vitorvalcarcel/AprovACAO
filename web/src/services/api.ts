@@ -1,25 +1,43 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-// 1. Interface para controlar as tentativas na configuração da requisição
+// 1. Interface expandida para controlar retry e queue
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
+  _retry?: boolean; // Marca se já tentamos dar refresh para essa req
 }
 
-// 2. Configurações de Tempo (Estratégia para ~13 segundos totais)
-// 3 tentativas x 4 segundos de espera = 12 segundos + tempo de processamento
-const MAX_RETRIES = 3; 
-const RETRY_DELAY = 4000; 
+// 2. Configurações de Retry (Rede)
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 4000;
+
+// 3. Variáveis para controle de Refresh Token (Mutex)
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+// Função para processar a fila de requisições pausadas
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
-  // 3. Define um limite de tempo por requisição (se o back travar processando)
-  timeout: 13000, 
+  timeout: 13000,
 });
 
 let isRedirecting = false;
 
-// Função auxiliar para disparar o evento que o ToastContext escuta
-const dispatchToast = (type: 'success'|'error'|'info', title: string, message?: string) => {
+// Helpers
+const dispatchToast = (type: 'success' | 'error' | 'info', title: string, message?: string) => {
   window.dispatchEvent(new CustomEvent('toast-event', {
     detail: { type, title, message }
   }));
@@ -36,29 +54,23 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<any>) => {
-    
+
     const config = error.config as CustomAxiosRequestConfig;
     const url = config?.url;
+    const response = error.response;
 
-    // --- Lógica de Retry (Espera antes de falhar) ---
-    // Se for erro de rede (!error.response) e ainda tivermos tentativas
-    if (!error.response && config && (config._retryCount || 0) < MAX_RETRIES) {
-        // Ignora retry se for o próprio health check
-        if (url && !url.includes('/actuator/health')) {
-            config._retryCount = (config._retryCount || 0) + 1;
-            
-            // Pausa a execução por 4 segundos
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            
-            // Tenta a requisição novamente
-            return api(config);
-        }
+    // --- 1. Lógica de Retry (Erro de Rede / Timeout) ---
+    if (!response && config && (config._retryCount || 0) < MAX_RETRIES) {
+      if (url && !url.includes('/actuator/health')) {
+        config._retryCount = (config._retryCount || 0) + 1;
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return api(config);
+      }
     }
 
-    // --- Detecção de Queda Definitiva (Após as tentativas falharem) ---
+    // --- 2. Queda Definitiva (500 ou Sem Resposta após Retries) ---
     if (url && !url.includes('/actuator/health')) {
-      // Se não tem resposta (Back off) ou Erro 500+
-      if (!error.response || error.response.status >= 500) {
+      if (!response || response.status >= 500) {
         if (window.location.pathname !== '/manutencao') {
           window.location.href = '/manutencao';
           return Promise.reject(error);
@@ -66,36 +78,81 @@ api.interceptors.response.use(
       }
     }
 
-    // Se chegou aqui e não tem response, rejeita
-    if (!error.response) {
-       return Promise.reject(error);
-    }
+    // --- 3. Refresh Token (Erro 403 Forbidden) ---
+    if (response?.status === 403 && config && !config._retry) {
 
-    const status = error.response.status;
-    const data = error.response.data;
-
-    // 2. Erro 403 (Proibido/Sessão Expirada)
-    if (status === 403) {
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && !isRedirecting) {
-        isRedirecting = true;
-        dispatchToast('info', 'Sessão Expirada', 'Por favor, faça login novamente.');
-        
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        window.location.href = '/login';
+      // Se for a própria requisição de login ou refresh falhando, não faz nada (deixa erro subir)
+      if (url?.includes('/auth/login') || url?.includes('/auth/refresh')) {
+        return Promise.reject(error);
       }
-      return Promise.reject(error);
+
+      if (isRefreshing) {
+        // Se já está renovando, coloca na fila
+        return new Promise(function (resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          config.headers['Authorization'] = 'Bearer ' + token;
+          return api(config);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      config._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (!refreshToken) {
+          throw new Error('Sem refresh token');
+        }
+
+        // Chama endpoint de refresh (usando axios puro para evitar loop)
+        const { data } = await axios.post(api.defaults.baseURL + '/auth/refresh', {
+          refreshToken
+        });
+
+        const { accessToken, refreshToken: newRefreshToken } = data;
+
+        // Salva novos tokens
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Atualiza header padrão
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
+
+        // Processa fila com sucesso
+        processQueue(null, accessToken);
+
+        // Retenta a requisição original
+        config.headers['Authorization'] = 'Bearer ' + accessToken;
+        return api(config);
+
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+
+        // Se falhar o refresh, desloga
+        if (!isRedirecting) {
+          isRedirecting = true;
+          dispatchToast('info', 'Sessão Expirada', 'Faça login novamente.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('usuario');
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    // 3. Erro 400 (Bad Request - Validação ou Negócio)
-    if (status === 400) {
-      // Se for lista de erros de validação (array)
+    // --- 4. Erros 400 (Bad Request) ---
+    if (response?.status === 400) {
+      const data = response.data;
       if (Array.isArray(data)) {
-        return Promise.reject(error); 
+        return Promise.reject(error);
       }
-      
-      // Se for erro de negócio (Objeto DadosErro do Java: { mensagem: "..." })
       if (data && data.mensagem) {
         dispatchToast('error', 'Atenção', data.mensagem);
         return Promise.reject(error);
@@ -106,7 +163,7 @@ api.interceptors.response.use(
   }
 );
 
-// --- INTERFACES E MÉTODOS DE FEEDBACK (Novos) ---
+// --- INTERFACES E MÉTODOS DE FEEDBACK ---
 
 export interface IFeedbackDTO {
   tipo: 'BUG' | 'SUGESTAO' | 'ELOGIO' | 'OUTRO';
