@@ -40,11 +40,10 @@ api.interceptors.response.use(
     const config = error.config as CustomAxiosRequestConfig;
     const url = config?.url;
 
-    // --- TAREFA C: Lógica de Retry (Espera antes de falhar) ---
-    // Se for erro de rede (!error.response) e ainda tivermos tentativas, esperamos e tentamos de novo.
-    // Isso evita que o usuário veja a tela de manutenção em uma oscilação de 1 segundo.
+    // --- Lógica de Retry (Espera antes de falhar) ---
+    // Se for erro de rede (!error.response) e ainda tivermos tentativas
     if (!error.response && config && (config._retryCount || 0) < MAX_RETRIES) {
-        // Ignora retry se for o próprio health check (para não ficar preso lá)
+        // Ignora retry se for o próprio health check
         if (url && !url.includes('/actuator/health')) {
             config._retryCount = (config._retryCount || 0) + 1;
             
@@ -56,7 +55,7 @@ api.interceptors.response.use(
         }
     }
 
-    // --- TAREFA C: Detecção de Queda Definitiva (Após as tentativas falharem) ---
+    // --- Detecção de Queda Definitiva (Após as tentativas falharem) ---
     if (url && !url.includes('/actuator/health')) {
       // Se não tem resposta (Back off) ou Erro 500+
       if (!error.response || error.response.status >= 500) {
@@ -67,7 +66,7 @@ api.interceptors.response.use(
       }
     }
 
-    // Se chegou aqui e não tem response, rejeita (caso seja health check ou outro erro)
+    // Se chegou aqui e não tem response, rejeita
     if (!error.response) {
        return Promise.reject(error);
     }
@@ -91,10 +90,12 @@ api.interceptors.response.use(
 
     // 3. Erro 400 (Bad Request - Validação ou Negócio)
     if (status === 400) {
+      // Se for lista de erros de validação (array)
       if (Array.isArray(data)) {
         return Promise.reject(error); 
       }
       
+      // Se for erro de negócio (Objeto DadosErro do Java: { mensagem: "..." })
       if (data && data.mensagem) {
         dispatchToast('error', 'Atenção', data.mensagem);
         return Promise.reject(error);
@@ -104,5 +105,17 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// --- INTERFACES E MÉTODOS DE FEEDBACK (Novos) ---
+
+export interface IFeedbackDTO {
+  tipo: 'BUG' | 'SUGESTAO' | 'ELOGIO' | 'OUTRO';
+  mensagem: string;
+}
+
+export const enviarFeedback = async (dados: IFeedbackDTO) => {
+  const response = await api.post('/feedbacks', dados);
+  return response.data;
+};
 
 export default api;
