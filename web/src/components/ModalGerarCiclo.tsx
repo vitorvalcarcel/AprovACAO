@@ -22,13 +22,14 @@ interface ItemSugestao {
 interface ModalGerarCicloProps {
   isOpen: boolean;
   onClose: () => void;
-  concurso: Concurso | null;
+  onSuccess?: () => void;
+  concurso: Concurso | null; // Keep Concurso match if needed, but I see source has `concurso: Concurso | null;`. I will replace standard block.
 }
 
-export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGerarCicloProps) {
+export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }: ModalGerarCicloProps) {
   const [step, setStep] = useState(1);
-  const [totalHorasStr, setTotalHorasStr] = useState('12'); 
-  const [totalQuestoesStr, setTotalQuestoesStr] = useState('75'); 
+  const [totalHorasStr, setTotalHorasStr] = useState('12');
+  const [totalQuestoesStr, setTotalQuestoesStr] = useState('75');
   const [itens, setItens] = useState<ItemSugestao[]>([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
@@ -53,12 +54,12 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
       setErro("Insira uma carga horária válida.");
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await api.get<ItemSugestao[]>('/ciclos/sugestao', {
-        params: { 
-          concursoId: concurso.id, 
+        params: {
+          concursoId: concurso.id,
           horas: horasNum,
           questoes: isNaN(questoesNum) ? 0 : questoesNum
         }
@@ -101,7 +102,8 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
       setStep(3);
       setTimeout(() => {
         onClose();
-        window.location.reload(); 
+        if (onSuccess) onSuccess();
+        else window.location.reload();
       }, 1500);
     } catch (error: any) {
       setErro(error.response?.data?.mensagem || "Erro ao salvar ciclo.");
@@ -134,7 +136,7 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={step === 1 ? "Novo Ciclo" : (step === 3 ? "Sucesso!" : `Planejando: ${concurso?.nome}`)}>
-      
+
       {step === 1 && (
         <form onSubmit={gerarSugestao} className="space-y-6">
           <div className="text-center py-4">
@@ -149,7 +151,7 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
             <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
               <label className="text-xs font-bold text-blue-600 uppercase mb-2">Horas Totais</label>
               <div className="flex items-center gap-1">
-                <input 
+                <input
                   type="number" autoFocus min="1"
                   value={totalHorasStr} onChange={e => setTotalHorasStr(e.target.value)}
                   className="w-20 text-center text-2xl font-bold bg-white border border-blue-200 rounded-lg py-1 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -161,7 +163,7 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
             <div className="flex flex-col items-center p-4 bg-purple-50 rounded-xl border border-purple-100">
               <label className="text-xs font-bold text-purple-600 uppercase mb-2">Questões Totais</label>
               <div className="flex items-center gap-1">
-                <input 
+                <input
                   type="number" min="0"
                   value={totalQuestoesStr} onChange={e => setTotalQuestoesStr(e.target.value)}
                   className="w-20 text-center text-2xl font-bold bg-white border border-purple-200 rounded-lg py-1 focus:ring-2 focus:ring-purple-500 outline-none"
@@ -174,7 +176,7 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
           {erro && <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded animate-pulse">{erro}</div>}
 
           <button type="submit" disabled={loading || !totalHorasStr} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
-            {loading ? 'Calculando...' : <>Gerar Sugestão <ArrowRight size={18}/></>}
+            {loading ? 'Calculando...' : <>Gerar Sugestão <ArrowRight size={18} /></>}
           </button>
         </form>
       )}
@@ -191,12 +193,12 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
               </div>
             </div>
             <button type="button" onClick={() => setStep(1)} className="text-xs text-gray-500 hover:text-gray-800 flex gap-1 items-center hover:underline">
-              <RotateCcw size={12}/> Recalcular
+              <RotateCcw size={12} /> Recalcular
             </button>
           </div>
 
           <div className="border rounded-lg overflow-hidden max-h-[350px] overflow-y-auto bg-white scrollbar-thin">
-            
+
             {/* TAREFA E: VISUALIZAÇÃO DESKTOP (TABELA) */}
             <table className="hidden md:table w-full text-sm text-left">
               <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">
@@ -213,14 +215,14 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
                     <td className="px-3 py-2">
                       <div className="font-medium text-gray-800 truncate max-w-[150px]" title={item.nomeMateria}>{item.nomeMateria}</div>
                       <div className="w-full bg-gray-100 h-1 rounded-full mt-1 overflow-hidden">
-                        <div className="bg-blue-400 h-1 rounded-full" style={{width: `${Math.min(item.percentual, 100)}%`}} />
+                        <div className="bg-blue-400 h-1 rounded-full" style={{ width: `${Math.min(item.percentual, 100)}%` }} />
                       </div>
                     </td>
                     <td className="px-3 py-2 text-center text-xs text-gray-500 font-mono">
                       {item.peso}
                     </td>
                     <td className="px-2 py-2">
-                      <input 
+                      <input
                         type="number" step="0.1" min="0"
                         value={item.horasEditadas}
                         onChange={e => atualizarHoras(idx, e.target.value)}
@@ -228,7 +230,7 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
                       />
                     </td>
                     <td className="px-2 py-2">
-                      <input 
+                      <input
                         type="number" min="0"
                         value={item.questoesEditadas}
                         onChange={e => atualizarQuestoes(idx, e.target.value)}
@@ -242,34 +244,34 @@ export default function ModalGerarCiclo({ isOpen, onClose, concurso }: ModalGera
 
             {/* TAREFA E: VISUALIZAÇÃO MOBILE (CARDS VERTICAIS) */}
             <div className="md:hidden divide-y divide-gray-100">
-                {itens.map((item, idx) => (
-                    <div key={item.materiaId} className="p-3">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="font-bold text-sm text-gray-800">{item.nomeMateria}</span>
-                            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Peso {item.peso}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Horas</label>
-                                <input 
-                                    type="number" step="0.1"
-                                    value={item.horasEditadas}
-                                    onChange={e => atualizarHoras(idx, e.target.value)}
-                                    className="w-full border border-blue-200 bg-blue-50 rounded p-1.5 text-center font-bold text-blue-700 text-sm"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] uppercase font-bold text-purple-600 block mb-1">Questões</label>
-                                <input 
-                                    type="number"
-                                    value={item.questoesEditadas}
-                                    onChange={e => atualizarQuestoes(idx, e.target.value)}
-                                    className="w-full border border-purple-200 bg-purple-50 rounded p-1.5 text-center font-bold text-purple-700 text-sm"
-                                />
-                            </div>
-                        </div>
+              {itens.map((item, idx) => (
+                <div key={item.materiaId} className="p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-sm text-gray-800">{item.nomeMateria}</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Peso {item.peso}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Horas</label>
+                      <input
+                        type="number" step="0.1"
+                        value={item.horasEditadas}
+                        onChange={e => atualizarHoras(idx, e.target.value)}
+                        className="w-full border border-blue-200 bg-blue-50 rounded p-1.5 text-center font-bold text-blue-700 text-sm"
+                      />
                     </div>
-                ))}
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-purple-600 block mb-1">Questões</label>
+                      <input
+                        type="number"
+                        value={item.questoesEditadas}
+                        onChange={e => atualizarQuestoes(idx, e.target.value)}
+                        className="w-full border border-purple-200 bg-purple-50 rounded p-1.5 text-center font-bold text-purple-700 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
           </div>
