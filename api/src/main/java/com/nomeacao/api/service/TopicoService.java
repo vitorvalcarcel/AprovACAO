@@ -3,6 +3,7 @@ package com.nomeacao.api.service;
 import com.nomeacao.api.dto.DadosAtualizacaoTopico;
 import com.nomeacao.api.dto.DadosCadastroTopico;
 import com.nomeacao.api.dto.DadosListagemTopico;
+import com.nomeacao.api.dto.MateriaComTopicosDTO;
 import com.nomeacao.api.model.Topico;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.repository.MateriaRepository;
@@ -11,7 +12,10 @@ import com.nomeacao.api.repository.TopicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class TopicoService {
@@ -24,6 +28,31 @@ public class TopicoService {
 
     @Autowired
     private RegistroEstudoRepository registroRepository;
+
+    public List<MateriaComTopicosDTO> listarHierarquia(Usuario usuario) {
+        List<Topico> todosTopicos = repository.findAllByUsuarioComMateria(usuario);
+
+        Map<Long, List<Topico>> agrupado = new LinkedHashMap<>();
+        Map<Long, String> nomesMaterias = new LinkedHashMap<>();
+
+        for (Topico t : todosTopicos) {
+            Long matId = t.getMateria().getId();
+            agrupado.computeIfAbsent(matId, k -> new ArrayList<>()).add(t);
+            nomesMaterias.putIfAbsent(matId, t.getMateria().getNome());
+        }
+
+        List<MateriaComTopicosDTO> resposta = new ArrayList<>();
+        for (Map.Entry<Long, List<Topico>> entry : agrupado.entrySet()) {
+            Long materiaId = entry.getKey();
+            String nomeMateria = nomesMaterias.get(materiaId);
+            List<DadosListagemTopico> dtosTopicos = entry.getValue().stream()
+                    .map(DadosListagemTopico::new)
+                    .toList();
+            
+            resposta.add(new MateriaComTopicosDTO(materiaId, nomeMateria, dtosTopicos));
+        }
+        return resposta;
+    }
 
     public DadosListagemTopico cadastrar(DadosCadastroTopico dados, Usuario usuario) {
         var materia = materiaRepository.findById(dados.materiaId())

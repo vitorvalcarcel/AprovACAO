@@ -2,6 +2,7 @@ package com.nomeacao.api.controller;
 
 import com.nomeacao.api.dto.DadosAtualizacaoTopico;
 import com.nomeacao.api.dto.DadosCadastroTopico;
+import com.nomeacao.api.dto.MateriaComTopicosDTO;
 import com.nomeacao.api.model.Usuario;
 import com.nomeacao.api.service.TopicoService;
 import jakarta.transaction.Transactional;
@@ -12,12 +13,20 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/topicos")
 public class TopicoController {
 
     @Autowired
     private TopicoService service;
+
+    @GetMapping("/hierarquia")
+    public ResponseEntity<List<MateriaComTopicosDTO>> listarHierarquia(@AuthenticationPrincipal Usuario usuario) {
+        var hierarquia = service.listarHierarquia(usuario);
+        return ResponseEntity.ok(hierarquia);
+    }
 
     @PostMapping
     @Transactional

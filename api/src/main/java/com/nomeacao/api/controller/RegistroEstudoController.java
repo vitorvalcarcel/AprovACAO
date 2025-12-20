@@ -51,12 +51,13 @@ public class RegistroEstudoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @RequestParam(required = false) List<Long> materias,
+            @RequestParam(required = false) List<Long> topicos, // Parâmetro adicionado
             @RequestParam(required = false) List<Long> concursos,
             @RequestParam(required = false) List<Long> tipos,
             @PageableDefault(size = 20, sort = "dataInicio", direction = Sort.Direction.DESC) Pageable pageable,
             @AuthenticationPrincipal Usuario usuario) {
         
-        var pagina = service.listar(inicio, fim, materias, concursos, tipos, pageable, usuario);
+        var pagina = service.listar(inicio, fim, materias, topicos, concursos, tipos, pageable, usuario);
         return ResponseEntity.ok(pagina);
     }
 

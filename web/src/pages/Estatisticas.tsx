@@ -34,6 +34,7 @@ export default function Estatisticas() {
         if (filtrosAtivos.materiaIds.length) params.materias = filtrosAtivos.materiaIds.join(',');
         if (filtrosAtivos.concursoIds.length) params.concursos = filtrosAtivos.concursoIds.join(',');
         if (filtrosAtivos.tipoEstudoIds.length) params.tipos = filtrosAtivos.tipoEstudoIds.join(',');
+        if (filtrosAtivos.topicoIds.length) params.topicos = filtrosAtivos.topicoIds.join(',');
 
         const response = await api.get<DashboardData>('/dashboard', { params });
         setData(response.data);
