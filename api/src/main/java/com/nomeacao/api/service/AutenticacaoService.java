@@ -169,4 +169,10 @@ public class AutenticacaoService implements UserDetailsService {
         tipoEstudoRepository.deleteAll(tipoEstudoRepository.findAllByUsuario(usuario));
         repository.delete(usuario);
     }
+
+    public void atualizarStatusTutorial(Usuario usuario, Boolean concluido) {
+        usuario.setTutorialConcluido(concluido);
+        repository.save(usuario);
+    }
+
 }

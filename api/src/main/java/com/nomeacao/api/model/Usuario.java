@@ -41,6 +41,9 @@ public class Usuario implements UserDetails {
     @Column(name = "validade_codigo")
     private LocalDateTime validadeCodigo;
 
+    @Column(name = "tutorial_concluido", nullable = false)
+    private Boolean tutorialConcluido = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_USER"));
