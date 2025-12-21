@@ -24,53 +24,64 @@ import { OnboardingProvider } from './contexts/OnboardingContext';
 import RequireOnboarding from './routes/RequireOnboarding';
 import Onboarding from './pages/Onboarding';
 
+// Componente interno
+function AppContent() {
+  // REMOVIDO: O bloqueio "if (loading)" foi retirado.
+  // O app vai renderizar as rotas imediatamente se tiver token no localStorage,
+  // restaurando a sensação de velocidade e mostrando a Sidebar.
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/manutencao" element={<Manutencao />} />
+
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/verificar-email" element={<VerificarEmail />} />
+          <Route path="/confirmar" element={<ConfirmarConta />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenha />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+        </Route>
+
+        {/* Rotas Privadas (Requer Autenticação) */}
+        <Route element={<PrivateRoute />}>
+
+          {/* Verifica se precisa do tutorial */}
+          <Route element={<RequireOnboarding />}>
+
+            {/* Rota do Tutorial */}
+            <Route path="/onboarding" element={<Onboarding />} />
+
+            {/* App Principal (Só acessa se tutorial concluído) */}
+            <Route element={<Layout />}>
+              <Route path="/app" element={<Dashboard />} />
+              <Route path="/app/materias" element={<Materias />} />
+              <Route path="/app/concursos" element={<Concursos />} />
+              <Route path="/app/ciclos" element={<MeusCiclos />} />
+              <Route path="/app/historico" element={<Historico />} />
+              <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
+              <Route path="/app/estatisticas" element={<Estatisticas />} />
+              <Route path="/app/perfil" element={<Perfil />} />
+            </Route>
+
+            <Route path="/" element={<Navigate to="/app" replace />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 function App() {
   return (
     <ToastProvider>
       <AuthProvider>
         <TimerProvider>
           <OnboardingProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/manutencao" element={<Manutencao />} />
-
-                <Route element={<PublicRoute />}>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/cadastro" element={<Cadastro />} />
-                  <Route path="/verificar-email" element={<VerificarEmail />} />
-                  <Route path="/confirmar" element={<ConfirmarConta />} />
-                  <Route path="/esqueci-senha" element={<EsqueciSenha />} />
-                  <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-                </Route>
-
-                {/* Rotas Privadas (Requer Autenticação) */}
-                <Route element={<PrivateRoute />}>
-
-                  {/* Verifica se precisa do tutorial */}
-                  <Route element={<RequireOnboarding />}>
-
-                    {/* Rota do Tutorial */}
-                    <Route path="/onboarding" element={<Onboarding />} />
-
-                    {/* App Principal (Só acessa se tutorial concluído) */}
-                    <Route element={<Layout />}>
-                      <Route path="/app" element={<Dashboard />} />
-                      <Route path="/app/materias" element={<Materias />} />
-                      <Route path="/app/concursos" element={<Concursos />} />
-                      <Route path="/app/ciclos" element={<MeusCiclos />} />
-                      <Route path="/app/historico" element={<Historico />} />
-                      <Route path="/app/tipos-estudo" element={<TiposEstudo />} />
-                      <Route path="/app/estatisticas" element={<Estatisticas />} />
-                      <Route path="/app/perfil" element={<Perfil />} />
-                    </Route>
-
-                    <Route path="/" element={<Navigate to="/app" replace />} />
-                  </Route>
-                </Route>
-
-                <Route path="*" element={<Navigate to="/login" replace />} />
-              </Routes>
-            </BrowserRouter>
+            <AppContent />
           </OnboardingProvider>
         </TimerProvider>
       </AuthProvider>

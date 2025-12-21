@@ -10,10 +10,10 @@ import com.nomeacao.api.repository.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Service
@@ -31,7 +31,7 @@ public class TokenService {
             return JWT.create()
                     .withIssuer("API Nome.Acao")
                     .withSubject(usuario.getEmail())
-                    .withExpiresAt(dataExpiracaoCurta()) // Validade Curta (30 min)
+                    .withExpiresAt(Instant.now().plus(30, ChronoUnit.MINUTES)) // 30 min em UTC
                     .sign(algoritmo);
         } catch (JWTCreationException exception) {
             throw new RuntimeException("Erro ao gerar token jwt", exception);
@@ -42,7 +42,7 @@ public class TokenService {
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUsuario(usuario);
         refreshToken.setToken(UUID.randomUUID().toString());
-        refreshToken.setDataExpiracao(Instant.now().plusSeconds(60 * 60 * 24 * 7)); // 7 dias
+        refreshToken.setDataExpiracao(Instant.now().plus(7, ChronoUnit.DAYS)); // 7 dias em UTC
         refreshToken.setRevoked(false);
 
         refreshTokenRepository.save(refreshToken);
@@ -62,25 +62,34 @@ public class TokenService {
         }
     }
 
-    private Instant dataExpiracaoCurta() {
-        // 30 minutos de validade para o Access Token
-        return LocalDateTime.now().plusMinutes(30).toInstant(ZoneOffset.of("-03:00"));
-    }
-
-    public RefreshToken validarRefreshToken(String token) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+    @Transactional
+    public DadosTokenJWT rotacionarToken(String refreshTokenString) {
+        // 1. Busca e Valida
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenString)
                 .orElseThrow(() -> new RuntimeException("Refresh Token não encontrado!"));
 
+        // 2. Verifica Revogação e Expiração
         if (refreshToken.isExpirado() || refreshToken.isRevoked()) {
-            // Se estiver revogado ou expirado, não serve mais
             throw new RuntimeException("Refresh Token inválido ou expirado!");
         }
 
-        return refreshToken;
-    }
+        // 3. BLINDAGEM: Verifica se o usuário ainda está ativo
+        if (!refreshToken.getUsuario().getAtivo()) {
+            // Revoga preventivamente para impedir novas tentativas
+            refreshToken.setRevoked(true);
+            refreshTokenRepository.save(refreshToken);
+            throw new RuntimeException("Conta inativa ou bloqueada.");
+        }
 
-    public void revogarRefreshToken(RefreshToken refreshToken) {
+        // 4. Revoga o anterior (Rotação)
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
+
+        // 5. Gera novos tokens
+        Usuario usuario = refreshToken.getUsuario();
+        String newAccessToken = gerarToken(usuario);
+        String newRefreshToken = gerarRefreshToken(usuario);
+
+        return new DadosTokenJWT(newAccessToken, newRefreshToken);
     }
 }

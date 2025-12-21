@@ -78,10 +78,9 @@ api.interceptors.response.use(
       }
     }
 
-    // --- 3. Refresh Token (Erro 403 Forbidden) ---
-    if (response?.status === 403 && config && !config._retry) {
+    // --- 3. Refresh Token (Erro 401 ou 403) ---
+    if ((response?.status === 401 || response?.status === 403) && config && !config._retry) {
 
-      // Se for a própria requisição de login ou refresh falhando, não faz nada (deixa erro subir)
       if (url?.includes('/auth/login') || url?.includes('/auth/refresh')) {
         return Promise.reject(error);
       }

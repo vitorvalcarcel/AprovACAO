@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ConfirmarConta() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
+  const { refreshUser } = useAuth();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
@@ -18,13 +20,13 @@ export default function ConfirmarConta() {
 
     const confirmar = async () => {
       try {
-        // Chama API de confirmação
-        // O backend retorna o JWT diretamente (Magic Link)
         const response = await api.post(`/usuarios/confirmar-email?token=${token}`);
 
         const { accessToken, refreshToken } = response.data;
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
+
+        await refreshUser();
 
         setStatus('success');
 
@@ -38,7 +40,7 @@ export default function ConfirmarConta() {
     };
 
     confirmar();
-  }, [token, navigate]);
+  }, [token, navigate, refreshUser]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">

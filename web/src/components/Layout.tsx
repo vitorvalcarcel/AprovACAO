@@ -1,7 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, X, BarChart2, Tag, List, MessageSquarePlus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import AvisoExpiracao from './AvisoExpiracao';
 import BottomNavigation from './BottomNavigation';
 import Modal from './Modal';
 import RegistroRapido from './RegistroRapido';
@@ -112,7 +111,7 @@ export default function Layout() {
               Minha Conta
             </Link>
 
-            {/* --- BOTÃO NOVO DE FEEDBACK --- */}
+            {/* --- BOTÃO DE FEEDBACK --- */}
             <button 
               onClick={() => { setFeedbackModalOpen(true); setMobileMenuOpen(false); }}
               className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
@@ -131,7 +130,6 @@ export default function Layout() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
         <div className="flex-1 overflow-auto p-4 lg:p-8 pb-32 lg:pb-8">
           <Outlet />
-          <AvisoExpiracao />
         </div>
       </main>
 
@@ -157,7 +155,6 @@ export default function Layout() {
         />
       </Modal>
 
-      {/* --- RENDERIZAÇÃO DO MODAL NOVO --- */}
       <ModalFeedback 
         isOpen={feedbackModalOpen}
         onClose={() => setFeedbackModalOpen(false)}
