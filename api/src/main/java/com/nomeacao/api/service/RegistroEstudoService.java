@@ -116,33 +116,46 @@ public class RegistroEstudoService {
             LocalDateTime inicio, 
             LocalDateTime fim, 
             List<Long> materias, 
+            List<Long> topicos, // Parâmetro adicionado
             List<Long> concursos, 
             List<Long> tipos, 
             Pageable pageable,
             Usuario usuario) {
         
         Specification<RegistroEstudo> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+            List<Predicate> mainPredicates = new ArrayList<>();
 
-            predicates.add(cb.equal(root.get("usuario"), usuario));
+            mainPredicates.add(cb.equal(root.get("usuario"), usuario));
 
             if (inicio != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("dataInicio"), inicio));
+                mainPredicates.add(cb.greaterThanOrEqualTo(root.get("dataInicio"), inicio));
             }
             if (fim != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("dataInicio"), fim));
-            }
-            if (materias != null && !materias.isEmpty()) {
-                predicates.add(root.get("materia").get("id").in(materias));
-            }
-            if (concursos != null && !concursos.isEmpty()) {
-                predicates.add(root.get("concurso").get("id").in(concursos));
-            }
-            if (tipos != null && !tipos.isEmpty()) {
-                predicates.add(root.get("tipoEstudo").get("id").in(tipos));
+                mainPredicates.add(cb.lessThanOrEqualTo(root.get("dataInicio"), fim));
             }
 
-            return cb.and(predicates.toArray(new Predicate[0]));
+            // Lógica OR: (Materia IN ... OR Topico IN ...)
+            List<Predicate> matTopPredicates = new ArrayList<>();
+            if (materias != null && !materias.isEmpty()) {
+                matTopPredicates.add(root.get("materia").get("id").in(materias));
+            }
+            if (topicos != null && !topicos.isEmpty()) {
+                matTopPredicates.add(root.get("topico").get("id").in(topicos));
+            }
+            
+            // Se tiver filtro de matéria ou tópico, agrupa com OR e adiciona ao AND principal
+            if (!matTopPredicates.isEmpty()) {
+                mainPredicates.add(cb.or(matTopPredicates.toArray(new Predicate[0])));
+            }
+
+            if (concursos != null && !concursos.isEmpty()) {
+                mainPredicates.add(root.get("concurso").get("id").in(concursos));
+            }
+            if (tipos != null && !tipos.isEmpty()) {
+                mainPredicates.add(root.get("tipoEstudo").get("id").in(tipos));
+            }
+
+            return cb.and(mainPredicates.toArray(new Predicate[0]));
         };
 
         return repository.findAll(spec, pageable)

@@ -1,4 +1,4 @@
 package com.nomeacao.api.infra.security;
 
-public record DadosTokenJWT(String token) {
+public record DadosTokenJWT(String accessToken, String refreshToken) {
 }

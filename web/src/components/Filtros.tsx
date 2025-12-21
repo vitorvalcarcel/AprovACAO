@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Calendar, Filter, ChevronDown, Check, X } from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
+import AccordionMultiSelect from './AccordionMultiSelect';
 
 interface Opcao { id: number; nome: string; }
+interface MateriaComTopicos { id: number; nome: string; topicos: { id: number; nome: string }[]; }
 
 export interface FiltrosState {
   dataInicio: string;
@@ -21,7 +23,7 @@ interface FiltrosProps {
 export default function Filtros({ onChange }: FiltrosProps) {
   // Listas
   const [concursos, setConcursos] = useState<Opcao[]>([]);
-  const [materias, setMaterias] = useState<Opcao[]>([]);
+  const [hierarquiaMaterias, setHierarquiaMaterias] = useState<MateriaComTopicos[]>([]);
   const [tiposEstudo, setTiposEstudo] = useState<Opcao[]>([]);
 
   // Seleção
@@ -30,6 +32,7 @@ export default function Filtros({ onChange }: FiltrosProps) {
   
   const [selConcursos, setSelConcursos] = useState<number[]>([]);
   const [selMaterias, setSelMaterias] = useState<number[]>([]);
+  const [selTopicos, setSelTopicos] = useState<number[]>([]);
   const [selTipos, setSelTipos] = useState<number[]>([]);
 
   // Estado Mobile Off-Canvas
@@ -38,7 +41,7 @@ export default function Filtros({ onChange }: FiltrosProps) {
   // Carrega listas
   useEffect(() => {
     api.get('/concursos').then(res => setConcursos(res.data)).catch(() => {});
-    api.get('/materias').then(res => setMaterias(res.data)).catch(() => {});
+    api.get('/topicos/hierarquia').then(res => setHierarquiaMaterias(res.data)).catch(() => {});
     api.get('/tipos-estudo').then(res => setTiposEstudo(res.data)).catch(() => {});
   }, []);
 
@@ -97,10 +100,10 @@ export default function Filtros({ onChange }: FiltrosProps) {
       dataFim: datas.fim,
       concursoIds: selConcursos,
       materiaIds: selMaterias,
-      topicoIds: [], 
+      topicoIds: selTopicos, // ALTERADO: Agora envia os tópicos selecionados
       tipoEstudoIds: selTipos
     });
-  }, [datas, selConcursos, selMaterias, selTipos]);
+  }, [datas, selConcursos, selMaterias, selTopicos, selTipos]);
 
   // Componente Dropdown Interno
   const MultiSelect = ({ label, options, selected, setSelected }: any) => {
@@ -140,11 +143,11 @@ export default function Filtros({ onChange }: FiltrosProps) {
     );
   };
 
-  const contagemFiltrosAtivos = selConcursos.length + selMaterias.length + selTipos.length;
+  const contagemFiltrosAtivos = selConcursos.length + selMaterias.length + selTopicos.length + selTipos.length;
 
   return (
     <>
-      {/* --- BLOCO DESKTOP (Original) --- */}
+      {/* --- BLOCO DESKTOP --- */}
       <div className="hidden lg:block bg-white p-3 rounded-xl shadow-sm border border-gray-100 space-y-3">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
@@ -172,18 +175,29 @@ export default function Filtros({ onChange }: FiltrosProps) {
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-50">
           <div className="flex items-center gap-1 text-gray-400 mr-2 text-xs font-medium uppercase"><Filter size={14} /> Filtros:</div>
           <MultiSelect label="Concursos" options={concursos} selected={selConcursos} setSelected={setSelConcursos} />
-          <MultiSelect label="Matérias" options={materias} selected={selMaterias} setSelected={setSelMaterias} />
+          
+          <AccordionMultiSelect 
+            label="Matérias" 
+            options={hierarquiaMaterias} 
+            selectedParents={selMaterias} 
+            selectedChildren={selTopicos} 
+            onChange={(parents, children) => {
+              setSelMaterias(parents);
+              setSelTopicos(children);
+            }} 
+          />
+
           <MultiSelect label="Tipos" options={tiposEstudo} selected={selTipos} setSelected={setSelTipos} />
           
           {contagemFiltrosAtivos > 0 && (
-            <button onClick={() => { setSelConcursos([]); setSelMaterias([]); setSelTipos([]); }} className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 ml-auto">
+            <button onClick={() => { setSelConcursos([]); setSelMaterias([]); setSelTopicos([]); setSelTipos([]); }} className="text-xs text-gray-400 hover:text-red-500 flex items-center gap-1 ml-auto">
               <X size={12} /> Limpar
             </button>
           )}
         </div>
       </div>
 
-      {/* --- BLOCO MOBILE (Dual View) --- */}
+      {/* --- BLOCO MOBILE --- */}
       <div className="lg:hidden flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
         <span className="text-sm text-gray-500 font-medium">
           {contagemFiltrosAtivos > 0 ? `${contagemFiltrosAtivos} filtros ativos` : 'Filtrar resultados'}
@@ -196,11 +210,8 @@ export default function Filtros({ onChange }: FiltrosProps) {
         </button>
       </div>
 
-      {/* MODAL DE FILTROS MOBILE */}
       <Modal isOpen={mobileFiltrosOpen} onClose={() => setMobileFiltrosOpen(false)} title="Filtrar">
         <div className="flex flex-col gap-6">
-          
-          {/* Seção Data */}
           <div className="space-y-3">
             <label className="text-xs font-bold text-gray-400 uppercase">Período</label>
             <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
@@ -233,15 +244,23 @@ export default function Filtros({ onChange }: FiltrosProps) {
             )}
           </div>
 
-          {/* Seção Categorias */}
           <div className="space-y-4">
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Concursos</label>
               <MultiSelect label="Selecionar Concursos" options={concursos} selected={selConcursos} setSelected={setSelConcursos} />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Matérias</label>
-              <MultiSelect label="Selecionar Matérias" options={materias} selected={selMaterias} setSelected={setSelMaterias} />
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Matérias e Tópicos</label>
+              <AccordionMultiSelect 
+                label="Selecionar Matérias" 
+                options={hierarquiaMaterias} 
+                selectedParents={selMaterias} 
+                selectedChildren={selTopicos} 
+                onChange={(parents, children) => {
+                  setSelMaterias(parents);
+                  setSelTopicos(children);
+                }} 
+              />
             </div>
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Tipos de Estudo</label>

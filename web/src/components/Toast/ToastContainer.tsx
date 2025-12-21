@@ -1,4 +1,5 @@
 import Toast, { type ToastMessage } from './index';
+import { createPortal } from 'react-dom';
 
 interface ToastContainerProps {
   messages: ToastMessage[];
@@ -6,14 +7,15 @@ interface ToastContainerProps {
 }
 
 export default function ToastContainer({ messages, onRemove }: ToastContainerProps) {
-  return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+  return createPortal(
+    <div className="fixed top-4 right-4 z-[10000] flex flex-col gap-2 pointer-events-none">
       {/* pointer-events-auto é necessário dentro do toast para permitir clique no fechar */}
       <div className="pointer-events-auto flex flex-col gap-2">
         {messages.map(msg => (
           <Toast key={msg.id} toast={msg} onRemove={onRemove} />
         ))}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

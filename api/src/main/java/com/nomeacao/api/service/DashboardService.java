@@ -22,18 +22,20 @@ public class DashboardService {
     @Autowired private RegistroEstudoRepository registroRepository;
     @Autowired private CicloRepository cicloRepository;
 
+    // ALTERADO: Adicionado List<Long> topicos
     public DashboardDTO carregarDashboard(
             Usuario usuario,
             LocalDateTime inicio, LocalDateTime fim,
-            List<Long> materias, List<Long> concursos, List<Long> tipos
+            List<Long> materias, List<Long> topicos, List<Long> concursos, List<Long> tipos
     ) {
         // --- 1. FILTROS E RESUMO (OTIMIZADO) ---
         List<Long> listaMaterias = (materias != null && !materias.isEmpty()) ? materias : null;
+        List<Long> listaTopicos = (topicos != null && !topicos.isEmpty()) ? topicos : null; // Novo
         List<Long> listaConcursos = (concursos != null && !concursos.isEmpty()) ? concursos : null;
         List<Long> listaTipos = (tipos != null && !tipos.isEmpty()) ? tipos : null;
 
         ResumoGeralDTO resumo = registroRepository.calcularResumoGeral(
-            usuario, inicio, fim, listaMaterias, listaConcursos, listaTipos
+            usuario, inicio, fim, listaMaterias, listaTopicos, listaConcursos, listaTipos
         );
 
         double totalSegundosResumo = resumo.totalSegundos() != null ? resumo.totalSegundos() : 0.0;
@@ -47,7 +49,7 @@ public class DashboardService {
 
         // --- GRÁFICO EVOLUÇÃO (Com Gap Filling) ---
         List<EvolucaoDiariaDTO> evolucaoBanco = registroRepository.calcularEvolucaoDiaria(
-            usuario, inicio, fim, listaMaterias, listaConcursos, listaTipos
+            usuario, inicio, fim, listaMaterias, listaTopicos, listaConcursos, listaTipos
         );
 
         // 1. Determinar Range de Datas

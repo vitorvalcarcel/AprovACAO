@@ -148,6 +148,7 @@ export default function Historico() {
       if (filtros.materiaIds.length) params.materias = filtros.materiaIds.join(',');
       if (filtros.concursoIds.length) params.concursos = filtros.concursoIds.join(',');
       if (filtros.tipoEstudoIds.length) params.tipos = filtros.tipoEstudoIds.join(',');
+      if (filtros.topicoIds.length) params.topicos = filtros.topicoIds.join(','); // ADICIONADO
 
       const response = await api.get<PageResponse<Registro>>('/registros', { params });
       setRegistros(response.data.content);
@@ -265,7 +266,6 @@ export default function Historico() {
       ) : (
         <div className="bg-transparent md:bg-white md:rounded-xl md:shadow-sm md:border md:border-gray-200 flex-1 flex flex-col">
           
-          {/* VIEW MOBILE: LISTA COMPACTA */}
           <div className="md:hidden pb-32">
             <ul className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
                 {registros.map(reg => (
@@ -286,7 +286,6 @@ export default function Historico() {
             </ul>
           </div>
 
-          {/* VIEW DESKTOP: TABELA */}
           <div className="hidden md:block overflow-auto flex-1">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 text-gray-600 font-medium border-b sticky top-0 z-10">

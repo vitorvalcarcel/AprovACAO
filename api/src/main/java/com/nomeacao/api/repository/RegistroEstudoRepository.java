@@ -48,6 +48,7 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
         @Param("fim") LocalDateTime fim
     );
 
+    // ALTERADO: Adicionado filtro OR para Materias/Topicos
     @Query("""
         SELECT new com.nomeacao.api.dto.ResumoGeralDTO(
             COALESCE(SUM(CAST(r.segundos AS long)), 0),
@@ -58,19 +59,27 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
         WHERE r.usuario = :usuario
           AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
           AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
-          AND ((:materias) IS NULL OR r.materia.id IN (:materias))
           AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
           AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
+          AND (
+                ( (:materias) IS NULL AND (:topicos) IS NULL )
+                OR
+                ( r.materia.id IN (:materias) )
+                OR
+                ( r.topico.id IN (:topicos) )
+          )
     """)
     ResumoGeralDTO calcularResumoGeral(
         @Param("usuario") Usuario usuario,
         @Param("inicio") LocalDateTime inicio,
         @Param("fim") LocalDateTime fim,
         @Param("materias") List<Long> materias,
+        @Param("topicos") List<Long> topicos, // Novo
         @Param("concursos") List<Long> concursos,
         @Param("tipos") List<Long> tipos
     );
 
+    // ALTERADO: Adicionado filtro OR para Materias/Topicos
     @Query("""
         SELECT new com.nomeacao.api.dto.EvolucaoDiariaDTO(
             CAST(r.dataInicio AS date),
@@ -80,9 +89,15 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
         WHERE r.usuario = :usuario
           AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
           AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
-          AND ((:materias) IS NULL OR r.materia.id IN (:materias))
           AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
           AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
+          AND (
+                ( (:materias) IS NULL AND (:topicos) IS NULL )
+                OR
+                ( r.materia.id IN (:materias) )
+                OR
+                ( r.topico.id IN (:topicos) )
+          )
         GROUP BY CAST(r.dataInicio AS date)
         ORDER BY CAST(r.dataInicio AS date) ASC
     """)
@@ -91,6 +106,7 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
         @Param("inicio") LocalDateTime inicio,
         @Param("fim") LocalDateTime fim,
         @Param("materias") List<Long> materias,
+        @Param("topicos") List<Long> topicos, // Novo
         @Param("concursos") List<Long> concursos,
         @Param("tipos") List<Long> tipos
     );

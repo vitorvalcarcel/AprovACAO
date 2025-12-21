@@ -1,24 +1,23 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, X, BarChart2, Tag, List } from 'lucide-react';
+import { User, LayoutDashboard, Book, Target, History, LogOut, GraduationCap, X, BarChart2, Tag, List, MessageSquarePlus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import AvisoExpiracao from './AvisoExpiracao';
 import BottomNavigation from './BottomNavigation';
 import Modal from './Modal';
 import RegistroRapido from './RegistroRapido';
 import KeepAliveManager from './KeepAliveManager';
 import FloatingTimerBar from './FloatingTimerBar';
-import { useTimerState } from '../contexts/TimerContext'; // USANDO O HOOK ESTÁVEL
+import { useTimerState } from '../contexts/TimerContext';
+import ModalFeedback from './ModalFeedback';
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Agora usamos APENAS o estado (isActive), sem os segundos. 
-  // O Layout NÃO vai re-renderizar a cada segundo!
   const { isActive } = useTimerState(); 
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registroModalOpen, setRegistroModalOpen] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [registroMode, setRegistroMode] = useState<'timer' | 'manual'>('timer');
 
   useEffect(() => {
@@ -111,6 +110,15 @@ export default function Layout() {
               <User size={20} />
               Minha Conta
             </Link>
+
+            {/* --- BOTÃO DE FEEDBACK --- */}
+            <button 
+              onClick={() => { setFeedbackModalOpen(true); setMobileMenuOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <MessageSquarePlus size={20} /> Enviar Feedback
+            </button>
+            
             <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-colors">
               <LogOut size={20} /> Sair
             </button>
@@ -122,7 +130,6 @@ export default function Layout() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen relative">
         <div className="flex-1 overflow-auto p-4 lg:p-8 pb-32 lg:pb-8">
           <Outlet />
-          <AvisoExpiracao />
         </div>
       </main>
 
@@ -147,6 +154,11 @@ export default function Layout() {
             }} 
         />
       </Modal>
+
+      <ModalFeedback 
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

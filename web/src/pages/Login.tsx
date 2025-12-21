@@ -5,20 +5,24 @@ import api from '../services/api';
 import { useToast } from '../components/Toast/ToastContext';
 
 interface LoginResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
 }
+
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // Estado para visibilidade da senha
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  
+
   // Estado para controlar se precisa reenviar o email
   const [contaInativa, setContaInativa] = useState(false);
   const [reenviando, setReenviando] = useState(false);
@@ -29,13 +33,18 @@ export default function Login() {
     setContaInativa(false);
 
     try {
-      const response = await api.post<LoginResponse>('/login', { email, senha });
-      const token = response.data.token;
-      localStorage.setItem('token', token);
+      const response = await api.post<LoginResponse>('/auth/login', { email, senha });
+      const { accessToken, refreshToken } = response.data;
+
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+
+      await refreshUser(); // Assuming refreshUser is defined elsewhere or will be added.
+
       navigate('/app');
     } catch (error: any) {
       console.error(error);
-      
+
       if (error.response?.data?.mensagem?.includes('inativa') || error.response?.data?.mensagem?.includes('verifique')) {
         setContaInativa(true);
       } else if (error.response?.status === 401) {
@@ -64,7 +73,7 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        
+
         {/* Identidade Visual AprovAÇÃO */}
         <div className="flex items-center justify-center mb-8">
           <GraduationCap className="text-blue-600 mr-2" size={40} />
@@ -74,7 +83,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4" noValidate>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
             <input
@@ -126,7 +135,7 @@ export default function Login() {
                 disabled={reenviando}
                 className="text-sm font-bold text-yellow-700 hover:text-yellow-900 flex items-center justify-center gap-2 mx-auto"
               >
-                {reenviando ? <Loader2 size={14} className="animate-spin"/> : <Mail size={14}/>}
+                {reenviando ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
                 Reenviar E-mail de Ativação
               </button>
             </div>

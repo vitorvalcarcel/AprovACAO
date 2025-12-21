@@ -57,3 +57,5 @@ web/dist-ssr/
 web/*.local
 web/.env
 web/.DS_Store
+
+.agent

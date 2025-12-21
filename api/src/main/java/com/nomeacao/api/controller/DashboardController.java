@@ -24,11 +24,12 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fim,
             @RequestParam(required = false) List<Long> materias,
+            @RequestParam(required = false) List<Long> topicos,
             @RequestParam(required = false) List<Long> concursos,
             @RequestParam(required = false) List<Long> tipos,
             @AuthenticationPrincipal Usuario usuario) {
         
-        var dto = service.carregarDashboard(usuario, inicio, fim, materias, concursos, tipos);
+        var dto = service.carregarDashboard(usuario, inicio, fim, materias, topicos, concursos, tipos);
         return ResponseEntity.ok(dto);
     }
 }

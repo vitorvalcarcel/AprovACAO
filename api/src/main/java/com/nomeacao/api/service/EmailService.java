@@ -1,5 +1,6 @@
 package com.nomeacao.api.service;
 
+import com.nomeacao.api.model.Usuario;
 import com.resend.Resend;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
@@ -22,6 +23,9 @@ public class EmailService {
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
+
+    @Value("${app.admin.email}")
+    private String adminEmail;
 
     @Async
     public void enviarConfirmacao(String destinatario, String nome, String token) {
@@ -64,12 +68,30 @@ public class EmailService {
         enviarEmailViaResend(destinatario, assunto, conteudo);
     }
 
+    @Async
+    public void enviarNotificacaoBug(Usuario autor, String mensagemBug) {
+        if (adminEmail == null || adminEmail.isBlank() || adminEmail.contains("SEU_EMAIL")) {
+            logger.warn("Admin email não configurado. Bug registrado apenas no banco.");
+            return;
+        }
+
+        String assunto = "[BUG] AprovAÇÃO - " + autor.getNome();
+        String conteudo = String.format("""
+            <p><strong>Novo bug reportado!</strong></p>
+            <p><strong>Usuário:</strong> %s (%s)</p>
+            <p><strong>ID:</strong> %d</p>
+            <hr/>
+            <p><strong>Mensagem:</strong></p>
+            <pre style="background: #f4f4f5; padding: 10px; border-radius: 5px;">%s</pre>
+            """, autor.getNome(), autor.getEmail(), autor.getId(), mensagemBug);
+
+        enviarEmailViaResend(adminEmail, assunto, conteudo);
+    }
+
     private void enviarEmailViaResend(String para, String assunto, String conteudoPrincipal) {
         try {
-            // Instancia o cliente Resend
             Resend resend = new Resend(resendApiKey);
 
-            // Template HTML Base (Design System)
             String htmlFinal = String.format("""
                 <!DOCTYPE html>
                 <html>
@@ -103,7 +125,6 @@ public class EmailService {
                 </html>
                 """, conteudoPrincipal);
 
-            // Monta o objeto de envio
             CreateEmailOptions params = CreateEmailOptions.builder()
                     .from("AprovAÇÃO <" + resendFrom + ">")
                     .to(para)
@@ -111,13 +132,10 @@ public class EmailService {
                     .html(htmlFinal)
                     .build();
 
-            // Dispara o envio
             CreateEmailResponse data = resend.emails().send(params);
-            
             logger.info("Email enviado via Resend. ID: {}", data.getId());
 
         } catch (Exception e) {
-            // Logamos o erro mas não quebramos a execução do usuário para garantir resiliência
             logger.error("Erro CRÍTICO ao enviar e-mail via Resend: {}", e.getMessage(), e);
         }
     }

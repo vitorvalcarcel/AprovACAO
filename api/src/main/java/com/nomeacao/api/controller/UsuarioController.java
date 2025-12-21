@@ -67,7 +67,6 @@ public class UsuarioController {
 
     // 5. Redefinir Senha
     @PostMapping("/redefinir-senha")
-    // ADICIONADO @Valid AQUI
     public ResponseEntity redefinirSenha(@RequestBody @Valid DadosRedefinirSenha dados) {
         try {
             service.redefinirSenha(dados.token(), dados.novaSenha());
@@ -98,6 +97,14 @@ public class UsuarioController {
             return ResponseEntity.badRequest().body(new MensagemErro(e.getMessage()));
         }
     }
+    
+    @PatchMapping("/tutorial")
+    @Transactional
+    public ResponseEntity atualizarStatusTutorial(@RequestBody @Valid DadosStatusTutorial dados, 
+                                                  @AuthenticationPrincipal Usuario usuario) {
+        service.atualizarStatusTutorial(usuario, dados.concluido());
+        return ResponseEntity.noContent().build();
+    }
 
     @DeleteMapping
     public ResponseEntity excluirConta(@RequestBody @Valid DadosConfirmacaoSenha dados,
@@ -114,7 +121,6 @@ public class UsuarioController {
     public record DadosReenvioEmail(String email) {}
     public record DadosEsqueciSenha(String email) {}
     
-    // ATUALIZADO: Agora com validação de senha forte igual ao cadastro
     public record DadosRedefinirSenha(
         @NotBlank String token, 
         

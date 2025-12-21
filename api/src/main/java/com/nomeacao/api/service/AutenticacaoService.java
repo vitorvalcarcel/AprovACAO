@@ -22,16 +22,25 @@ import java.util.UUID;
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
-    @Autowired private UsuarioRepository repository;
-    @Autowired private TipoEstudoService tipoEstudoService;
-    @Autowired private RegistroEstudoRepository registroRepository;
-    @Autowired private ConcursoRepository concursoRepository;
-    @Autowired private MateriaRepository materiaRepository;
-    @Autowired private TipoEstudoRepository tipoEstudoRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    
-    @Autowired private EmailService emailService;
-    @Autowired private TokenService jwtService;
+    @Autowired
+    private UsuarioRepository repository;
+    @Autowired
+    private TipoEstudoService tipoEstudoService;
+    @Autowired
+    private RegistroEstudoRepository registroRepository;
+    @Autowired
+    private ConcursoRepository concursoRepository;
+    @Autowired
+    private MateriaRepository materiaRepository;
+    @Autowired
+    private TipoEstudoRepository tipoEstudoRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+    @Autowired
+    private TokenService jwtService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -49,14 +58,14 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setNome(dados.nome());
         usuario.setEmail(dados.email());
         usuario.setSenha(passwordEncoder.encode(dados.senha()));
-        
+
         // Identidade
         usuario.setAtivo(false); // Bloqueia login
         usuario.setCodigoVerificacao(UUID.randomUUID().toString());
         usuario.setValidadeCodigo(LocalDateTime.now().plusHours(24));
-        
+
         repository.save(usuario);
-        
+
         // Cria dados padrão
         tipoEstudoService.criarPadroes(usuario);
 
@@ -80,8 +89,10 @@ public class AutenticacaoService implements UserDetailsService {
         repository.save(usuario);
 
         // Gera o JWT para Auto-Login
-        var jwt = jwtService.gerarToken(usuario);
-        return new DadosTokenJWT(jwt);
+        // Gera o JWT para Auto-Login
+        var accessToken = jwtService.gerarToken(usuario);
+        var refreshToken = jwtService.gerarRefreshToken(usuario);
+        return new DadosTokenJWT(accessToken, refreshToken);
     }
 
     @Transactional
@@ -126,8 +137,9 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setSenha(passwordEncoder.encode(novaSenha));
         usuario.setCodigoVerificacao(null);
         usuario.setValidadeCodigo(null);
-        if (!usuario.getAtivo()) usuario.setAtivo(true); 
-        
+        if (!usuario.getAtivo())
+            usuario.setAtivo(true);
+
         repository.save(usuario);
     }
 
@@ -169,4 +181,10 @@ public class AutenticacaoService implements UserDetailsService {
         tipoEstudoRepository.deleteAll(tipoEstudoRepository.findAllByUsuario(usuario));
         repository.delete(usuario);
     }
+
+    public void atualizarStatusTutorial(Usuario usuario, Boolean concluido) {
+        usuario.setTutorialConcluido(concluido);
+        repository.save(usuario);
+    }
+
 }
