@@ -3,21 +3,20 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 // 1. Interface expandida para controlar retry e queue
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
-  _retry?: boolean; // Marca se já tentamos dar refresh para essa req
+  _retry?: boolean; 
 }
 
-// 2. Configurações de Retry (Rede)
+// 2. Configurações de Retry (Rápido: 1s)
 const MAX_RETRIES = 3;
-const RETRY_DELAY = 4000;
+const RETRY_DELAY = 1000;
 
-// 3. Variáveis para controle de Refresh Token (Mutex)
+// 3. Variáveis para controle de Refresh Token
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: any) => void;
 }> = [];
 
-// Função para processar a fila de requisições pausadas
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -36,11 +35,14 @@ const api = axios.create({
 
 let isRedirecting = false;
 
-// Helpers
 const dispatchToast = (type: 'success' | 'error' | 'info', title: string, message?: string) => {
   window.dispatchEvent(new CustomEvent('toast-event', {
     detail: { type, title, message }
   }));
+};
+
+const dispatchMaintenance = () => {
+  window.dispatchEvent(new CustomEvent('maintenance-event'));
 };
 
 api.interceptors.request.use((config) => {
@@ -71,10 +73,8 @@ api.interceptors.response.use(
     // --- 2. Queda Definitiva (500 ou Sem Resposta após Retries) ---
     if (url && !url.includes('/actuator/health')) {
       if (!response || response.status >= 500) {
-        if (window.location.pathname !== '/manutencao') {
-          window.location.href = '/manutencao';
-          return Promise.reject(error);
-        }
+        dispatchMaintenance();
+        return Promise.reject(error);
       }
     }
 
@@ -86,7 +86,6 @@ api.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        // Se já está renovando, coloca na fila
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         }).then(token => {
@@ -107,31 +106,24 @@ api.interceptors.response.use(
           throw new Error('Sem refresh token');
         }
 
-        // Chama endpoint de refresh (usando axios puro para evitar loop)
         const { data } = await axios.post(api.defaults.baseURL + '/auth/refresh', {
           refreshToken
         });
 
         const { accessToken, refreshToken: newRefreshToken } = data;
 
-        // Salva novos tokens
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
-
-        // Atualiza header padrão
         api.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
 
-        // Processa fila com sucesso
         processQueue(null, accessToken);
 
-        // Retenta a requisição original
         config.headers['Authorization'] = 'Bearer ' + accessToken;
         return api(config);
 
       } catch (refreshError) {
         processQueue(refreshError, null);
 
-        // Se falhar o refresh, desloga
         if (!isRedirecting) {
           isRedirecting = true;
           dispatchToast('info', 'Sessão Expirada', 'Faça login novamente.');
@@ -161,8 +153,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// --- INTERFACES E MÉTODOS DE FEEDBACK ---
 
 export interface IFeedbackDTO {
   tipo: 'BUG' | 'SUGESTAO' | 'ELOGIO' | 'OUTRO';
