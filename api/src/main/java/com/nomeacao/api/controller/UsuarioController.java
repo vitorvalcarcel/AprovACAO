@@ -99,6 +99,7 @@ public class UsuarioController {
     }
     
     @PatchMapping("/tutorial")
+    @Transactional
     public ResponseEntity atualizarStatusTutorial(@RequestBody @Valid DadosStatusTutorial dados, 
                                                   @AuthenticationPrincipal Usuario usuario) {
         service.atualizarStatusTutorial(usuario, dados.concluido());

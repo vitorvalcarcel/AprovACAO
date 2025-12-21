@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, PlayCircle, BookOpen } from 'lucide-react';
 import OnboardingLayout from '../../../components/Onboarding/OnboardingLayout';
 import { useOnboarding } from '../../../contexts/OnboardingContext';
@@ -9,32 +8,61 @@ import ModalGerarCiclo from '../../../components/ModalGerarCiclo';
 import api from '../../../services/api';
 
 export default function Step4_Vincular() {
-    const { nextStep, prevStep } = useOnboarding();
+    const { nextStep, prevStep, updateStepData, stepsData } = useOnboarding();
+    
     const [concursos, setConcursos] = useState<Concurso[]>([]);
-
     const [modalDisciplinasAberto, setModalDisciplinasAberto] = useState(false);
     const [modalCicloAberto, setModalCicloAberto] = useState(false);
     const [concursoSelecionado, setConcursoSelecionado] = useState<Concurso | null>(null);
-    const [cicloGerado, setCicloGerado] = useState(false);
 
-    const carregarConcursos = async () => {
+    // Inicializa com o valor do contexto
+    const [cicloGerado, setCicloGerado] = useState(!!stepsData.cicloGerado);
+
+    // Função Unificada de Carregamento para evitar Race Conditions e Erros 500
+    const carregarDados = useCallback(async () => {
         try {
-            const res = await api.get<Concurso[]>('/concursos');
-            setConcursos(res.data);
-            if (res.data.length > 0) {
-                // Seleciona automaticamente o primeiro concurso se nenhum estiver selecionado
-                if (!concursoSelecionado) setConcursoSelecionado(res.data[0]);
+            // 1. Busca Concursos
+            const resConcursos = await api.get<Concurso[]>('/concursos');
+            const listaConcursos = resConcursos.data;
+            setConcursos(listaConcursos);
+
+            if (listaConcursos.length > 0) {
+                const concursoPrincipal = listaConcursos[0];
+                setConcursoSelecionado(concursoPrincipal);
+
+                // 2. Só verifica ciclo se tiver concurso (CORREÇÃO DO ERRO 500)
+                // Se já estiver no contexto, não gasta rede
+                if (stepsData.cicloGerado) {
+                    setCicloGerado(true);
+                    return;
+                }
+
+                try {
+                    // Passando o concursoId obrigatório!
+                    const resCiclos = await api.get(`/ciclos?concursoId=${concursoPrincipal.id}`);
+                    const listaCiclos = resCiclos.data;
+
+                    if (Array.isArray(listaCiclos) && listaCiclos.length > 0) {
+                        setCicloGerado(true);
+                        // Atualiza contexto sem gerar loop
+                        if (!stepsData.cicloGerado) {
+                            updateStepData('cicloGerado', true);
+                        }
+                    }
+                } catch (errCiclo) {
+                    console.error("Erro ao buscar ciclos:", errCiclo);
+                }
             }
         } catch (e) {
-            console.error(e);
+            console.error("Erro ao carregar dados iniciais:", e);
         }
-    };
+    }, [stepsData.cicloGerado, updateStepData]);
 
+    // Efeito único de montagem
     useEffect(() => {
-        carregarConcursos();
-    }, []);
+        carregarDados();
+    }, [carregarDados]);
 
-    // Função auxiliar para abrir os modais corretamente a partir do Card
     const handleOpenDisciplinas = (concurso: Concurso) => {
         setConcursoSelecionado(concurso);
         setModalDisciplinasAberto(true);
@@ -46,9 +74,13 @@ export default function Step4_Vincular() {
     };
 
     const handleCicloSuccess = () => {
-        setCicloGerado(true);
         setModalCicloAberto(false);
-        carregarConcursos(); // Recarrega para garantir dados frescos
+        // Feedback imediato
+        setCicloGerado(true);
+        updateStepData('cicloGerado', true);
+        
+        // Recarrega para garantir dados frescos
+        carregarDados();
     };
 
     const educationContent = (
@@ -77,10 +109,9 @@ export default function Step4_Vincular() {
                             👇 Aqui está o concurso que você criou. Use os botões roxo e verde nele!
                         </p>
 
-                        {/* Exibimos apenas o primeiro concurso para focar a atenção, ou o selecionado */}
                         <ConcursoCard
                             concurso={concursos[0]}
-                            onEdit={() => { }} // Desabilitado no tutorial para simplificar
+                            onEdit={() => { }} 
                             onArchive={() => { }}
                             onDelete={() => { }}
                             onOpenDisciplinas={() => handleOpenDisciplinas(concursos[0])}
@@ -123,4 +154,3 @@ export default function Step4_Vincular() {
         </OnboardingLayout>
     );
 }
-

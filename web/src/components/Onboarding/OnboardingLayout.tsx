@@ -19,7 +19,7 @@ export default function OnboardingLayout({
     stepDescription,
     educationContent
 }: OnboardingLayoutProps) {
-    const { currentStep, totalSteps, isLastStep } = useOnboarding();
+    const { currentStep, totalSteps } = useOnboarding();
     const { updateUserTutorialStatus } = useAuth();
     const navigate = useNavigate();
     const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -28,20 +28,20 @@ export default function OnboardingLayout({
         try {
             await api.patch('/usuarios/tutorial', { concluido: true });
             updateUserTutorialStatus(true);
-            navigate('/');
+            navigate('/app', { replace: true });
         } catch (error) {
             console.error(error);
         }
     };
 
-    // Calcula progresso (para mobile principalmente)
+    // Calcula progresso
     const progressPercent = (currentStep / totalSteps) * 100;
 
     return (
         <div className="bg-white min-h-screen md:bg-gray-50 md:flex md:items-center md:justify-center md:p-4">
             <div className="w-full min-h-screen md:min-h-0 md:h-[85vh] md:max-w-7xl bg-white md:rounded-3xl md:shadow-2xl md:overflow-hidden flex flex-col md:flex-row md:border md:border-gray-100">
 
-                {/* COLUNA ESQUERDA: Progresso (Hidden on Mobile) */}
+                {/* COLUNA ESQUERDA: Progresso */}
                 <div className="hidden md:flex w-72 bg-gradient-to-b from-gray-50 to-white border-r border-gray-100 flex-col p-8 z-10">
                     <div className="mb-10 flex justify-between items-start">
                         <div>
@@ -64,11 +64,11 @@ export default function OnboardingLayout({
                             return (
                                 <div key={stepNum} className={`flex items-center gap-4 transition-all duration-300 ${isActive ? 'translate-x-2' : ''}`}>
                                     <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors
-                    ${isCompleted ? 'bg-green-500 border-green-500 text-white' : ''}
-                    ${isActive ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' : ''}
-                    ${!isCompleted && !isActive ? 'bg-white border-gray-200 text-gray-300' : ''}
-                  `}>
+                                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors
+                                        ${isCompleted ? 'bg-green-500 border-green-500 text-white' : ''}
+                                        ${isActive ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200' : ''}
+                                        ${!isCompleted && !isActive ? 'bg-white border-gray-200 text-gray-300' : ''}
+                                    `}>
                                         {isCompleted ? <CheckCircle size={16} /> : stepNum}
                                     </div>
                                     <div className={`text-sm font-medium transition-colors ${isActive ? 'text-gray-800' : 'text-gray-400'}`}>
@@ -90,10 +90,9 @@ export default function OnboardingLayout({
                     </div>
                 </div>
 
-                {/* COLUNA CENTRAL: Ação (Conteúdo Principal) */}
+                {/* COLUNA CENTRAL: Conteúdo */}
                 <div className="flex-1 flex flex-col bg-white relative">
-
-                    {/* Mobile Header (Progress) - Sticky at top */}
+                    {/* Mobile Header */}
                     <div className="md:hidden p-4 border-b border-gray-100 sticky top-0 bg-white z-20">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="font-bold text-gray-800">Passo {currentStep} <span className="text-gray-400 font-normal">de {totalSteps}</span></h2>
@@ -130,7 +129,7 @@ export default function OnboardingLayout({
                     </div>
                 </div>
 
-                {/* COLUNA DIREITA: Educação (Hidden on Mobile) */}
+                {/* COLUNA DIREITA: Educação */}
                 {educationContent && (
                     <div className="hidden xl:flex w-80 bg-gray-50 border-l border-gray-100 flex-col p-8 overflow-y-auto">
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 sticky top-0">
@@ -146,7 +145,7 @@ export default function OnboardingLayout({
                 )}
             </div>
 
-            {/* Mobile Education Modal */}
+            {/* Mobile Info Modal */}
             <Modal
                 isOpen={isInfoOpen}
                 onClose={() => setIsInfoOpen(false)}

@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+
+// Tipagem estrita para os dados do fluxo
+interface OnboardingData {
+    hasMateria?: boolean;
+    hasConcurso?: boolean;
+    cicloGerado?: boolean;
+    [key: string]: string | number | boolean | undefined; // Flexibilidade controlada
+}
 
 interface OnboardingContextData {
     currentStep: number;
@@ -9,35 +17,46 @@ interface OnboardingContextData {
     resetTutorial: () => void;
     isFirstStep: boolean;
     isLastStep: boolean;
-    stepsData: any;
-    updateStepData: (key: string, value: any) => void;
+    stepsData: OnboardingData;
+    updateStepData: (key: keyof OnboardingData, value: any) => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextData>({} as OnboardingContextData);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
-    const [currentStep, setCurrentStep] = useState(1);
-    const [stepsData, setStepsData] = useState<any>({});
+    // Inicializa lendo do storage ou padrão 1
+    const [currentStep, setCurrentStep] = useState(() => {
+        const stored = sessionStorage.getItem('onboarding_step');
+        return stored ? Number(stored) : 1;
+    });
 
-    // Total de passos definido no roteiro: 7 passos (Atualizado com passo de vínculo)
-    // 1: Introdução/Metodologia
-    // 2: Matérias e Tópicos (Interativo)
-    // 3: Concursos (Interativo)
-    // 4: Vincular Matérias e Ciclo (Novo)
-    // 5: Registro de Estudos
+    const [stepsData, setStepsData] = useState<OnboardingData>({});
+
+    // 1: Intro
+    // 2: Matérias
+    // 3: Concursos/Ciclo
+    // 4: Vincular (Novo)
+    // 5: Registro
     // 6: Tipos de Estudo
     // 7: Final
     const totalSteps = 7;
 
+    // Persistência automática ao mudar de passo
+    useEffect(() => {
+        sessionStorage.setItem('onboarding_step', String(currentStep));
+    }, [currentStep]);
+
     function nextStep() {
         if (currentStep < totalSteps) {
             setCurrentStep(prev => prev + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
     function prevStep() {
         if (currentStep > 1) {
             setCurrentStep(prev => prev - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
@@ -50,10 +69,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     function resetTutorial() {
         setCurrentStep(1);
         setStepsData({});
+        sessionStorage.removeItem('onboarding_step');
     }
 
-    function updateStepData(key: string, value: any) {
-        setStepsData((prev: any) => ({ ...prev, [key]: value }));
+    function updateStepData(key: keyof OnboardingData, value: any) {
+        setStepsData((prev) => ({ ...prev, [key]: value }));
     }
 
     return (
