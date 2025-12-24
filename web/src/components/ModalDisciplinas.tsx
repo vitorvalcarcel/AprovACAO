@@ -20,6 +20,7 @@ interface Vinculo {
   nomeMateria: string;
   peso: number;
   questoesProva: number;
+  tipo: string;
 }
 
 interface ModalDisciplinasProps {
@@ -281,15 +282,15 @@ export default function ModalDisciplinas({ isOpen, onClose, concurso }: ModalDis
                 {vinculos.map(v => (
                   <div key={v.id} className={`group flex items-center justify-between p-2 rounded-lg border transition-all ${idVinculoEmEdicao === v.id ? 'bg-blue-50 border-blue-200 shadow-sm ring-1 ring-blue-100' : 'bg-white border-gray-100 hover:border-gray-300 hover:shadow-sm'}`}>
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${v.nomeMateria.includes('Discursiva') ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
-                        {v.nomeMateria.includes('Discursiva') ? <Pencil size={12} /> : <BookOpen size={12} />}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${v.tipo === 'DISCURSIVA' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {v.tipo === 'DISCURSIVA' ? <Pencil size={12} /> : <BookOpen size={12} />}
                       </div>
                       <div className="min-w-0">
                         <p className={`text-xs font-semibold truncate ${idVinculoEmEdicao === v.id ? 'text-blue-700' : 'text-gray-800'}`}>{v.nomeMateria}</p>
-                        {!v.nomeMateria.includes('Discursiva') && (
+                        {v.tipo !== 'DISCURSIVA' && (
                           <p className="text-[9px] text-gray-500 font-medium">Peso {v.peso} • {v.questoesProva} questões</p>
                         )}
-                        {v.nomeMateria.includes('Discursiva') && (
+                        {v.tipo === 'DISCURSIVA' && (
                           <p className="text-[9px] text-orange-500 font-medium">Tempo Fixo</p>
                         )}
                       </div>

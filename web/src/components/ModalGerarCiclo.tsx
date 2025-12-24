@@ -17,6 +17,7 @@ interface ItemSugestao {
   questoesSugeridas: number;
   horasEditadas: number;
   questoesEditadas: number;
+  tipo: string;
 }
 
 interface ModalGerarCicloProps {
@@ -51,8 +52,8 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
   const checkDiscursiva = async () => {
     if (!concurso) return;
     try {
-      const res = await api.get<{ nomeMateria: string }[]>(`/concursos/${concurso.id}/materias`);
-      const tem = res.data.some(m => m.nomeMateria === 'Redação e Discursiva [Sistema]');
+      const res = await api.get<{ nomeMateria: string; tipo: string }[]>(`/concursos/${concurso.id}/materias`);
+      const tem = res.data.some(m => m.tipo === 'DISCURSIVA');
       setTemDiscursiva(tem);
     } catch (e) {
       console.error(e);
@@ -85,6 +86,14 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
         horasEditadas: item.horasSugeridas,
         questoesEditadas: item.questoesSugeridas
       }));
+
+      // Sort: GERAL first, DISCURSIVA last
+      dados.sort((a, b) => {
+        if (a.tipo === 'DISCURSIVA' && b.tipo !== 'DISCURSIVA') return 1;
+        if (a.tipo !== 'DISCURSIVA' && b.tipo === 'DISCURSIVA') return -1;
+        return b.horasSugeridas - a.horasSugeridas; // Keep desc hours sort within groups
+      });
+
       setItens(dados);
       setStep(2);
     } catch (error: any) {
@@ -242,31 +251,46 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {itens.map((item, idx) => (
-                  <tr key={item.materiaId} className="hover:bg-gray-50">
+                  <tr key={item.materiaId} className={`hover:bg-gray-50 ${item.tipo === 'DISCURSIVA' ? 'bg-orange-50/30' : ''}`}>
                     <td className="px-3 py-2">
-                      <div className="font-medium text-gray-800 truncate max-w-[150px]" title={item.nomeMateria}>{item.nomeMateria}</div>
-                      <div className="w-full bg-gray-100 h-1 rounded-full mt-1 overflow-hidden">
-                        <div className="bg-blue-400 h-1 rounded-full" style={{ width: `${Math.min(item.percentual, 100)}%` }} />
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-gray-800 truncate max-w-[140px]" title={item.nomeMateria}>
+                          {item.nomeMateria}
+                        </div>
+                        {item.tipo === 'DISCURSIVA' && (
+                          <span className="shrink-0 text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold uppercase">
+                            Discursiva
+                          </span>
+                        )}
                       </div>
+                      {item.tipo !== 'DISCURSIVA' && (
+                        <div className="w-full bg-gray-100 h-1 rounded-full mt-1 overflow-hidden">
+                          <div className="bg-blue-400 h-1 rounded-full" style={{ width: `${Math.min(item.percentual, 100)}%` }} />
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-center text-xs text-gray-500 font-mono">
-                      {item.peso}
+                      {item.tipo === 'DISCURSIVA' ? '-' : item.peso}
                     </td>
                     <td className="px-2 py-2">
                       <input
                         type="number" step="0.1" min="0"
                         value={item.horasEditadas}
                         onChange={e => atualizarHoras(idx, e.target.value)}
-                        className="w-full border border-blue-100 bg-blue-50/50 rounded px-1 py-1 text-center font-bold text-blue-700 focus:border-blue-500 outline-none focus:bg-white transition-colors"
+                        className={`w-full border rounded px-1 py-1 text-center font-bold outline-none focus:bg-white transition-colors ${item.tipo === 'DISCURSIVA' ? 'border-orange-100 bg-orange-50 text-orange-700 focus:border-orange-500' : 'border-blue-100 bg-blue-50/50 text-blue-700 focus:border-blue-500'}`}
                       />
                     </td>
                     <td className="px-2 py-2">
-                      <input
-                        type="number" min="0"
-                        value={item.questoesEditadas}
-                        onChange={e => atualizarQuestoes(idx, e.target.value)}
-                        className="w-full border border-purple-100 bg-purple-50/50 rounded px-1 py-1 text-center font-bold text-purple-700 focus:border-purple-500 outline-none focus:bg-white transition-colors"
-                      />
+                      {item.tipo === 'DISCURSIVA' ? (
+                        <div className="text-center text-gray-300">-</div>
+                      ) : (
+                        <input
+                          type="number" min="0"
+                          value={item.questoesEditadas}
+                          onChange={e => atualizarQuestoes(idx, e.target.value)}
+                          className="w-full border border-purple-100 bg-purple-50/50 rounded px-1 py-1 text-center font-bold text-purple-700 focus:border-purple-500 outline-none focus:bg-white transition-colors"
+                        />
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -276,29 +300,33 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
             {/* TAREFA E: VISUALIZAÇÃO MOBILE (CARDS VERTICAIS) */}
             <div className="md:hidden divide-y divide-gray-100">
               {itens.map((item, idx) => (
-                <div key={item.materiaId} className="p-3">
+                <div key={item.materiaId} className={`p-3 ${item.tipo === 'DISCURSIVA' ? 'bg-orange-50 border-l-4 border-orange-400' : ''}`}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-sm text-gray-800">{item.nomeMateria}</span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Peso {item.peso}</span>
+                    <span className={`font-bold text-sm ${item.tipo === 'DISCURSIVA' ? 'text-orange-800' : 'text-gray-800'}`}>{item.nomeMateria}</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{item.tipo === 'DISCURSIVA' ? 'Discursiva' : `Peso ${item.peso}`}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Horas</label>
+                      <label className={`text-[10px] uppercase font-bold block mb-1 ${item.tipo === 'DISCURSIVA' ? 'text-orange-600' : 'text-blue-600'}`}>Horas</label>
                       <input
                         type="number" step="0.1"
                         value={item.horasEditadas}
                         onChange={e => atualizarHoras(idx, e.target.value)}
-                        className="w-full border border-blue-200 bg-blue-50 rounded p-1.5 text-center font-bold text-blue-700 text-sm"
+                        className={`w-full border rounded p-1.5 text-center font-bold text-sm ${item.tipo === 'DISCURSIVA' ? 'border-orange-200 bg-orange-100 text-orange-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-purple-600 block mb-1">Questões</label>
-                      <input
-                        type="number"
-                        value={item.questoesEditadas}
-                        onChange={e => atualizarQuestoes(idx, e.target.value)}
-                        className="w-full border border-purple-200 bg-purple-50 rounded p-1.5 text-center font-bold text-purple-700 text-sm"
-                      />
+                      <label className={`text-[10px] uppercase font-bold block mb-1 ${item.tipo === 'DISCURSIVA' ? 'text-gray-400' : 'text-purple-600'}`}>Questões</label>
+                      {item.tipo === 'DISCURSIVA' ? (
+                        <div className="w-full border border-gray-100 bg-gray-50 rounded p-1.5 text-center font-bold text-gray-300 text-sm">-</div>
+                      ) : (
+                        <input
+                          type="number"
+                          value={item.questoesEditadas}
+                          onChange={e => atualizarQuestoes(idx, e.target.value)}
+                          className="w-full border border-purple-200 bg-purple-50 rounded p-1.5 text-center font-bold text-purple-700 text-sm"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

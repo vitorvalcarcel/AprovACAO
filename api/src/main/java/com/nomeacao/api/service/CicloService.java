@@ -156,7 +156,8 @@ public class CicloService {
                         item.cm.getPeso(),
                         item.horasCalculadas,
                         item.questoesCalculadas,
-                        percentual));
+                        percentual,
+                        item.cm.getMateria().getTipo().toString()));
             }
         }
 
@@ -184,8 +185,8 @@ public class CicloService {
                         horasPorMateria,
                         0, // Discursiva não tem meta de questões por enquanto? Spec diz "não adicionar
                            // colunas de meta por quantidade". User control via hours.
-                        0.0 // Percentual de teoria? Null or 0.
-                ));
+                        0.0, // Percentual de teoria? Null or 0.
+                        cm.getMateria().getTipo().toString()));
             }
         }
 
