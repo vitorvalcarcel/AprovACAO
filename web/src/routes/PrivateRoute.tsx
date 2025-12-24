@@ -1,10 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import AppShellSkeleton from '../components/skeletons/AppShellSkeleton';
 
 export default function PrivateRoute() {
-  // Verifica se existe o token no navegador
-  const token = localStorage.getItem('token');
+  const { user, loading } = useAuth();
 
-  // Se tem token, deixa passar (renderiza o Outlet/Conteúdo)
-  // Se não tem, joga para o /login
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
+  if (loading) {
+    return <AppShellSkeleton />;
+  }
+
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
 }

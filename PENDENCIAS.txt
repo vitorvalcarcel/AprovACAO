@@ -2,11 +2,7 @@
 SEÇÃO 1: SEGURANÇA E INTEGRIDADE DE DADOS (CRÍTICO)
 =============================================================================
 
-1. [FRONTEND] Proteção Real de Rotas Privadas (PrivateRoute.tsx)
-   - Detalhe: Atualmente a verificação de rota privada olha apenas se existe uma string na chave 'token' do localStorage. Recomenda-se validar o estado real do contexto de autenticação.
-   - Status: 🔴 PENDENTE
-
-2. [BACKEND] Exclusão em Cascata do Usuário (Integridade)
+1. [BACKEND] Exclusão em Cascata do Usuário (Integridade)
    - Detalhe: O método `excluirConta` deleta manualmente os registros de cada tabela relacionada. Se novas tabelas forem criadas no futuro, a exclusão quebrará por erro de Foreign Key.
    - Solução: Configurar `CascadeType.REMOVE` nas entidades ou Constraints de Banco de Dados.
    - Status: 🔴 PENDENTE
@@ -15,12 +11,12 @@ SEÇÃO 1: SEGURANÇA E INTEGRIDADE DE DADOS (CRÍTICO)
 SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO
 =============================================================================
 
-3. [BACKEND] Problema N+1 no Histórico de Ciclos (CicloService.java)
+2. [BACKEND] Problema N+1 no Histórico de Ciclos (CicloService.java)
    - Detalhe: Ao listar o histórico, o sistema executa uma nova consulta SQL para cada ciclo retornado (dentro do loop).
    - Solução: Refatorar para uma consulta agregada (GROUP BY) única.
    - Status: 🔴 PENDENTE
 
-4. [BACKEND] Precisão de Cálculos de Horas
+3. [BACKEND] Precisão de Cálculos de Horas
    - Detalhe: O sistema usa `Double` para somar horas. Para maior precisão contábil, recomenda-se uso de minutos/segundos inteiros ou `BigDecimal`.
    - Status: 🟡 MELHORIA
 
@@ -28,15 +24,15 @@ SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO
 SEÇÃO 3: QUALIDADE DE CÓDIGO E TESTES
 =============================================================================
 
-5. [BACKEND] Refinamento do Tratamento de Exceções (TratadorDeErros.java)
+4. [BACKEND] Refinamento do Tratamento de Exceções (TratadorDeErros.java)
    - Detalhe: O handler global existe, mas não cobre todas as exceções corretamente e retorna formatos de erro inconsistentes que quebram o frontend.
    - Status: 🟡 EM ANDAMENTO
 
-6. Implementação de Testes Automatizados
+5. Implementação de Testes Automatizados
    - Detalhe: A cobertura de testes unitários para regras de negócio (Ciclos, Estatísticas) é inexistente.
    - Status: 🔴 PENDENTE
 
-7. Refatoração de Fuso Horário (Estratégia Híbrida)
+6. Refatoração de Fuso Horário (Estratégia Híbrida)
    - Detalhe: Migrar campos de `LocalDateTime` para `Instant` visando suporte correto a múltiplos fusos horários.
    - Status: 🔴 PENDENTE
 
@@ -44,15 +40,15 @@ SEÇÃO 3: QUALIDADE DE CÓDIGO E TESTES
 SEÇÃO 4: FUNCIONALIDADES - ROADMAP DO PRODUTO (NOVAS)
 =============================================================================
 
-8. Recomendação Inteligente de Estudo ("O que estudar hoje?")
+7. Recomendação Inteligente de Estudo ("O que estudar hoje?")
    - Detalhe: Algoritmo que sugere a próxima matéria baseada no saldo do ciclo e na curva de esquecimento.
    - Status: 🔴 PENDENTE
 
-9. Simulador de Nota Final
+8. Simulador de Nota Final
    - Detalhe: Ferramenta para projetar a nota baseada no % de acertos atual vs peso das matérias do edital.
    - Status: 🔴 PENDENTE
 
-10. Importação de Edital Automática
+9. Importação de Edital Automática
     - Detalhe: Parser de PDF/Texto para criar matérias e tópicos automaticamente a partir do edital.
     - Status: 🔴 PENDENTE
 
@@ -69,3 +65,4 @@ HISTÓRICO DE CONQUISTAS (JÁ IMPLEMENTADO)
 ✅ [UI] Design Responsivo e Mobile-First.
 ✅ [PERFORMANCE] Consultas SQL Otimizadas e Paginação.
 ✅ [INFRA] Dockerização.
+✅ [SEGURANÇA] Proteção Real de Rotas Privadas (AuthContext + Skeleton).
