@@ -30,6 +30,8 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
   const [step, setStep] = useState(1);
   const [totalHorasStr, setTotalHorasStr] = useState('12');
   const [totalQuestoesStr, setTotalQuestoesStr] = useState('75');
+  const [horasDiscursivaStr, setHorasDiscursivaStr] = useState('1.5');
+  const [temDiscursiva, setTemDiscursiva] = useState(false);
   const [itens, setItens] = useState<ItemSugestao[]>([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
@@ -41,8 +43,21 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
       setErro('');
       setTotalHorasStr('12');
       setTotalQuestoesStr('75');
+      setHorasDiscursivaStr('1.5');
+      checkDiscursiva();
     }
-  }, [isOpen]);
+  }, [isOpen, concurso]); // Added concurso dependency
+
+  const checkDiscursiva = async () => {
+    if (!concurso) return;
+    try {
+      const res = await api.get<{ nomeMateria: string }[]>(`/concursos/${concurso.id}/materias`);
+      const tem = res.data.some(m => m.nomeMateria === 'Redação e Discursiva [Sistema]');
+      setTemDiscursiva(tem);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const gerarSugestao = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +76,8 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
         params: {
           concursoId: concurso.id,
           horas: horasNum,
-          questoes: isNaN(questoesNum) ? 0 : questoesNum
+          questoes: isNaN(questoesNum) ? 0 : questoesNum,
+          horasDiscursiva: temDiscursiva ? parseFloat(horasDiscursivaStr) : undefined
         }
       });
       const dados = response.data.map(item => ({
@@ -172,6 +188,21 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
               </div>
             </div>
           </div>
+
+          {temDiscursiva && (
+            <div className="flex flex-col items-center p-4 bg-orange-50 rounded-xl border border-orange-100 animate-fade-in">
+              <label className="text-xs font-bold text-orange-600 uppercase mb-2">Horas Discursiva</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number" step="0.5" min="0.5"
+                  value={horasDiscursivaStr} onChange={e => setHorasDiscursivaStr(e.target.value)}
+                  className="w-20 text-center text-2xl font-bold bg-white border border-orange-200 rounded-lg py-1 focus:ring-2 focus:ring-orange-500 outline-none"
+                />
+                <span className="text-orange-400 font-medium">h</span>
+              </div>
+              <p className="text-[10px] text-orange-400 mt-1 uppercase font-bold text-center">Tempo Fixo</p>
+            </div>
+          )}
 
           {erro && <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded animate-pulse">{erro}</div>}
 

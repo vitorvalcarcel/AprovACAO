@@ -6,6 +6,10 @@ import java.util.List;
 
 public interface ConcursoMateriaRepository extends JpaRepository<ConcursoMateria, Long> {
     boolean existsByConcursoIdAndMateriaId(Long concursoId, Long materiaId);
+
     boolean existsByMateriaId(Long materiaId);
+
     List<ConcursoMateria> findAllByConcursoId(Long concursoId);
+
+    ConcursoMateria findByConcursoIdAndMateriaId(Long concursoId, Long materiaId);
 }

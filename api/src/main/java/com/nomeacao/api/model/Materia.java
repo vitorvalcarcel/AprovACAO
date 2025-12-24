@@ -20,7 +20,11 @@ public class Materia {
     private String nome;
 
     @Column(nullable = false)
-    private Boolean arquivada = false; 
+    private Boolean arquivada = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoMateria tipo = TipoMateria.GERAL;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")

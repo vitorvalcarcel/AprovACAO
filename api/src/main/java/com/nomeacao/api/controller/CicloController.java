@@ -18,7 +18,8 @@ import java.util.List;
 @RequestMapping("/ciclos")
 public class CicloController {
 
-    @Autowired private CicloService service;
+    @Autowired
+    private CicloService service;
 
     @PostMapping
     @Transactional
@@ -31,9 +32,10 @@ public class CicloController {
     public ResponseEntity<List<DadosSugestaoCiclo>> obterSugestao(
             @RequestParam Long concursoId,
             @RequestParam Double horas,
-            @RequestParam(required = false, defaultValue = "0") Integer questoes) {
-        
-        var sugestao = service.sugerir(concursoId, horas, questoes);
+            @RequestParam(required = false, defaultValue = "0") Integer questoes,
+            @RequestParam(required = false) Double horasDiscursiva) {
+
+        var sugestao = service.sugerir(concursoId, horas, questoes, horasDiscursiva);
         return ResponseEntity.ok(sugestao);
     }
 

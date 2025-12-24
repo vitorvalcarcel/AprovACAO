@@ -28,7 +28,8 @@ export default function Materias() {
   const [materiaAbertaId, setMateriaAbertaId] = useState<number | null>(null);
   const [topicos, setTopicos] = useState<Topico[]>([]);
   const [loadingTopicos, setLoadingTopicos] = useState(false);
-  const [mostrarArquivados, setMostrarArquivados] = useState(false);
+  const [mostrarTopicosArquivados, setMostrarTopicosArquivados] = useState(false);
+  const [mostrarMateriasArquivadas, setMostrarMateriasArquivadas] = useState(false);
 
   // Estados dos Modais
   const [modalMateriaOpen, setModalMateriaOpen] = useState(false);
@@ -63,7 +64,7 @@ export default function Materias() {
       setMateriaAbertaId(null);
     } else {
       setMateriaAbertaId(id);
-      setMostrarArquivados(false);
+      setMostrarTopicosArquivados(false);
       carregarTopicos(id, false);
     }
   };
@@ -82,10 +83,10 @@ export default function Materias() {
     }
   };
 
-  const toggleFiltroArquivados = () => {
+  const toggleFiltroTopicosArquivados = () => {
     if (!materiaAbertaId) return;
-    const novoValor = !mostrarArquivados;
-    setMostrarArquivados(novoValor);
+    const novoValor = !mostrarTopicosArquivados;
+    setMostrarTopicosArquivados(novoValor);
     carregarTopicos(materiaAbertaId, novoValor);
   };
 
@@ -130,7 +131,7 @@ export default function Materias() {
         try {
           await api.delete(`/topicos/${topico.id}`);
           showToast('success', 'Tópico excluído.');
-          if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
+          if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarTopicosArquivados);
           setConfirmacao(p => ({ ...p, aberto: false }));
         } catch (error: any) {
           showToast('error', 'Erro', error.response?.data || "Erro ao excluir.");
@@ -144,13 +145,13 @@ export default function Materias() {
       const endpoint = topico.arquivado ? 'desarquivar' : 'arquivar';
       await api.patch(`/topicos/${topico.id}/${endpoint}`);
       showToast('success', topico.arquivado ? 'Tópico restaurado' : 'Tópico arquivado');
-      if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarArquivados);
+      if (materiaAbertaId) carregarTopicos(materiaAbertaId, mostrarTopicosArquivados);
     } catch (e) {
       showToast('error', 'Erro', "Erro ao alterar status.");
     }
   };
 
-  const listaMaterias = materias.filter(m => !m.arquivada);
+  const listaMaterias = materias.filter(m => mostrarMateriasArquivadas ? m.arquivada : !m.arquivada);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
@@ -166,6 +167,19 @@ export default function Materias() {
         >
           <Plus size={20} /> Nova Matéria
         </button>
+      </div>
+
+      <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex items-center gap-2 text-gray-500 text-sm px-2">
+          <Book size={16} /> <span>{listaMaterias.length} matérias</span>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600">
+          <span>Ver Arquivadas</span>
+          <div className="relative">
+            <input type="checkbox" checked={mostrarMateriasArquivadas} onChange={(e) => setMostrarMateriasArquivadas(e.target.checked)} className="sr-only peer" />
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+          </div>
+        </label>
       </div>
 
       <div className="space-y-3">
@@ -219,10 +233,10 @@ export default function Materias() {
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-2">
                         <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none hover:text-gray-700">
-                          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${mostrarArquivados ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                            <div className={`w-3 h-3 bg-white rounded-full shadow-sm transform transition-transform ${mostrarArquivados ? 'translate-x-4' : ''}`} />
+                          <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${mostrarTopicosArquivados ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                            <div className={`w-3 h-3 bg-white rounded-full shadow-sm transform transition-transform ${mostrarTopicosArquivados ? 'translate-x-4' : ''}`} />
                           </div>
-                          <input type="checkbox" className="hidden" checked={mostrarArquivados} onChange={toggleFiltroArquivados} />
+                          <input type="checkbox" className="hidden" checked={mostrarTopicosArquivados} onChange={toggleFiltroTopicosArquivados} />
                           Mostrar Arquivados
                         </label>
                       </div>
@@ -294,7 +308,7 @@ export default function Materias() {
         onClose={() => setModalTopicoOpen(false)}
         materiaId={materiaAbertaId}
         topicoEdicao={topicoEdicao}
-        onSalvo={() => materiaAbertaId && carregarTopicos(materiaAbertaId, mostrarArquivados)}
+        onSalvo={() => materiaAbertaId && carregarTopicos(materiaAbertaId, mostrarTopicosArquivados)}
       />
 
       <Modal isOpen={confirmacao.aberto} onClose={() => setConfirmacao(p => ({ ...p, aberto: false }))} title={confirmacao.titulo}>

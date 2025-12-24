@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface MateriaRepository extends JpaRepository<Materia, Long> {
     List<Materia> findAllByUsuario(Usuario usuario);
-    
+
     boolean existsByUsuarioIdAndNomeIgnoreCase(Long usuarioId, String nome);
+
+    java.util.Optional<Materia> findByUsuarioIdAndTipo(Long usuarioId, com.nomeacao.api.model.TipoMateria tipo);
 }

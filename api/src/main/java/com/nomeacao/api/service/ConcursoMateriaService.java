@@ -27,7 +27,8 @@ public class ConcursoMateriaService {
 
     public DadosDetalhamentoVinculo vincular(Long concursoId, DadosVinculoMateria dados, Usuario usuario) {
         if (dados.peso() <= 0 || dados.questoesProva() <= 0) {
-            throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+            throw new RuntimeException(
+                    "Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
         }
 
         var concurso = concursoRepository.findById(concursoId)
@@ -35,6 +36,10 @@ public class ConcursoMateriaService {
 
         if (!concurso.getUsuario().getId().equals(usuario.getId())) {
             throw new RuntimeException("Este concurso não pertence a você!");
+        }
+
+        if (dados.incluirDiscursiva() != null && dados.incluirDiscursiva()) {
+            return vincularDiscursiva(concurso, usuario, dados);
         }
 
         var materia = materiaRepository.findById(dados.materiaId())
@@ -58,6 +63,41 @@ public class ConcursoMateriaService {
         return new DadosDetalhamentoVinculo(vinculo);
     }
 
+    private DadosDetalhamentoVinculo vincularDiscursiva(com.nomeacao.api.model.Concurso concurso, Usuario usuario,
+            DadosVinculoMateria dados) {
+        // 1. Busca ou Cria a Matéria de Sistema
+        var materiaDiscursiva = materiaRepository
+                .findByUsuarioIdAndTipo(usuario.getId(), com.nomeacao.api.model.TipoMateria.DISCURSIVA)
+                .orElseGet(() -> {
+                    var nova = new com.nomeacao.api.model.Materia();
+                    nova.setNome("Prova Discursiva");
+                    nova.setUsuario(usuario);
+                    nova.setTipo(com.nomeacao.api.model.TipoMateria.DISCURSIVA);
+                    nova.setArquivada(false);
+                    return materiaRepository.save(nova);
+                });
+
+        // 2. Verifica se já está vinculada
+        if (repository.existsByConcursoIdAndMateriaId(concurso.getId(), materiaDiscursiva.getId())) {
+            // Se já existe, retorna o existente (idempotente)
+            var existente = repository.findByConcursoIdAndMateriaId(concurso.getId(), materiaDiscursiva.getId());
+            return new DadosDetalhamentoVinculo(existente);
+        }
+
+        // 3. Cria o vínculo
+        var vinculo = new ConcursoMateria();
+        vinculo.setConcurso(concurso);
+        vinculo.setMateria(materiaDiscursiva);
+        // Regra: Peso e Questões podem vir do front, mas para Discursiva o tempo será
+        // fixo no Ciclo.
+        // Mesmo assim, salvamos para constar.
+        vinculo.setPeso(dados.peso());
+        vinculo.setQuestoesProva(dados.questoesProva());
+
+        repository.save(vinculo);
+        return new DadosDetalhamentoVinculo(vinculo);
+    }
+
     public DadosDetalhamentoVinculo atualizar(DadosAtualizacaoVinculo dados, Usuario usuario) {
         var vinculo = repository.findById(dados.id())
                 .orElseThrow(() -> new RuntimeException("Vínculo não encontrado"));
@@ -68,13 +108,15 @@ public class ConcursoMateriaService {
 
         if (dados.peso() != null) {
             if (dados.peso() <= 0) {
-                throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+                throw new RuntimeException(
+                        "Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
             }
             vinculo.setPeso(dados.peso());
         }
         if (dados.questoesProva() != null) {
             if (dados.questoesProva() <= 0) {
-                throw new RuntimeException("Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
+                throw new RuntimeException(
+                        "Regra de Negócio: O peso e a quantidade de questões devem ser maiores que zero para gerar metas de estudo.");
             }
             vinculo.setQuestoesProva(dados.questoesProva());
         }
