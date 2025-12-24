@@ -41,6 +41,8 @@ public class AutenticacaoService implements UserDetailsService {
     private EmailService emailService;
     @Autowired
     private TokenService jwtService;
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -179,6 +181,7 @@ public class AutenticacaoService implements UserDetailsService {
         concursoRepository.deleteAll(concursoRepository.findAllByUsuario(usuario));
         materiaRepository.deleteAll(materiaRepository.findAllByUsuario(usuario));
         tipoEstudoRepository.deleteAll(tipoEstudoRepository.findAllByUsuario(usuario));
+        refreshTokenRepository.deleteAllByUsuario(usuario);
         repository.delete(usuario);
     }
 
