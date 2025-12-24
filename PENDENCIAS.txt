@@ -1,75 +1,71 @@
 =============================================================================
-SEÇÃO 1: DÉBITOS TÉCNICOS E QUALIDADE
+SEÇÃO 1: SEGURANÇA E INTEGRIDADE DE DADOS (CRÍTICO)
 =============================================================================
 
-1. Implementação de Testes Automatizados (Backend)
-   - Detalhe: A pasta `src/test` contém apenas o arquivo padrão. É necessário
-     criar testes unitários para os Services principais (CicloService, Timer).
+1. [FRONTEND] Proteção Real de Rotas Privadas (PrivateRoute.tsx)
+   - Detalhe: Atualmente a verificação de rota privada olha apenas se existe uma string na chave 'token' do localStorage. Recomenda-se validar o estado real do contexto de autenticação.
    - Status: 🔴 PENDENTE
 
-2. Refatoração de Fuso Horário (Estratégia Híbrida)
-   - Detalhe: Migrar campos de data (`LocalDateTime`) para `Instant` + `Data Lógica`.
-     O sistema atual usa `LocalDateTime` sem fuso, o que gera inconsistência em
-     relatórios se o servidor não estiver no mesmo fuso do usuário. A estratégia
-     híbrida corrige isso mantendo o histórico absoluto (Instant) e a percepção
-     do usuário (LocalDate).
+2. [BACKEND] Exclusão em Cascata do Usuário (Integridade)
+   - Detalhe: O método `excluirConta` deleta manualmente os registros de cada tabela relacionada. Se novas tabelas forem criadas no futuro, a exclusão quebrará por erro de Foreign Key.
+   - Solução: Configurar `CascadeType.REMOVE` nas entidades ou Constraints de Banco de Dados.
    - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 2: FUNCIONALIDADES - CORE BUSINESS (O QUE FALTA NO APP)
+SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO
 =============================================================================
 
-2. Recomendação Inteligente de Estudo
-   - Detalhe: O algoritmo "cérebro" que sugere qual matéria estudar hoje baseada
-     no histórico e nas metas do ciclo.
+3. [BACKEND] Problema N+1 no Histórico de Ciclos (CicloService.java)
+   - Detalhe: Ao listar o histórico, o sistema executa uma nova consulta SQL para cada ciclo retornado (dentro do loop).
+   - Solução: Refatorar para uma consulta agregada (GROUP BY) única.
    - Status: 🔴 PENDENTE
 
-3. Simulador de Nota
-   - Detalhe: Ferramenta para o usuário projetar sua nota final baseada no
-     desempenho atual de questões.
+4. [BACKEND] Precisão de Cálculos de Horas
+   - Detalhe: O sistema usa `Double` para somar horas. Para maior precisão contábil, recomenda-se uso de minutos/segundos inteiros ou `BigDecimal`.
+   - Status: 🟡 MELHORIA
+
+=============================================================================
+SEÇÃO 3: QUALIDADE DE CÓDIGO E TESTES
+=============================================================================
+
+5. [BACKEND] Refinamento do Tratamento de Exceções (TratadorDeErros.java)
+   - Detalhe: O handler global existe, mas não cobre todas as exceções corretamente e retorna formatos de erro inconsistentes que quebram o frontend.
+   - Status: 🟡 EM ANDAMENTO
+
+6. Implementação de Testes Automatizados
+   - Detalhe: A cobertura de testes unitários para regras de negócio (Ciclos, Estatísticas) é inexistente.
    - Status: 🔴 PENDENTE
 
-4. Importação em Lote (Edital)
-   - Detalhe: Funcionalidade para importar matérias e tópicos de um edital
-     (PDF/Texto) automaticamente.
-   - Status: 🔴 PENDENTE
-
-5. Status do Concurso
-   - Detalhe: Indicadores visuais na tela de concursos (Edital Aberto, 
-     Inscrições Abertas, Prova Realizada, etc).
-   - Status: 🔴 PENDENTE
-
-6. Tutorial de Primeiro Acesso (Onboarding)
-   - Detalhe: Um guia passo-a-passo interativo para ensinar o usuário novo a 
-     criar seu primeiro ciclo.
-   - Status: 🔴 PENDENTE
-
-7. Widget de Contagem Regressiva
-   - Detalhe: Um contador de dias para a prova na tela inicial.
+7. Refatoração de Fuso Horário (Estratégia Híbrida)
+   - Detalhe: Migrar campos de `LocalDateTime` para `Instant` visando suporte correto a múltiplos fusos horários.
    - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 3: ANALYTICS & COMUNIDADE
+SEÇÃO 4: FUNCIONALIDADES - ROADMAP DO PRODUTO (NOVAS)
 =============================================================================
 
-8. Dashboard Macro (Visão de Vida)
-   - Detalhe: Visão geral de longo prazo, somando todos os concursos e todo
-     o histórico do usuário.
+8. Recomendação Inteligente de Estudo ("O que estudar hoje?")
+   - Detalhe: Algoritmo que sugere a próxima matéria baseada no saldo do ciclo e na curva de esquecimento.
    - Status: 🔴 PENDENTE
 
-9. Canal de Feedback
-   - Detalhe: Formulário ou modal oficial para usuários reportarem bugs ou
-     sugestões diretamente para a equipe.
+9. Simulador de Nota Final
+   - Detalhe: Ferramenta para projetar a nota baseada no % de acertos atual vs peso das matérias do edital.
    - Status: 🔴 PENDENTE
+
+10. Importação de Edital Automática
+    - Detalhe: Parser de PDF/Texto para criar matérias e tópicos automaticamente a partir do edital.
+    - Status: 🔴 PENDENTE
 
 =============================================================================
 HISTÓRICO DE CONQUISTAS (JÁ IMPLEMENTADO)
 =============================================================================
-✅ [INFRA] Keep-Alive & Tela de Manutenção (Resiliência).
-✅ [SEGURANÇA] Externalização de Segredos (Env Vars) e JWT.
-✅ [OBSERVABILIDADE] Logs de Requisição e Health Check.
-✅ [UX] Cronômetro Global Persistente (TimerContext + LocalStorage).
-✅ [UX] Widget Flutuante de Estudo.
-✅ [UI] Correções visuais Mobile/Desktop e Menu com FAB.
+✅ [UX] Onboarding e Tutorial Passo-a-Passo (OnboardingContext + Persistência).
+✅ [UX] Central de Feedback (Backend API + Modal Frontend).
+✅ [INFRA] Keep-Alive & Tela de Manutenção.
+✅ [SEGURANÇA] Arquitetura JWT com Refresh Token e Rotação.
+✅ [CORE] Algoritmo de Ciclos (Método de Hamilton).
+✅ [UX] Cronômetro Global Persistente.
+✅ [UX] Dashboard com Gráficos e Gap Filling.
+✅ [UI] Design Responsivo e Mobile-First.
 ✅ [PERFORMANCE] Consultas SQL Otimizadas e Paginação.
-✅ [INFRA] Dockerização (Dockerfile + Compose).
+✅ [INFRA] Dockerização.
