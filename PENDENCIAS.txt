@@ -1,60 +1,90 @@
 =============================================================================
-SEÇÃO 1: SEGURANÇA E INTEGRIDADE DE DADOS (CRÍTICO)
+SEÇÃO 1: REGRAS DE NEGÓCIO E INTEGRIDADE
 =============================================================================
 
-1. [BACKEND] Exclusão em Cascata do Usuário (Integridade)
-   - Detalhe: O método `excluirConta` deleta manualmente os registros de cada tabela relacionada. Se novas tabelas forem criadas no futuro, a exclusão quebrará por erro de Foreign Key.
-   - Solução: Configurado `CascadeType.REMOVE` nas entidades `Usuario`, `Concurso` e `Materia`.
-   - Status: ✅ CONCLUÍDO
-
-=============================================================================
-SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO
-=============================================================================
-
-2. [BACKEND] Problema N+1 no Histórico de Ciclos (CicloService.java)
-   - Detalhe: Ao listar o histórico, o sistema executa uma nova consulta SQL para cada ciclo retornado (dentro do loop).
-   - Solução: Refatorado para estratégia "In-Memory": busca única de ciclos (Eager Load) e busca única de registros (DTO), com agregação em Java.
-   - Status: ✅ CONCLUÍDO
-
-3. [BACKEND] Precisão de Cálculos de Horas
-   - Detalhe: O sistema usa `Double` para somar horas. Para maior precisão contábil, recomenda-se uso de minutos/segundos inteiros ou `BigDecimal`.
-   - Status: 🟡 MELHORIA
-
-=============================================================================
-SEÇÃO 3: QUALIDADE DE CÓDIGO E TESTES
-=============================================================================
-
-4. [BACKEND] Refinamento do Tratamento de Exceções (TratadorDeErros.java)
-   - Detalhe: O handler global existe, mas não cobre todas as exceções corretamente e retorna formatos de erro inconsistentes que quebram o frontend.
-   - Status: 🟡 EM ANDAMENTO
-
-5. Implementação de Testes Automatizados
-   - Detalhe: A cobertura de testes unitários para regras de negócio (Ciclos, Estatísticas) é inexistente.
+1. [REGRA] Limite de Registro de Estudos (12h)
+   - Detalhe: Um registro de estudo não pode exceder 12 horas.
+   - Requisitos:
+     - Exibir aviso explícito para o usuário.
+     - Limitar o cronômetro para não ultrapassar 12h.
+     - Validação no Backend: Bloquear registros manuais ou via cronômetro > 12h.
    - Status: 🔴 PENDENTE
 
-6. Refatoração de Fuso Horário (Estratégia Híbrida)
+2. Refatoração de Fuso Horário (Estratégia Híbrida)
    - Detalhe: Migrar campos de `LocalDateTime` para `Instant` visando suporte correto a múltiplos fusos horários.
    - Status: 🔴 PENDENTE
 
 =============================================================================
-SEÇÃO 4: FUNCIONALIDADES - ROADMAP DO PRODUTO (NOVAS)
+SEÇÃO 2: QUALIDADE DE CÓDIGO E TESTES
 =============================================================================
 
-7. Recomendação Inteligente de Estudo ("O que estudar hoje?")
-   - Detalhe: Algoritmo que sugere a próxima matéria baseada no saldo do ciclo e na curva de esquecimento.
+3. [BACKEND] Refinamento do Tratamento de Exceções (TratadorDeErros.java)
+   - Detalhe: O handler global existe, mas não cobre todas as exceções corretamente e retorna formatos de erro inconsistentes que quebram o frontend.
+   - Status: 🟡 EM ANDAMENTO
+
+4. Implementação de Testes Automatizados
+   - Detalhe: A cobertura de testes unitários para regras de negócio (Ciclos, Estatísticas) é inexistente.
    - Status: 🔴 PENDENTE
 
-8. Simulador de Nota Final
-   - Detalhe: Ferramenta para projetar a nota baseada no % de acertos atual vs peso das matérias do edital.
+=============================================================================
+SEÇÃO 3: NOVAS FUNCIONALIDADES (UX & GAMEFICAÇÃO)
+=============================================================================
+
+5. [DASHBOARD] Card do Concurso Ativo (Foco)
+   - Detalhe: Card em destaque mostrando o concurso do ciclo ativo.
+   - Requisitos:
+     - Contagem regressiva de dias para a prova.
+     - Mensagem motivacional diária/aleatória.
    - Status: 🔴 PENDENTE
 
-9. Importação de Edital Automática
+6. [GAMEFICAÇÃO] Constância de Estudos (Streak)
+   - Detalhe: Medir e exibir a constância de dias estudando.
+   - Requisitos:
+     - Considerar dia válido apenas se estudar > 30min.
+     - Contagem automática de dias consecutivos.
+     - Visualização da "Streak" (ofensiva) para engajamento.
+   - Status: 🔴 PENDENTE
+
+=============================================================================
+SEÇÃO 4: ESTATÍSTICAS E ANÁLISE DE DADOS
+=============================================================================
+
+7. [ESTATÍSTICAS] Visualização por Matérias (Tabela Detalhada)
+   - Detalhe: Nova visualização listando todas as matérias.
+   - Colunas: Nome da Matéria, Horas Estudadas, Questões Feitas, % de Acertos.
+   - Funcionalidade: Filtros de data (ex: ver evolução apenas do último mês) para evitar que o histórico antigo distorça a performance atual.
+   - Status: 🔴 PENDENTE
+
+8. [ESTATÍSTICAS] Gráfico de Teia (Radar Chart)
+   - Detalhe: Visualização gráfica de desempenho por matéria.
+   - Eixos: Matérias (selecionadas ou do ciclo atual).
+   - Métrica: Porcentagem de acertos.
+   - Objetivo: Identificar visualmente matérias fracas vs. fortes. Suportar filtros de data.
+   - Status: 🔴 PENDENTE
+
+=============================================================================
+SEÇÃO 5: ROADMAP FUTURO
+=============================================================================
+
+9. Recomendação Inteligente de Estudo ("O que estudar hoje?")
+    - Detalhe: Algoritmo que sugere a próxima matéria baseada no saldo do ciclo e na curva de esquecimento.
+    - Status: 🔴 PENDENTE
+
+10. Simulador de Nota Final
+    - Detalhe: Ferramenta para projetar a nota baseada no % de acertos atual vs peso das matérias do edital.
+    - Status: 🔴 PENDENTE
+
+11. Importação de Edital Automática
     - Detalhe: Parser de PDF/Texto para criar matérias e tópicos automaticamente a partir do edital.
     - Status: 🔴 PENDENTE
 
 =============================================================================
 HISTÓRICO DE CONQUISTAS (JÁ IMPLEMENTADO)
 =============================================================================
+✅ [BACKEND] Precisão de Cálculos de Horas (Segundos/BigDecimal).
+✅ [BACKEND] Problema N+1 no Histórico de Ciclos resolvido (Refatoração Service).
+✅ [BACKEND] Exclusão em Cascata e Integridade de Usuário configurada.
+✅ [UX] Verificação de Exibição de Tempo no Frontend (Refatoração para Segundos).
 ✅ [UX] Onboarding e Tutorial Passo-a-Passo (OnboardingContext + Persistência).
 ✅ [UX] Central de Feedback (Backend API + Modal Frontend).
 ✅ [INFRA] Keep-Alive & Tela de Manutenção.
@@ -64,5 +94,4 @@ HISTÓRICO DE CONQUISTAS (JÁ IMPLEMENTADO)
 ✅ [UX] Dashboard com Gráficos e Gap Filling.
 ✅ [UI] Design Responsivo e Mobile-First.
 ✅ [PERFORMANCE] Consultas SQL Otimizadas e Paginação.
-✅ [INFRA] Dockerização.
-✅ [SEGURANÇA] Proteção Real de Rotas Privadas (AuthContext + Skeleton).
+✅ [SEGURANÇA] Proteção Real de Rotas Privadas (AuthContext).
