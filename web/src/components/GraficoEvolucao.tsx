@@ -133,8 +133,8 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
               key={tipo}
               onClick={() => setAgrupamento(tipo)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${agrupamento === tipo
-                  ? 'bg-white text-blue-700 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                ? 'bg-white text-blue-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
                 }`}
             >
               {tipo === 'auto' ? 'Auto' : tipo.charAt(0).toUpperCase() + tipo.slice(1)}
