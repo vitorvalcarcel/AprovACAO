@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Lock, AlertTriangle, CheckCircle, Loader2, KeyRound, HelpCircle } from 'lucide-react';
+import { User, Mail, Lock, AlertTriangle, CheckCircle, Loader2, KeyRound, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Modal from '../components/Modal';
@@ -51,6 +51,7 @@ export default function Perfil() {
   const [senhaExclusao, setSenhaExclusao] = useState('');
   const [erroExclusao, setErroExclusao] = useState('');
   const [loadingExclusao, setLoadingExclusao] = useState(false);
+  const [mostrarSenhaExclusao, setMostrarSenhaExclusao] = useState(false);
 
   useEffect(() => {
     carregarUsuario();
@@ -336,7 +337,24 @@ export default function Perfil() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Digite sua senha para confirmar</label>
-            <input type="password" autoFocus value={senhaExclusao} onChange={e => setSenhaExclusao(e.target.value)} className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" placeholder="Sua senha atual" />
+            <div className="relative">
+              <input
+                type={mostrarSenhaExclusao ? "text" : "password"}
+                autoFocus
+                value={senhaExclusao}
+                onChange={e => setSenhaExclusao(e.target.value)}
+                className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-red-500 outline-none pr-10"
+                placeholder="Sua senha atual"
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenhaExclusao(!mostrarSenhaExclusao)}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition-colors"
+                tabIndex={-1}
+              >
+                {mostrarSenhaExclusao ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
           {erroExclusao && <div className="text-sm bg-red-100 text-red-800 p-3 rounded-lg flex items-center gap-2"><AlertTriangle size={16} /> {erroExclusao}</div>}
           <div className="flex justify-end gap-2 pt-2 border-t">

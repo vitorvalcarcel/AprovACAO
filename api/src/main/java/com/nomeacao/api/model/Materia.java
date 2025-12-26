@@ -39,6 +39,10 @@ public class Materia {
     @ToString.Exclude
     private java.util.List<ConcursoMateria> concursos;
 
+    @OneToMany(mappedBy = "materia", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private java.util.List<RegistroEstudo> registros;
+
     public void atualizarInformacoes(String novoNome) {
         if (novoNome != null && !novoNome.trim().isEmpty()) {
             this.nome = novoNome;
