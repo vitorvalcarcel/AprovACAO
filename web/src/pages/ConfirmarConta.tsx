@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
@@ -11,12 +11,16 @@ export default function ConfirmarConta() {
   const { refreshUser } = useAuth();
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const effectRan = useRef(false);
 
   useEffect(() => {
     if (!token) {
       setStatus('error');
       return;
     }
+
+    if (effectRan.current) return;
+    effectRan.current = true;
 
     const confirmar = async () => {
       try {
@@ -40,7 +44,8 @@ export default function ConfirmarConta() {
     };
 
     confirmar();
-  }, [token, navigate, refreshUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
