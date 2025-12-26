@@ -3,6 +3,7 @@ package com.nomeacao.api.service;
 import com.nomeacao.api.dto.DadosCriacaoCiclo;
 import com.nomeacao.api.dto.DadosListagemCiclo;
 import com.nomeacao.api.dto.DadosSugestaoCiclo;
+import com.nomeacao.api.dto.RegistroTempoDTO;
 import com.nomeacao.api.model.*;
 import com.nomeacao.api.repository.*;
 import jakarta.transaction.Transactional;
@@ -43,7 +44,6 @@ public class CicloService {
         }
     }
 
-    // 1. Gera sugestão baseada no Método de Hamilton com Passos Discretos
     // 1. Gera sugestão baseada no Método de Hamilton com Passos Discretos
     public List<DadosSugestaoCiclo> sugerir(Long concursoId, Double horasMeta, Integer questoesMeta,
             Double horasDiscursiva) {
@@ -247,34 +247,37 @@ public class CicloService {
         if (!concurso.getUsuario().getId().equals(usuario.getId()))
             throw new RuntimeException("Acesso negado.");
 
-        List<Ciclo> ciclos = repository.findAllByConcursoIdOrderByDataInicioDesc(concursoId);
+        // Busca 1: Ciclos com Itens e Matérias (Eager Loading)
+        List<Ciclo> ciclos = repository.findAllComItensPorConcursoId(concursoId);
+
+        // Busca 2: Todos os registros simplificados do concurso
+        List<RegistroTempoDTO> todosRegistros = registroRepository.findAllPorConcursoAsDto(concursoId, usuario.getId());
 
         return ciclos.stream()
                 .map(c -> {
-                    Double progresso = calcularProgressoReal(c, usuario.getId());
+                    Double progresso = calcularProgressoMemoria(c, todosRegistros);
                     return new DadosListagemCiclo(c, progresso);
                 })
                 .toList();
     }
 
-    private Double calcularProgressoReal(Ciclo ciclo, Long usuarioId) {
+    private Double calcularProgressoMemoria(Ciclo ciclo, List<RegistroTempoDTO> todosRegistros) {
         if (ciclo.getItens() == null || ciclo.getItens().isEmpty())
             return 0.0;
 
+        LocalDateTime inicio = ciclo.getDataInicio();
         LocalDateTime fim = ciclo.getDataFim() != null ? ciclo.getDataFim() : LocalDateTime.now();
 
         double somaPercentuais = 0.0;
         int totalItens = 0;
 
         for (ItemCiclo item : ciclo.getItens()) {
-            Long segundosRealizados = registroRepository.somarSegundosPorMateriaEPeriodo(
-                    usuarioId,
-                    item.getMateria().getId(),
-                    ciclo.getDataInicio(),
-                    fim);
-
-            if (segundosRealizados == null)
-                segundosRealizados = 0L;
+            // Filtro em memória equivalente ao SQL anterior
+            long segundosRealizados = todosRegistros.stream()
+                    .filter(r -> r.materiaId().equals(item.getMateria().getId()))
+                    .filter(r -> !r.dataInicio().isBefore(inicio) && !r.dataInicio().isAfter(fim))
+                    .mapToLong(RegistroTempoDTO::segundos)
+                    .sum();
 
             double metaSegundos = item.getHorasMeta() * 3600;
             double percentualItem = 0.0;

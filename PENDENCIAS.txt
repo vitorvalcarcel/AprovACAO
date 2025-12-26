@@ -13,8 +13,8 @@ SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO
 
 2. [BACKEND] Problema N+1 no Histórico de Ciclos (CicloService.java)
    - Detalhe: Ao listar o histórico, o sistema executa uma nova consulta SQL para cada ciclo retornado (dentro do loop).
-   - Solução: Refatorar para uma consulta agregada (GROUP BY) única.
-   - Status: 🔴 PENDENTE
+   - Solução: Refatorado para estratégia "In-Memory": busca única de ciclos (Eager Load) e busca única de registros (DTO), com agregação em Java.
+   - Status: ✅ CONCLUÍDO
 
 3. [BACKEND] Precisão de Cálculos de Horas
    - Detalhe: O sistema usa `Double` para somar horas. Para maior precisão contábil, recomenda-se uso de minutos/segundos inteiros ou `BigDecimal`.

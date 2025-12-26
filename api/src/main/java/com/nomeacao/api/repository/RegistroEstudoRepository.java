@@ -12,7 +12,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, Long>, JpaSpecificationExecutor<RegistroEstudo> {
+public interface RegistroEstudoRepository
+        extends JpaRepository<RegistroEstudo, Long>, JpaSpecificationExecutor<RegistroEstudo> {
 
     List<RegistroEstudo> findAllByUsuarioOrderByDataInicioDesc(Usuario usuario);
     boolean existsByMateriaId(Long materiaId);
@@ -22,92 +23,104 @@ public interface RegistroEstudoRepository extends JpaRepository<RegistroEstudo, 
     void deleteAllByUsuario(Usuario usuario);
 
     @Query("""
-        SELECT new com.nomeacao.api.dto.ResumoHistoricoDTO(
-            r.materia.id,
-            SUM(CASE WHEN r.contarHorasNoCiclo = true THEN CAST(r.segundos AS long) ELSE 0 END), 
-            SUM(CAST(r.questoesFeitas AS long))
-        )
-        FROM RegistroEstudo r
-        WHERE r.concurso.id = :concursoId
-        GROUP BY r.materia.id
-    """)
+                SELECT new com.nomeacao.api.dto.ResumoHistoricoDTO(
+                    r.materia.id,
+                    SUM(CASE WHEN r.contarHorasNoCiclo = true THEN CAST(r.segundos AS long) ELSE 0 END),
+                    SUM(CAST(r.questoesFeitas AS long))
+                )
+                FROM RegistroEstudo r
+                WHERE r.concurso.id = :concursoId
+                GROUP BY r.materia.id
+            """)
     List<com.nomeacao.api.dto.ResumoHistoricoDTO> somarEstudosPorConcurso(@Param("concursoId") Long concursoId);
 
     @Query("""
-        SELECT SUM(r.segundos) 
-        FROM RegistroEstudo r 
-        WHERE r.usuario.id = :usuarioId 
-          AND r.materia.id = :materiaId 
-          AND r.dataInicio BETWEEN :inicio AND :fim 
-          AND r.contarHorasNoCiclo = true
-    """)
+                SELECT SUM(r.segundos)
+                FROM RegistroEstudo r
+                WHERE r.usuario.id = :usuarioId
+                  AND r.materia.id = :materiaId
+                  AND r.dataInicio BETWEEN :inicio AND :fim
+                  AND r.contarHorasNoCiclo = true
+            """)
     Long somarSegundosPorMateriaEPeriodo(
-        @Param("usuarioId") Long usuarioId, 
-        @Param("materiaId") Long materiaId, 
-        @Param("inicio") LocalDateTime inicio, 
-        @Param("fim") LocalDateTime fim
-    );
+            @Param("usuarioId") Long usuarioId,
+            @Param("materiaId") Long materiaId,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim);
 
     // ALTERADO: Adicionado filtro OR para Materias/Topicos
     @Query("""
-        SELECT new com.nomeacao.api.dto.ResumoGeralDTO(
-            COALESCE(SUM(CAST(r.segundos AS long)), 0),
-            COALESCE(SUM(CAST(r.questoesFeitas AS long)), 0),
-            COALESCE(SUM(CAST(r.questoesCertas AS long)), 0)
-        )
-        FROM RegistroEstudo r
-        WHERE r.usuario = :usuario
-          AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
-          AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
-          AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
-          AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
-          AND (
-                ( (:materias) IS NULL AND (:topicos) IS NULL )
-                OR
-                ( r.materia.id IN (:materias) )
-                OR
-                ( r.topico.id IN (:topicos) )
-          )
-    """)
+                SELECT new com.nomeacao.api.dto.ResumoGeralDTO(
+                    COALESCE(SUM(CAST(r.segundos AS long)), 0),
+                    COALESCE(SUM(CAST(r.questoesFeitas AS long)), 0),
+                    COALESCE(SUM(CAST(r.questoesCertas AS long)), 0)
+                )
+                FROM RegistroEstudo r
+                WHERE r.usuario = :usuario
+                  AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
+                  AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
+                  AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
+                  AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
+                  AND (
+                        ( (:materias) IS NULL AND (:topicos) IS NULL )
+                        OR
+                        ( r.materia.id IN (:materias) )
+                        OR
+                        ( r.topico.id IN (:topicos) )
+                  )
+            """)
     ResumoGeralDTO calcularResumoGeral(
-        @Param("usuario") Usuario usuario,
-        @Param("inicio") LocalDateTime inicio,
-        @Param("fim") LocalDateTime fim,
-        @Param("materias") List<Long> materias,
-        @Param("topicos") List<Long> topicos, // Novo
-        @Param("concursos") List<Long> concursos,
-        @Param("tipos") List<Long> tipos
-    );
+            @Param("usuario") Usuario usuario,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
+            @Param("materias") List<Long> materias,
+            @Param("topicos") List<Long> topicos,
+            @Param("concursos") List<Long> concursos,
+            @Param("tipos") List<Long> tipos);
 
     // ALTERADO: Adicionado filtro OR para Materias/Topicos
     @Query("""
-        SELECT new com.nomeacao.api.dto.EvolucaoDiariaDTO(
-            CAST(r.dataInicio AS date),
-            COALESCE(SUM(CAST(r.segundos AS long)), 0)
-        )
-        FROM RegistroEstudo r
-        WHERE r.usuario = :usuario
-          AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
-          AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
-          AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
-          AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
-          AND (
-                ( (:materias) IS NULL AND (:topicos) IS NULL )
-                OR
-                ( r.materia.id IN (:materias) )
-                OR
-                ( r.topico.id IN (:topicos) )
-          )
-        GROUP BY CAST(r.dataInicio AS date)
-        ORDER BY CAST(r.dataInicio AS date) ASC
-    """)
+                SELECT new com.nomeacao.api.dto.EvolucaoDiariaDTO(
+                    CAST(r.dataInicio AS date),
+                    COALESCE(SUM(CAST(r.segundos AS long)), 0)
+                )
+                FROM RegistroEstudo r
+                WHERE r.usuario = :usuario
+                  AND (CAST(:inicio AS timestamp) IS NULL OR r.dataInicio >= :inicio)
+                  AND (CAST(:fim AS timestamp) IS NULL OR r.dataInicio <= :fim)
+                  AND ((:concursos) IS NULL OR r.concurso.id IN (:concursos))
+                  AND ((:tipos) IS NULL OR r.tipoEstudo.id IN (:tipos))
+                  AND (
+                        ( (:materias) IS NULL AND (:topicos) IS NULL )
+                        OR
+                        ( r.materia.id IN (:materias) )
+                        OR
+                        ( r.topico.id IN (:topicos) )
+                  )
+                GROUP BY CAST(r.dataInicio AS date)
+                ORDER BY CAST(r.dataInicio AS date) ASC
+            """)
     List<EvolucaoDiariaDTO> calcularEvolucaoDiaria(
-        @Param("usuario") Usuario usuario,
-        @Param("inicio") LocalDateTime inicio,
-        @Param("fim") LocalDateTime fim,
-        @Param("materias") List<Long> materias,
-        @Param("topicos") List<Long> topicos, // Novo
-        @Param("concursos") List<Long> concursos,
-        @Param("tipos") List<Long> tipos
-    );
+            @Param("usuario") Usuario usuario,
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
+            @Param("materias") List<Long> materias,
+            @Param("topicos") List<Long> topicos,
+            @Param("concursos") List<Long> concursos,
+            @Param("tipos") List<Long> tipos);
+
+    @Query("""
+                SELECT new com.nomeacao.api.dto.RegistroTempoDTO(
+                    r.materia.id,
+                    r.dataInicio,
+                    r.segundos
+                )
+                FROM RegistroEstudo r
+                WHERE r.concurso.id = :concursoId
+                  AND r.contarHorasNoCiclo = true
+                  AND r.usuario.id = :usuarioId
+            """)
+    List<com.nomeacao.api.dto.RegistroTempoDTO> findAllPorConcursoAsDto(
+            @Param("concursoId") Long concursoId,
+            @Param("usuarioId") Long usuarioId);
 }
