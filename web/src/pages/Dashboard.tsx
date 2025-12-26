@@ -9,7 +9,7 @@ import { useTimer } from '../contexts/TimerContext';
 
 interface ItemProgresso {
   nomeMateria: string;
-  metaHoras: number;
+  metaSegundos: number;
   segundosRealizados: number;
   saldoSegundos: number;
   percentualHoras: number;
@@ -28,11 +28,11 @@ interface DashboardData {
 
 export default function Dashboard() {
   const { showToast } = useToast();
-  const { startTimer, isActive } = useTimer(); 
-  
+  const { startTimer, isActive } = useTimer();
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [modalEncerrarOpen, setModalEncerrarOpen] = useState(false);
 
   const carregarDashboard = async () => {
@@ -68,13 +68,17 @@ export default function Dashboard() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  const formatarMetaHoras = (segundos: number) => {
+    return (segundos / 3600).toFixed(1);
+  };
+
   const handleIniciarCronometro = () => {
     if (isActive) {
-        const event = new CustomEvent('open-timer-modal');
-        window.dispatchEvent(event);
+      const event = new CustomEvent('open-timer-modal');
+      window.dispatchEvent(event);
     } else {
-        startTimer();
-        showToast('info', 'Cronômetro Iniciado', 'Selecione a matéria quando for salvar.');
+      startTimer();
+      showToast('info', 'Cronômetro Iniciado', 'Selecione a matéria quando for salvar.');
     }
   };
 
@@ -85,7 +89,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col xl:flex-row gap-8 items-start max-w-[1600px] mx-auto min-h-screen">
-      
+
       <div className="flex-1 w-full min-w-0 flex flex-col">
         {loading ? (
           <DashboardSkeleton />
@@ -100,10 +104,10 @@ export default function Dashboard() {
                   </p>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-3">
                 {data?.cicloId && (
-                  <button 
+                  <button
                     onClick={() => setModalEncerrarOpen(true)}
                     className="flex items-center gap-2 px-3 py-2 bg-white text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg text-xs font-bold transition-colors uppercase shadow-sm"
                   >
@@ -136,7 +140,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
-                
+
                 <div className="grid grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   <div className="col-span-5 sm:col-span-4">Matéria</div>
                   <div className="col-span-4 sm:col-span-4 text-center">Progresso</div>
@@ -150,7 +154,7 @@ export default function Dashboard() {
                 <div className="divide-y divide-gray-50">
                   {data.itens.map((item, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-2.5 items-center hover:bg-blue-50/30 transition-colors group">
-                      
+
                       {/* MATÉRIA */}
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-2 sm:gap-3">
                         <div className={`w-1 sm:w-1.5 h-8 sm:h-10 rounded-full shrink-0 ${item.saldoSegundos <= 0 && item.saldoQuestoes <= 0 ? 'bg-green-500' : 'bg-blue-500'}`}></div>
@@ -181,7 +185,7 @@ export default function Dashboard() {
                             {formatarTempo(item.segundosRealizados)}
                           </span>
                           <span className="text-[9px] sm:text-[10px] text-gray-400">
-                            / {item.metaHoras}h
+                            / {formatarMetaHoras(item.metaSegundos)}h
                           </span>
                         </div>
 
@@ -222,41 +226,40 @@ export default function Dashboard() {
       </div>
 
       <div className="hidden lg:flex w-full xl:w-96 shrink-0 xl:sticky xl:top-8 flex-col gap-4">
-        
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Clock size={20} className="text-blue-600"/> Registrar Estudo</h3>
-            
-            <div className="space-y-3">
-                <button 
-                    onClick={handleIniciarCronometro}
-                    className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md transition-all active:scale-[0.98] ${
-                        isActive 
-                        ? 'bg-white border-2 border-blue-600 text-blue-600 shadow-blue-100' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'
-                    }`}
-                >
-                    <Clock size={22} />
-                    {isActive ? 'ABRIR CRONÔMETRO' : 'INICIAR AGORA'}
-                </button>
 
-                {!isActive && (
-                    <button 
-                        onClick={handleRegistroManual}
-                        className="w-full py-3 bg-white border-2 border-gray-100 hover:border-gray-200 text-gray-700 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors animate-fade-in"
-                    >
-                        <Edit3 size={18} />
-                        REGISTRO MANUAL
-                    </button>
-                )}
-            </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Clock size={20} className="text-blue-600" /> Registrar Estudo</h3>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleIniciarCronometro}
+              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md transition-all active:scale-[0.98] ${isActive
+                  ? 'bg-white border-2 border-blue-600 text-blue-600 shadow-blue-100'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100'
+                }`}
+            >
+              <Clock size={22} />
+              {isActive ? 'ABRIR CRONÔMETRO' : 'INICIAR AGORA'}
+            </button>
+
+            {!isActive && (
+              <button
+                onClick={handleRegistroManual}
+                className="w-full py-3 bg-white border-2 border-gray-100 hover:border-gray-200 text-gray-700 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors animate-fade-in"
+              >
+                <Edit3 size={18} />
+                REGISTRO MANUAL
+              </button>
+            )}
+          </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group shrink-0">
           <div className="relative z-10">
             <h3 className="font-bold text-lg mb-1">Ver Estatísticas</h3>
             <p className="text-purple-100 text-sm mb-4">Analise sua evolução, taxa de acertos e gráficos detalhados.</p>
             <Link to="/app/estatisticas" className="inline-flex items-center gap-2 bg-white text-purple-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-50 transition-colors">
-              Acessar Relatórios <ChevronRight size={16}/>
+              Acessar Relatórios <ChevronRight size={16} />
             </Link>
           </div>
           <BarChart2 className="absolute -bottom-4 -right-4 text-white opacity-10 w-32 h-32 transform group-hover:scale-110 transition-transform duration-500" />
@@ -266,7 +269,7 @@ export default function Dashboard() {
       <Modal isOpen={modalEncerrarOpen} onClose={() => setModalEncerrarOpen(false)} title="Encerrar Ciclo">
         <div className="space-y-4">
           <div className="bg-orange-50 p-4 rounded-lg flex gap-3 text-orange-800 text-sm items-start">
-            <AlertTriangle className="shrink-0" size={20}/>
+            <AlertTriangle className="shrink-0" size={20} />
             <p>Tem certeza? Ao encerrar o ciclo, ele deixará de aparecer no Dashboard.</p>
           </div>
           <div className="flex justify-end gap-2">

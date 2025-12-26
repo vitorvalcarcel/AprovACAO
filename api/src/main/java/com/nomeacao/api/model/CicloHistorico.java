@@ -23,8 +23,8 @@ public class CicloHistorico {
     @JoinColumn(name = "materia_id", nullable = false)
     private Materia materia;
 
-    @Column(name = "horas_descontadas", nullable = false)
-    private Double horasDescontadas;
+    @Column(name = "segundos_descontados", nullable = false)
+    private Long segundosDescontados;
 
     @Column(name = "questoes_descontadas", nullable = false)
     private Integer questoesDescontadas;

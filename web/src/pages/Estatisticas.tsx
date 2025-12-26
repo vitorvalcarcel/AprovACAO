@@ -6,7 +6,7 @@ import GraficoEvolucao from '../components/GraficoEvolucao';
 import StatsSkeleton from '../components/skeletons/StatsSkeleton';
 
 interface DashboardData {
-  horasLiquidas: number;
+  segundosLiquidos: number;
   questoesFeitas: number;
   taxaAcertos: number;
   evolucaoDiaria: any[];
@@ -15,7 +15,7 @@ interface DashboardData {
 export default function Estatisticas() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [filtrosAtivos, setFiltrosAtivos] = useState<FiltrosState>({
     dataInicio: '', dataFim: '', concursoIds: [], materiaIds: [], topicoIds: [], tipoEstudoIds: []
   });
@@ -47,10 +47,10 @@ export default function Estatisticas() {
     carregarDados();
   }, [filtrosAtivos]);
 
-  const formatarHoras = (val: number) => {
-    if (!val) return "0h";
-    const h = Math.floor(val);
-    const m = Math.round((val - h) * 60);
+  const formatarHoras = (segundos: number) => {
+    if (!segundos) return "0h";
+    const h = Math.floor(segundos / 3600);
+    const m = Math.floor((segundos % 3600) / 60);
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
@@ -60,7 +60,7 @@ export default function Estatisticas() {
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-8 pb-10">
-      
+
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Estatísticas</h1>
@@ -76,7 +76,7 @@ export default function Estatisticas() {
           <div className="bg-blue-50 p-3 rounded-xl text-blue-600"><Target size={28} /></div>
           <div>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Horas Líquidas</p>
-            <h3 className="text-3xl font-bold text-gray-800">{formatarHoras(data?.horasLiquidas || 0)}</h3>
+            <h3 className="text-3xl font-bold text-gray-800">{formatarHoras(data?.segundosLiquidos || 0)}</h3>
           </div>
         </div>
 

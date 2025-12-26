@@ -114,11 +114,11 @@ export default function ModalGerarCiclo({ isOpen, onClose, onSuccess, concurso }
       const payload = {
         concursoId: concurso.id,
         descricao: `Ciclo ${totalHorasReal.toFixed(0)}h / ${totalQuestoesReal}q`,
-        totalHoras: totalHorasReal,
+        totalSegundos: Math.round(totalHorasReal * 3600),
         totalQuestoes: totalQuestoesReal,
         itens: itens.map((item, index) => ({
           materiaId: item.materiaId,
-          horasMeta: item.horasEditadas,
+          segundosMeta: Math.round(item.horasEditadas * 3600),
           questoesMeta: item.questoesEditadas,
           ordem: index + 1
         }))

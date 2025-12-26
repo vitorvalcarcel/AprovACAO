@@ -38,27 +38,26 @@ class DashboardServiceTest {
     @Test
     @DisplayName("DASHBOARD: Deve calcular KPIs gerais corretamente (Horas e Taxa Acerto)")
     void carregarDashboard_calculoKPIs() {
-        Usuario usuario = new Usuario(); usuario.setId(1L);
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
 
         // Mock do Resumo Geral: 7200s (2h), 100 questões, 80 acertos (80%)
         ResumoGeralDTO resumoMock = new ResumoGeralDTO(7200L, 100L, 80L);
 
         // ATUALIZADO: Adicionado any() extra para o parâmetro 'topicos'
         when(registroRepository.calcularResumoGeral(
-            eq(usuario), any(), any(), any(), any(), any(), any()
-        )).thenReturn(resumoMock);
+                eq(usuario), any(), any(), any(), any(), any(), any())).thenReturn(resumoMock);
 
         // ATUALIZADO: Adicionado any() extra para o parâmetro 'topicos'
         when(registroRepository.calcularEvolucaoDiaria(
-            any(), any(), any(), any(), any(), any(), any()
-        )).thenReturn(Collections.emptyList());
+                any(), any(), any(), any(), any(), any(), any())).thenReturn(Collections.emptyList());
 
         // Act
         // ATUALIZADO: Passando null para 'topicos' (5º argumento)
         DashboardDTO dashboard = service.carregarDashboard(usuario, null, null, null, null, null, null);
 
         // Assert
-        assertEquals(2.0, dashboard.horasLiquidas()); // 7200 / 3600
+        assertEquals(7200L, dashboard.segundosLiquidos()); // 2h = 7200s
         assertEquals(80.0, dashboard.taxaAcertos()); // 80 / 100
         assertEquals(100, dashboard.questoesFeitas());
     }
@@ -66,14 +65,15 @@ class DashboardServiceTest {
     @Test
     @DisplayName("DASHBOARD: Deve preencher dias vazios no gráfico (Gap Filling)")
     void carregarDashboard_gapFilling() {
-        Usuario usuario = new Usuario(); usuario.setId(1L);
-        
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
         LocalDate hoje = LocalDate.now();
-        LocalDate anteontem = hoje.minusDays(2); 
+        LocalDate anteontem = hoje.minusDays(2);
 
         List<EvolucaoDiariaDTO> evolucaoBanco = List.of(
-            new EvolucaoDiariaDTO(Date.valueOf(anteontem), 3600L), // 1h
-            new EvolucaoDiariaDTO(Date.valueOf(hoje), 7200L)       // 2h
+                new EvolucaoDiariaDTO(Date.valueOf(anteontem), 3600L), // 1h
+                new EvolucaoDiariaDTO(Date.valueOf(hoje), 7200L) // 2h
         );
 
         // ATUALIZADO: Adicionado any() extra
@@ -87,20 +87,19 @@ class DashboardServiceTest {
         // Act
         // ATUALIZADO: Passando null para 'topicos'
         DashboardDTO dashboard = service.carregarDashboard(
-            usuario, 
-            anteontem.atStartOfDay(), 
-            hoje.atTime(23, 59, 59), 
-            null, null, null, null
-        );
+                usuario,
+                anteontem.atStartOfDay(),
+                hoje.atTime(23, 59, 59),
+                null, null, null, null);
 
         List<DadosGrafico> grafico = dashboard.evolucaoDiaria();
 
         // Assert
-        assertEquals(3, grafico.size()); 
-        
-        assertEquals(1.0, grafico.get(0).valor()); // Anteontem
-        assertEquals(0.0, grafico.get(1).valor()); // Ontem (Preenchido automaticamente!)
-        assertEquals(2.0, grafico.get(2).valor()); // Hoje
+        assertEquals(3, grafico.size());
+
+        assertEquals(3600L, grafico.get(0).valor()); // Anteontem
+        assertEquals(0L, grafico.get(1).valor()); // Ontem (Preenchido automaticamente!)
+        assertEquals(7200L, grafico.get(2).valor()); // Hoje
     }
 
     // --- TESTES DE CICLO E PROGRESSO ---
@@ -108,17 +107,20 @@ class DashboardServiceTest {
     @Test
     @DisplayName("DASHBOARD: Deve calcular progresso do Ciclo Ativo corretamente")
     void carregarDashboard_progressoCiclo() {
-        Usuario usuario = new Usuario(); usuario.setId(1L);
-        
-        Concurso concurso = new Concurso(); 
-        concurso.setId(10L); 
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        Concurso concurso = new Concurso();
+        concurso.setId(10L);
         concurso.setNome("Concurso Teste");
 
-        Materia mat1 = new Materia(); mat1.setId(100L); mat1.setNome("Matéria 1");
-        
+        Materia mat1 = new Materia();
+        mat1.setId(100L);
+        mat1.setNome("Matéria 1");
+
         ItemCiclo item = new ItemCiclo();
         item.setMateria(mat1);
-        item.setHorasMeta(10.0);
+        item.setSegundosMeta(36000L); // 10h
         item.setQuestoesMeta(0);
 
         Ciclo ciclo = new Ciclo();
@@ -128,7 +130,7 @@ class DashboardServiceTest {
 
         when(cicloRepository.findFirstByUsuarioAndAtivoTrue(usuario)).thenReturn(Optional.of(ciclo));
 
-        ResumoHistoricoDTO historicoMat1 = new ResumoHistoricoDTO(100L, 18000L, 0L); 
+        ResumoHistoricoDTO historicoMat1 = new ResumoHistoricoDTO(100L, 18000L, 0L); // 5h feitas
         when(registroRepository.somarEstudosPorConcurso(10L)).thenReturn(List.of(historicoMat1));
 
         // ATUALIZADO: Adicionado any() extra
@@ -146,34 +148,35 @@ class DashboardServiceTest {
         assertNotNull(dashboard.cicloId());
         assertEquals("Concurso Teste", dashboard.nomeConcurso());
         assertEquals(1, dashboard.itens().size());
-        
+
         DashboardDTO.ItemProgresso itemProg = dashboard.itens().get(0);
-        assertEquals(50.0, itemProg.percentualHoras()); 
-        assertEquals(18000L, itemProg.saldoSegundos()); 
-        
+        assertEquals(50.0, itemProg.percentualHoras());
+        assertEquals(18000L, itemProg.saldoSegundos());
+
         assertEquals(50.0, dashboard.progressoGeral());
     }
 
     @Test
     @DisplayName("DASHBOARD: Deve retornar zerado se não houver dados")
     void carregarDashboard_semDados() {
-        Usuario usuario = new Usuario(); usuario.setId(1L);
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
 
         // ATUALIZADO: Adicionado any() extra
         when(registroRepository.calcularResumoGeral(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(new ResumoGeralDTO(null, null, null)); 
-        
+                .thenReturn(new ResumoGeralDTO(null, null, null));
+
         // ATUALIZADO: Adicionado any() extra
         when(registroRepository.calcularEvolucaoDiaria(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(Collections.emptyList());
-        
+
         when(cicloRepository.findFirstByUsuarioAndAtivoTrue(usuario)).thenReturn(Optional.empty());
 
         // Act
         // ATUALIZADO: Passando null para 'topicos'
         DashboardDTO dashboard = service.carregarDashboard(usuario, null, null, null, null, null, null);
 
-        assertEquals(0.0, dashboard.horasLiquidas());
+        assertEquals(0L, dashboard.segundosLiquidos());
         assertEquals(0, dashboard.questoesFeitas());
         assertNull(dashboard.cicloId());
     }

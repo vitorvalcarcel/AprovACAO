@@ -21,9 +21,10 @@ public class Ciclo {
     private Long id;
 
     private String descricao;
-    
-    private Double totalHoras;
-    
+
+    @Column(name = "total_segundos")
+    private Long totalSegundos;
+
     private Boolean ativo;
 
     @Column(name = "data_inicio")
@@ -43,7 +44,7 @@ public class Ciclo {
         item.setCiclo(this);
         this.itens.add(item);
     }
-    
+
     @PrePersist
     public void prePersist() {
         if (this.dataInicio == null) {

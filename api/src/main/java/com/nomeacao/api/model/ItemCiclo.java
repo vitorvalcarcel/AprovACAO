@@ -25,7 +25,8 @@ public class ItemCiclo {
 
     private Integer ordem;
 
-    private Double horasMeta;
-    
+    @Column(name = "segundos_meta")
+    private Long segundosMeta;
+
     private Integer questoesMeta = 0;
 }

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { 
-  format, parseISO, startOfWeek, startOfMonth 
+import {
+  format, parseISO, startOfWeek, startOfMonth
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart2, Calendar } from 'lucide-react';
@@ -26,7 +26,7 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
   // Função para formatar horas decimais em "Xh Ym"
   const formatarTempo = (valorDecimal: number) => {
     if (valorDecimal === 0) return "0h";
-    
+
     const totalMinutos = Math.round(valorDecimal * 60);
     const h = Math.floor(totalMinutos / 60);
     const m = totalMinutos % 60;
@@ -87,7 +87,7 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
     });
 
     return Array.from(grupos.values()).map(g => ({
-      label: modoAtual === 'semana' 
+      label: modoAtual === 'semana'
         ? format(g.dataRef, 'dd/MM', { locale: ptBR }) // Início da semana
         : format(g.dataRef, 'MMM/yy', { locale: ptBR }), // Mês
       fullLabel: modoAtual === 'semana'
@@ -105,7 +105,7 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
       </div>
     );
   }
-  
+
   if (dados.length === 0) {
     return (
       <div className="h-[400px] flex flex-col items-center justify-center text-gray-400 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">
@@ -117,12 +117,12 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-      
+
       {/* HEADER E CONTROLES */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-           <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <Calendar size={20} className="text-blue-600"/> Constância e Volume
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <Calendar size={20} className="text-blue-600" /> Constância e Volume
           </h3>
           <p className="text-xs text-gray-500 mt-1">Total de horas líquidas estudadas por período</p>
         </div>
@@ -132,52 +132,51 @@ export default function GraficoEvolucao({ dados, loading }: GraficoEvolucaoProps
             <button
               key={tipo}
               onClick={() => setAgrupamento(tipo)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                agrupamento === tipo 
-                  ? 'bg-white text-blue-700 shadow-sm' 
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${agrupamento === tipo
+                  ? 'bg-white text-blue-700 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
-              }`}
+                }`}
             >
               {tipo === 'auto' ? 'Auto' : tipo.charAt(0).toUpperCase() + tipo.slice(1)}
             </button>
           ))}
         </div>
       </div>
-      
+
       {/* GRÁFICO DE BARRAS */}
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dadosProcessados} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis 
-              dataKey="label" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#94a3b8', fontSize: 12 }} 
+            <XAxis
+              dataKey="label"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#94a3b8', fontSize: 12 }}
               dy={10}
               minTickGap={30}
             />
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#94a3b8', fontSize: 12 }} 
-              tickFormatter={(value) => `${value}h`}
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#94a3b8', fontSize: 12 }}
+              tickFormatter={(value) => `${Math.floor(value / 3600)}h`}
             />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              cursor={{ fill: '#f8fafc' }} 
+              cursor={{ fill: '#f8fafc' }}
               formatter={(value: number) => [formatarTempo(value), 'Tempo de Estudo']}
               labelFormatter={(label, payload) => {
-                if(payload && payload.length > 0) {
-                    return payload[0].payload.fullLabel;
+                if (payload && payload.length > 0) {
+                  return payload[0].payload.fullLabel;
                 }
                 return label;
               }}
             />
-            <Bar 
-              dataKey="valor" 
-              fill="#3b82f6" 
-              radius={[4, 4, 0, 0]} 
+            <Bar
+              dataKey="valor"
+              fill="#3b82f6"
+              radius={[4, 4, 0, 0]}
               maxBarSize={60}
               animationDuration={1000}
             />

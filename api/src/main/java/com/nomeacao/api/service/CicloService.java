@@ -215,7 +215,7 @@ public class CicloService {
         ciclo.setConcurso(concurso);
         ciclo.setAtivo(true);
         ciclo.setDescricao(dados.descricao());
-        ciclo.setTotalHoras(dados.totalHoras());
+        ciclo.setTotalSegundos(dados.totalSegundos());
         ciclo.setDataInicio(LocalDateTime.now());
 
         List<ItemCiclo> itensEntidade = new ArrayList<>();
@@ -227,7 +227,7 @@ public class CicloService {
                 var item = new ItemCiclo();
                 item.setCiclo(ciclo);
                 item.setMateria(materia);
-                item.setHorasMeta(itemDto.horasMeta());
+                item.setSegundosMeta(itemDto.segundosMeta());
                 item.setQuestoesMeta(itemDto.questoesMeta() != null ? itemDto.questoesMeta() : 0);
                 item.setOrdem(itemDto.ordem());
 
@@ -279,11 +279,11 @@ public class CicloService {
                     .mapToLong(RegistroTempoDTO::segundos)
                     .sum();
 
-            double metaSegundos = item.getHorasMeta() * 3600;
+            long metaSegundos = item.getSegundosMeta() != null ? item.getSegundosMeta() : 0L;
             double percentualItem = 0.0;
 
             if (metaSegundos > 0) {
-                percentualItem = (segundosRealizados / metaSegundos) * 100.0;
+                percentualItem = ((double) segundosRealizados / metaSegundos) * 100.0;
                 if (percentualItem > 100.0)
                     percentualItem = 100.0;
             }

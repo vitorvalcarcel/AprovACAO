@@ -167,8 +167,8 @@ class CicloServiceTest {
         cicloAntigo.setAtivo(true);
         cicloAntigo.setConcurso(concurso);
 
-        DadosCriacaoCiclo.DadosItemCiclo itemDto = new DadosCriacaoCiclo.DadosItemCiclo(100L, 2.0, 10, 1);
-        DadosCriacaoCiclo dados = new DadosCriacaoCiclo(1L, "Novo Ciclo", 20.0, 100, List.of(itemDto));
+        DadosCriacaoCiclo.DadosItemCiclo itemDto = new DadosCriacaoCiclo.DadosItemCiclo(100L, 7200L, 10, 1);
+        DadosCriacaoCiclo dados = new DadosCriacaoCiclo(1L, "Novo Ciclo", 72000L, 100, List.of(itemDto));
 
         Materia materia = new Materia();
         materia.setId(100L);
@@ -205,7 +205,7 @@ class CicloServiceTest {
         concurso.setId(10L);
         concurso.setUsuario(donoConcurso);
 
-        DadosCriacaoCiclo dados = new DadosCriacaoCiclo(10L, "Teste", 10.0, 10, new ArrayList<>());
+        DadosCriacaoCiclo dados = new DadosCriacaoCiclo(10L, "Teste", 36000L, 10, new ArrayList<>());
 
         when(concursoRepository.findById(10L)).thenReturn(Optional.of(concurso));
 
