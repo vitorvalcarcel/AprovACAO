@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,7 +32,7 @@ public class Usuario implements UserDetails {
 
     @Column(nullable = false)
     private String senha;
-    
+
     @Column(nullable = false)
     private Boolean ativo = false;
 
@@ -43,6 +44,30 @@ public class Usuario implements UserDetails {
 
     @Column(name = "tutorial_concluido", nullable = false)
     private Boolean tutorialConcluido = false;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<Materia> materias;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<Concurso> concursos;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<RegistroEstudo> registros;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<TipoEstudo> tiposEstudo;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<RefreshToken> refreshTokens;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.REMOVE)
+    @ToString.Exclude
+    private List<Feedback> feedbacks;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -76,6 +101,6 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return ativo; 
+        return ativo;
     }
 }

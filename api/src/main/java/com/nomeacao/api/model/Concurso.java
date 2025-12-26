@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDate;
 
@@ -33,6 +34,14 @@ public class Concurso {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
+
+    @OneToMany(mappedBy = "concurso", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private java.util.List<ConcursoMateria> materias;
+
+    @OneToMany(mappedBy = "concurso", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private java.util.List<Ciclo> ciclos;
 
     public void atualizarInformacoes(String nome, String banca, LocalDate dataProva) {
         if (nome != null && !nome.trim().isEmpty()) {

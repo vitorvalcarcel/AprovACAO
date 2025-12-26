@@ -4,8 +4,8 @@ SEÇÃO 1: SEGURANÇA E INTEGRIDADE DE DADOS (CRÍTICO)
 
 1. [BACKEND] Exclusão em Cascata do Usuário (Integridade)
    - Detalhe: O método `excluirConta` deleta manualmente os registros de cada tabela relacionada. Se novas tabelas forem criadas no futuro, a exclusão quebrará por erro de Foreign Key.
-   - Solução: Configurar `CascadeType.REMOVE` nas entidades ou Constraints de Banco de Dados.
-   - Status: 🔴 PENDENTE
+   - Solução: Configurado `CascadeType.REMOVE` nas entidades `Usuario`, `Concurso` e `Materia`.
+   - Status: ✅ CONCLUÍDO
 
 =============================================================================
 SEÇÃO 2: PERFORMANCE E OTIMIZAÇÃO

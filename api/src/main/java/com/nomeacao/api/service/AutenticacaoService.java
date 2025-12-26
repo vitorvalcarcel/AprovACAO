@@ -27,22 +27,12 @@ public class AutenticacaoService implements UserDetailsService {
     @Autowired
     private TipoEstudoService tipoEstudoService;
     @Autowired
-    private RegistroEstudoRepository registroRepository;
-    @Autowired
-    private ConcursoRepository concursoRepository;
-    @Autowired
-    private MateriaRepository materiaRepository;
-    @Autowired
-    private TipoEstudoRepository tipoEstudoRepository;
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private EmailService emailService;
     @Autowired
     private TokenService jwtService;
-    @Autowired
-    private RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -90,7 +80,6 @@ public class AutenticacaoService implements UserDetailsService {
         usuario.setValidadeCodigo(null);
         repository.save(usuario);
 
-        // Gera o JWT para Auto-Login
         // Gera o JWT para Auto-Login
         var accessToken = jwtService.gerarToken(usuario);
         var refreshToken = jwtService.gerarRefreshToken(usuario);
@@ -177,11 +166,6 @@ public class AutenticacaoService implements UserDetailsService {
         if (!passwordEncoder.matches(senhaConfirmacao, usuario.getSenha())) {
             throw new RuntimeException("Senha incorreta.");
         }
-        registroRepository.deleteAllByUsuario(usuario);
-        concursoRepository.deleteAll(concursoRepository.findAllByUsuario(usuario));
-        materiaRepository.deleteAll(materiaRepository.findAllByUsuario(usuario));
-        tipoEstudoRepository.deleteAll(tipoEstudoRepository.findAllByUsuario(usuario));
-        refreshTokenRepository.deleteAllByUsuario(usuario);
         repository.delete(usuario);
     }
 
